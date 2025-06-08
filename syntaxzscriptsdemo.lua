@@ -4,6 +4,52 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHept
 -- Create a single window with two tabs: Credits and Main (Credits first)
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 
+-- Make Kavo UI draggable
+local function makeDraggable(frame)
+    local UIS = game:GetService("UserInputService")
+    local dragging, dragInput, dragStart, startPos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                                      startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- Wait for Kavo UI main frame to exist, then make it draggable
+task.spawn(function()
+    local main
+    repeat
+        main = game.CoreGui:FindFirstChild("KavoUI") or game.CoreGui:FindFirstChild("Main")
+        task.wait(0.1)
+    until main and main:FindFirstChildWhichIsA("Frame")
+
+    local mainFrame = main:FindFirstChildWhichIsA("Frame")
+    makeDraggable(mainFrame)
+end)
+
 -- Credits Tab (FIRST)
 local CreditsTab = Window:NewTab("Credits")
 local CreditsSection = CreditsTab:NewSection("Script by Syntaxz Scripts")
