@@ -94,3 +94,28 @@ Section:NewToggle("Player ESP", "Toggles ESP", function(state)
         DisableESP()
     end
 end)
+
+--// Infinite Stamina Toggle (added to same section/tab)
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local Sprinting = ReplicatedStorage.Systems.Character.Game.Sprinting
+local m = require(Sprinting)
+
+local infiniteStaminaEnabled = false
+m.Stamina = 100
+
+local function monitorStamina()
+    while true do
+        if infiniteStaminaEnabled then
+            if m.Stamina <= 5 then
+                m.Stamina = 20
+            end
+        end
+        task.wait(0.1)
+    end
+end
+
+task.spawn(monitorStamina)
+
+Section:NewToggle("Infinite Stamina", "Toggle Infinite Stamina", function(state)
+    infiniteStaminaEnabled = state
+end)
