@@ -94,18 +94,19 @@ Section:NewToggle("Player ESP", "Toggles ESP", function(state)
         DisableESP()
     end
 end)
-
--- Infinite Stamina Toggle Script using Kavo UI
+-- Infinite Stamina Toggle Script using Kavo UI (Single Tab/Section)
 
 --// Dependencies
 local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
 local Sprinting = ReplicatedStorage.Systems.Character.Game.Sprinting
 local m = require(Sprinting)
 
---// Kavo UI Setup (assume Kavo UI is already loaded in your environment)
--- Replace this with your actual Kavo UI loading code if needed.
+--// Kavo UI Setup (assume Kavo UI is already loaded)
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Infinite Stamina", "Midnight")
+local Window = Library.CreateLib("My Script Hub", "Midnight") -- You can rename this
+
+local MainTab = Window:NewTab("Main") -- Only one tab is created
+local MainSection = MainTab:NewSection("Stamina") -- Only one section
 
 --// Toggle State
 local infiniteStaminaEnabled = false
@@ -127,9 +128,6 @@ end
 task.spawn(monitorStamina)
 
 --// UI Toggle
-local MainTab = Window:NewTab("Main")
-local MainSection = MainTab:NewSection("Stamina")
-
 MainSection:NewToggle("Infinite Stamina", "Toggle Infinite Stamina", function(state)
     infiniteStaminaEnabled = state
-end)
+end)    
