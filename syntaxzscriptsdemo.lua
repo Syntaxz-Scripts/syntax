@@ -1,8 +1,9 @@
--- ILY COPILOT <3
+-- Kavo UI Loader
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+
+-- Create a single window with two tabs: Credits and Main (Credits first)
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 
--- Make UI draggable
 local function makeDraggable(frame)
     local UIS = game:GetService("UserInputService")
     local dragging, dragInput, dragStart, startPos
@@ -37,18 +38,16 @@ local function makeDraggable(frame)
     end)
 end
 
--- Wait for Kavo's GUI to load and find the frame
+-- Wait for the frame to exist, then make it draggable
 task.spawn(function()
     local mainFrame
-    repeat
-        for _,v in pairs(game.CoreGui:GetDescendants()) do
-            if v:IsA("Frame") and v.Name == "Main" and v.Parent and v.Parent.Name == "KavoUI" then
-                mainFrame = v
-                break
-            end
+    while not mainFrame do
+        local gui = game.CoreGui:FindFirstChild("KavoUI")
+        if gui then
+            mainFrame = gui:FindFirstChild("Main")
         end
         task.wait(0.1)
-    until mainFrame
+    end
     makeDraggable(mainFrame)
 end)
 
