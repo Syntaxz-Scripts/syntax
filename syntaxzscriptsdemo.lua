@@ -1,19 +1,20 @@
 -- Kavo UI Loader
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
--- Create the window and tab
+-- Create a single window and tab/section
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 local Tab = Window:NewTab("Main")
 local Section = Tab:NewSection("Fun")
 
 -- ESP Script Logic
-local RunService = game:GetService("RunService")
 local highlighted = {}
 local espConnection
+local ESP_LABEL_NAME = "ESPLabel"
 
 local function highlight(part, text, color)
-    if not part:FindFirstChildOfClass("BillboardGui") then
+    if not part:FindFirstChild(ESP_LABEL_NAME) then
         local gui = Instance.new("BillboardGui")
+        gui.Name = ESP_LABEL_NAME
         gui.AlwaysOnTop = true
         gui.Size = UDim2.new(0, 50, 0, 50)
         gui.StudsOffset = Vector3.new(0, 2, 0)
@@ -61,11 +62,8 @@ local function clearESP()
     for obj, _ in pairs(highlighted) do
         local part = obj:FindFirstChildWhichIsA("BasePart")
         if part then
-            for _, v in ipairs(part:GetChildren()) do
-                if v:IsA("BillboardGui") then
-                    v:Destroy()
-                end
-            end
+            local gui = part:FindFirstChild(ESP_LABEL_NAME)
+            if gui then gui:Destroy() end
         end
         highlighted[obj] = nil
     end
@@ -86,7 +84,7 @@ local function DisableESP()
     clearESP()
 end
 
--- Kavo Toggle for ESP
+-- ESP Toggle
 Section:NewToggle("Player ESP", "Toggles ESP", function(state)
     if state then
         EnableESP()
@@ -95,22 +93,22 @@ Section:NewToggle("Player ESP", "Toggles ESP", function(state)
     end
 end)
 
---// Infinite Stamina Toggle (added to same section/tab)
+-- Infinite Stamina Logic
 local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
 local Sprinting = ReplicatedStorage.Systems.Character.Game.Sprinting
 local m = require(Sprinting)
 
 local infiniteStaminaEnabled = false
-m.Stamina = 100
 
 local function monitorStamina()
     while true do
-        if infiniteStaminaEnabled then
+        while infiniteStaminaEnabled do
             if m.Stamina <= 5 then
                 m.Stamina = 20
             end
+            task.wait(0.1)
         end
-        task.wait(0.1)
+        task.wait(0.5)
     end
 end
 
