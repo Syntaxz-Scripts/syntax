@@ -1,10 +1,19 @@
 -- Kavo UI Loader
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
--- Create a single window and tab/section
+-- Create a single window with two tabs: Credits and Main (Credits first)
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
-local Tab = Window:NewTab("Main")
-local Section = Tab:NewSection("Fun")
+
+-- Credits Tab (FIRST)
+local CreditsTab = Window:NewTab("Credits")
+local CreditsSection = CreditsTab:NewSection("Script by Syntaxz Scripts")
+CreditsSection:NewLabel("ESP & UI: Syntaxz Scripts")
+CreditsSection:NewLabel("UI Library: Kavo UI Library by xHeptc")
+CreditsSection:NewLabel("Discord: discord.gg/yourserver") -- Change to your Discord if you want
+
+-- Main Tab (SECOND)
+local MainTab = Window:NewTab("Main")
+local MainSection = MainTab:NewSection("Fun")
 
 -- ESP Script Logic
 local highlighted = {}
@@ -85,7 +94,7 @@ local function DisableESP()
 end
 
 -- ESP Toggle
-Section:NewToggle("Player ESP", "Toggles ESP", function(state)
+MainSection:NewToggle("Player ESP", "Toggles ESP", function(state)
     if state then
         EnableESP()
     else
@@ -114,6 +123,6 @@ end
 
 task.spawn(monitorStamina)
 
-Section:NewToggle("Infinite Stamina", "Toggle Infinite Stamina", function(state)
+MainSection:NewToggle("Infinite Stamina", "Toggle Infinite Stamina", function(state)
     infiniteStaminaEnabled = state
 end)
