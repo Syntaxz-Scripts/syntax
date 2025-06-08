@@ -1,46 +1,12 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Kavo UI Loader
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
-local Window = Rayfield:CreateWindow({
-   Name = "Syntaxz Scripts DEMO",
-   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-   LoadingTitle = "Rayfield Interface Suite",
-   LoadingSubtitle = "by Syntaxz",
-   Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+-- Create the window and tab
+local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
+local Tab = Window:NewTab("Main")
+local Section = Tab:NewSection("Fun")
 
-   ToggleUIKeybind = "K", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
-
-   DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
-
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil, -- Create a custom folder for your hub/game
-      FileName = "Syntaxz Hub"
-   },
-
-   Discord = {
-      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
-      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
-      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
-   },
-
-   KeySystem = false, -- Set this to true to use our key system
-   KeySettings = {
-      Title = "Untitled",
-      Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
-      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
-   }
-})
-Rayfield:SetVisibility(true)
-Rayfield:IsVisible(true)
-
-local MainTab = Window:CreateTab("Main", nil) -- Title, Image
-local MainSection = MainTab:CreateSection("Fun")
-
+-- ESP Script Logic
 local RunService = game:GetService("RunService")
 local highlighted = {}
 local espConnection
@@ -106,34 +72,25 @@ local function clearESP()
 end
 
 local function EnableESP()
-    -- Highlight all existing objects
     for _, obj in ipairs(workspace:GetDescendants()) do
         handle(obj)
     end
-    -- Connect to new objects
     espConnection = workspace.DescendantAdded:Connect(handle)
 end
 
 local function DisableESP()
-    -- Disconnect connection
     if espConnection then
         espConnection:Disconnect()
         espConnection = nil
     end
-    -- Remove all highlights
     clearESP()
 end
 
--- The Rayfield toggle (replace Tab with your actual tab variable, like MainTab)
-local Toggle = Tab:CreateToggle({
-   Name = "Player ESP",
-   CurrentValue = false,
-   Flag = "PlayerESP",
-   Callback = function(Value)
-      if Value then
-         EnableESP()
-      else
-         DisableESP()
-      end
-   end,
-})
+-- Kavo Toggle for ESP
+Section:NewToggle("Player ESP", "Toggles ESP", function(state)
+    if state then
+        EnableESP()
+    else
+        DisableESP()
+    end
+end)
