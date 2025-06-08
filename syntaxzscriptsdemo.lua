@@ -1,10 +1,8 @@
--- Kavo UI Loader
+-- ILY COPILOT <3
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-
--- Create a single window with two tabs: Credits and Main (Credits first)
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 
--- Make Kavo UI draggable
+-- Make UI draggable
 local function makeDraggable(frame)
     local UIS = game:GetService("UserInputService")
     local dragging, dragInput, dragStart, startPos
@@ -14,7 +12,6 @@ local function makeDraggable(frame)
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -32,21 +29,26 @@ local function makeDraggable(frame)
     UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-                                      startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
         end
     end)
 end
 
--- Wait for Kavo UI main frame to exist, then make it draggable
+-- Wait for Kavo's GUI to load and find the frame
 task.spawn(function()
-    local main
+    local mainFrame
     repeat
-        main = game.CoreGui:FindFirstChild("KavoUI") or game.CoreGui:FindFirstChild("Main")
+        for _,v in pairs(game.CoreGui:GetDescendants()) do
+            if v:IsA("Frame") and v.Name == "Main" and v.Parent and v.Parent.Name == "KavoUI" then
+                mainFrame = v
+                break
+            end
+        end
         task.wait(0.1)
-    until main and main:FindFirstChildWhichIsA("Frame")
-
-    local mainFrame = main:FindFirstChildWhichIsA("Frame")
+    until mainFrame
     makeDraggable(mainFrame)
 end)
 
@@ -55,7 +57,7 @@ local CreditsTab = Window:NewTab("Credits")
 local CreditsSection = CreditsTab:NewSection("Script by Syntaxz Scripts")
 CreditsSection:NewLabel("ESP & UI: Syntaxz Scripts")
 CreditsSection:NewLabel("UI Library: Kavo UI Library by xHeptc")
-CreditsSection:NewLabel("Discord: no discord :(") -- Change to your Discord if you want
+CreditsSection:NewLabel("Discord: discord.gg/yourserver") -- Change to your Discord if you want
 
 -- Main Tab (SECOND)
 local MainTab = Window:NewTab("Main")
