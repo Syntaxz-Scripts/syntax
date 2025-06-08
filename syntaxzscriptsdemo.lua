@@ -4,53 +4,6 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHept
 -- Create a single window with two tabs: Credits and Main (Credits first)
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 
-local function makeDraggable(frame)
-    local UIS = game:GetService("UserInputService")
-    local dragging, dragInput, dragStart, startPos
-
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
-
-    UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-end
-
--- Wait for the frame to exist, then make it draggable
-task.spawn(function()
-    local mainFrame
-    while not mainFrame do
-        local gui = game.CoreGui:FindFirstChild("KavoUI")
-        if gui then
-            mainFrame = gui:FindFirstChild("Main")
-        end
-        task.wait(0.1)
-    end
-    makeDraggable(mainFrame)
-end)
-
 -- Credits Tab (FIRST)
 local CreditsTab = Window:NewTab("Credits")
 local CreditsSection = CreditsTab:NewSection("Script by Syntaxz Scripts")
@@ -172,4 +125,49 @@ task.spawn(monitorStamina)
 
 MainSection:NewToggle("Infinite Stamina", "Toggle Infinite Stamina", function(state)
     infiniteStaminaEnabled = state
+end)
+
+-- Fullbright Logic (toggleable)
+local Lighting = game:GetService("Lighting")
+local originalLighting = {
+    Ambient = Lighting.Ambient,
+    Brightness = Lighting.Brightness,
+    ColorShift_Top = Lighting.ColorShift_Top,
+    ColorShift_Bottom = Lighting.ColorShift_Bottom,
+    OutdoorAmbient = Lighting.OutdoorAmbient,
+    FogEnd = Lighting.FogEnd
+}
+
+local fullbrightEnabled = false
+
+local function enableFullbright()
+    Lighting.Ambient = Color3.new(1, 1, 1)
+    Lighting.Brightness = 5
+    Lighting.ColorShift_Top = Color3.new(0, 0, 0)
+    Lighting.ColorShift_Bottom = Color3.new(0, 0, 0)
+    Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+    Lighting.FogEnd = 100000
+    fullbrightEnabled = true
+end
+
+local function disableFullbright()
+    for property, value in pairs(originalLighting) do
+        Lighting[property] = value
+    end
+    fullbrightEnabled = false
+end
+
+MainSection:NewToggle("Fullbright", "Toggle Fullbright", function(state)
+    if state then
+        enableFullbright()
+    else
+        disableFullbright()
+    end
+end)
+
+-- Optional: Auto-reapply fullbright if Lighting changes (anti-detection/anti-interference)
+Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
+    if fullbrightEnabled and Lighting.Ambient ~= Color3.new(1,1,1) then
+        enableFullbright()
+    end
 end)
