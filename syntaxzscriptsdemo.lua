@@ -3,6 +3,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHept
 
 -- Create a single window with two tabs: Credits and Main (Credits first)
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
+Window:MakeDraggable()
 
 -- Credits Tab (FIRST)
 local CreditsTab = Window:NewTab("Credits")
