@@ -35,7 +35,105 @@ local Window = Rayfield:CreateWindow({
       Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
    }
 })
-Rayfield:SetVisibility(True)
+Rayfield:SetVisibility(true)
+Rayfield:IsVisible(true)
 
 local MainTab = Window:CreateTab("Main", nil) -- Title, Image
 local MainSection = MainTab:CreateSection("Fun")
+
+local RunService = game:GetService("RunService")
+local highlighted = {}
+local espConnection
+
+local function highlight(part, text, color)
+    if not part:FindFirstChildOfClass("BillboardGui") then
+        local gui = Instance.new("BillboardGui")
+        gui.AlwaysOnTop = true
+        gui.Size = UDim2.new(0, 50, 0, 50)
+        gui.StudsOffset = Vector3.new(0, 2, 0)
+        gui.Parent = part
+
+        local label = Instance.new("TextLabel")
+        label.Parent = gui
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.Text = text
+        label.TextScaled = true
+        label.TextStrokeTransparency = 0.5
+        label.TextColor3 = color
+    end
+end
+
+local function handle(obj)
+    if highlighted[obj] then return end
+    if obj:IsA("Model") and obj.Name == "Generator" and obj.Parent and obj.Parent.Name == "Map" then
+        local part = obj:FindFirstChildWhichIsA("BasePart")
+        if part then
+            highlight(part, "Generator", Color3.fromRGB(255, 255, 0))
+            highlighted[obj] = true
+        end
+    end
+
+    if obj:IsA("Tool") and obj.Parent and obj.Parent.Name == "Ingame" then
+        local part = obj:FindFirstChildWhichIsA("BasePart")
+        if part then
+            highlight(part, obj.Name, Color3.fromRGB(255, 255, 0))
+            highlighted[obj] = true
+        end
+    end
+
+    if obj:IsA("Model") and obj.Parent and obj.Parent.Name == "Killers" then
+        local part = obj:FindFirstChildWhichIsA("BasePart")
+        if part then
+            highlight(part, "Killer", Color3.fromRGB(255, 0, 0))
+            highlighted[obj] = true
+        end
+    end
+end
+
+local function clearESP()
+    for obj, _ in pairs(highlighted) do
+        local part = obj:FindFirstChildWhichIsA("BasePart")
+        if part then
+            for _, v in ipairs(part:GetChildren()) do
+                if v:IsA("BillboardGui") then
+                    v:Destroy()
+                end
+            end
+        end
+        highlighted[obj] = nil
+    end
+end
+
+local function EnableESP()
+    -- Highlight all existing objects
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        handle(obj)
+    end
+    -- Connect to new objects
+    espConnection = workspace.DescendantAdded:Connect(handle)
+end
+
+local function DisableESP()
+    -- Disconnect connection
+    if espConnection then
+        espConnection:Disconnect()
+        espConnection = nil
+    end
+    -- Remove all highlights
+    clearESP()
+end
+
+-- The Rayfield toggle (replace Tab with your actual tab variable, like MainTab)
+local Toggle = Tab:CreateToggle({
+   Name = "Player ESP",
+   CurrentValue = false,
+   Flag = "PlayerESP",
+   Callback = function(Value)
+      if Value then
+         EnableESP()
+      else
+         DisableESP()
+      end
+   end,
+})
