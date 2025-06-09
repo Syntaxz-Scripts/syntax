@@ -1,5 +1,12 @@
--- Ui Loader by xHeptc
+-- Ui Loader by xHeptc with Advanced Anti-Cheat Detector/Bypass by Syntaxz Scripts
+
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+
+-- Utility: ClonedService for executor compatibility
+local function ClonedService(name)
+    local Reference = (cloneref) or function(reference) return reference end
+    return Reference(game:GetService(name))
+end
 
 -- Create a single window with four tabs: Credits, Forsaken, Universal, Grow a Garden
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
@@ -24,13 +31,6 @@ local GardenTab = Window:NewTab("Grow a Garden")
 local GardenSection = GardenTab:NewSection("Garden Tools")
 
 GardenSection:NewButton("Duplicate Tools", "Duplicates all tools in your backpack", function()
-    -- Tool duplication logic (safe version)
-    local function ClonedService(name)
-        local Service = game.GetService
-        local Reference = (cloneref) or function(reference) return reference end
-        return Reference(Service(game, name))
-    end
-
     local player = ClonedService("Players").LocalPlayer
     local backpack = player.Backpack
 
@@ -45,15 +45,7 @@ GardenSection:NewButton("Duplicate Tools", "Duplicates all tools in your backpac
     Library:Notify("Duplicated all tools in your backpack!")
 end)
 
--- Username typer for ctools
 GardenSection:NewTextBox("Copy Tools (ctools)", "Type a username and click to copy their tools!", function(username)
-    -- ctools logic
-    local function ClonedService(name)
-        local Service = game.GetService
-        local Reference = (cloneref) or function(reference) return reference end
-        return Reference(Service(game, name))
-    end
-
     local Players = ClonedService("Players")
     local LocalPlayer = Players.LocalPlayer
     local targetPlayer = nil
@@ -171,7 +163,6 @@ local function DisableESP()
     clearESP()
 end
 
--- ESP Toggle
 ForsakenSection:NewToggle("Player ESP", "Toggles ESP", function(state)
     if state then
         EnableESP()
@@ -181,15 +172,17 @@ ForsakenSection:NewToggle("Player ESP", "Toggles ESP", function(state)
 end)
 
 -- Infinite Stamina Logic
-local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
-local Sprinting = ReplicatedStorage.Systems.Character.Game.Sprinting
-local m = require(Sprinting)
-
+local ReplicatedStorage = ClonedService("ReplicatedStorage")
+local Sprinting = ReplicatedStorage:FindFirstChild("Systems")
+    and ReplicatedStorage.Systems:FindFirstChild("Character")
+    and ReplicatedStorage.Systems.Character:FindFirstChild("Game")
+    and ReplicatedStorage.Systems.Character.Game:FindFirstChild("Sprinting")
+local m = Sprinting and require(Sprinting)
 local infiniteStaminaEnabled = false
 
 local function monitorStamina()
     while true do
-        while infiniteStaminaEnabled do
+        while infiniteStaminaEnabled and m do
             if m.Stamina <= 5 then
                 m.Stamina = 20
             end
@@ -235,7 +228,6 @@ local function disableFullbright()
     fullbrightEnabled = false
 end
 
--- Move Fullbright Toggle to Universal Tab
 UniversalSection:NewToggle("Fullbright", "Toggle Fullbright", function(state)
     if state then
         enableFullbright()
@@ -244,9 +236,127 @@ UniversalSection:NewToggle("Fullbright", "Toggle Fullbright", function(state)
     end
 end)
 
--- Optional: Auto-reapply fullbright if Lighting changes (anti-detection/anti-interference)
 Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     if fullbrightEnabled and Lighting.Ambient ~= Color3.new(1,1,1) then
         enableFullbright()
     end
 end)
+
+-- Anti-Cheat Detector/Bypass Logic
+local acDetectorEnabled = false
+local acBypassConnections = {}
+local mt, oldNamecall, hookSet = nil, nil, false
+
+local function scanForAntiCheat()
+    local keywords = {"AntiCheat", "AC", "Ban", "Kick", "Logger", "Admin", "Detector"}
+    local found = {}
+    for _, obj in ipairs(game:GetDescendants()) do
+        if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+            for _, word in ipairs(keywords) do
+                if obj.Name:lower():find(word:lower()) then
+                    table.insert(found, obj:GetFullName())
+                end
+            end
+        end
+    end
+    return found
+end
+
+local function scanForSuspiciousRemotes()
+    local remotes = {}
+    for _, obj in ipairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            if obj.Name:lower():find("cheat") or obj.Name:lower():find("kick") or obj.Name:lower():find("ban") then
+                table.insert(remotes, obj:GetFullName())
+            end
+        end
+    end
+    return remotes
+end
+
+local function disableAntiCheatScripts()
+    for _, obj in ipairs(game:GetDescendants()) do
+        if (obj:IsA("LocalScript") or obj:IsA("Script")) and obj.Name:lower():find("anticheat") then
+            obj.Disabled = true
+        end
+    end
+end
+
+local function hookRemotes()
+    if hookSet then return end
+    mt = getrawmetatable(game)
+    oldNamecall = mt.__namecall
+
+    setreadonly(mt, false)
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if (self.Name:lower():find("kick") or self.Name:lower():find("ban") or self.Name:lower():find("cheat")) and (method == "FireServer" or method == "InvokeServer") then
+            return -- Block the call
+        end
+        return oldNamecall(self, ...)
+    end)
+    setreadonly(mt, true)
+    hookSet = true
+end
+
+local function unhookRemotes()
+    if not hookSet or not mt or not oldNamecall then return end
+    setreadonly(mt, false)
+    mt.__namecall = oldNamecall
+    setreadonly(mt, true)
+    hookSet = false
+end
+
+local function blockKickFunction()
+    local player = game:GetService("Players").LocalPlayer
+    if not player then return end
+    if hookfunction then
+        if not player.__kickHooked then
+            local oldKick = player.Kick
+            hookfunction(player.Kick, function() return end)
+            player.__kickHooked = true
+        end
+    else
+        player.Kick = function() return end
+    end
+end
+
+local function unblockKickFunction()
+    -- Can't truly restore, recommend rejoining to reset if needed
+end
+
+local function enableACDetectorBypass()
+    -- Scan & notify
+    local scripts = scanForAntiCheat()
+    local remotes = scanForSuspiciousRemotes()
+    if #scripts == 0 and #remotes == 0 then
+        Library:Notify("No obvious anti-cheat found.")
+    else
+        Library:Notify("Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
+            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none"))
+    end
+    -- Disable suspicious scripts
+    disableAntiCheatScripts()
+    -- Block suspicious remotes
+    hookRemotes()
+    -- Prevent .Kick()
+    blockKickFunction()
+    acDetectorEnabled = true
+end
+
+local function disableACDetectorBypass()
+    unhookRemotes()
+    unblockKickFunction()
+    acDetectorEnabled = false
+    Library:Notify("Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)")
+end
+
+UniversalSection:NewToggle("Anti-Cheat Detector/Bypass", "Detects and disables basic anti-cheats, blocks suspicious remotes and client kicks. Use if game bans/kicks for no reason.", function(state)
+    if state then
+        enableACDetectorBypass()
+    else
+        disableACDetectorBypass()
+    end
+end)
+
+-- END SCRIPT
