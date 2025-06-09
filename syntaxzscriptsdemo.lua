@@ -581,18 +581,12 @@ task.spawn(function()
     end
 end)
 
--- Create a floating toggle button (not in Kavo UI, always visible)
-local StarterGui = game:GetService("StarterGui")
+-- toggle
+
 local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
--- Helper: clean up any previous floating toggle button
-pcall(function()
-    if CoreGui:FindFirstChild("KAVO_UI_TOGGLE_BTN") then
-        CoreGui.KAVO_UI_TOGGLE_BTN:Destroy()
-    end
-end)
-
--- Create the floating button
+-- Make the floating toggle button
 local toggleGui = Instance.new("ScreenGui")
 toggleGui.Name = "KAVO_UI_TOGGLE_BTN"
 toggleGui.ResetOnSpawn = false
@@ -613,32 +607,37 @@ button.Parent = toggleGui
 button.Active = true
 button.Draggable = true
 
--- Utility: Find all Kavo main frames
-local function getKavoFrames()
-    local frames = {}
+-- Utility: Find all ScreenGuis created by Kavo UI (by looking for MainFrame)
+local function findKavoScreenGuis()
+    local uis = {}
     for _, gui in ipairs(CoreGui:GetChildren()) do
-        local mf = gui:FindFirstChild("MainFrame")
-        if mf and mf:IsA("Frame") then
-            table.insert(frames, mf)
+        if gui:IsA("ScreenGui") and gui ~= toggleGui and gui:FindFirstChild("MainFrame") then
+            table.insert(uis, gui)
         end
     end
-    return frames
+    return uis
 end
 
 local visible = true
-button.MouseButton1Click:Connect(function()
-    visible = not visible
-    for _, frame in ipairs(getKavoFrames()) do
-        frame.Visible = visible
-    end
-end)
-
--- Keep Kavo UI visible if opened again, keep button always visible
-game:GetService("RunService").RenderStepped:Connect(function()
-    for _, frame in ipairs(getKavoFrames()) do
-        if frame.Visible ~= visible then
-            frame.Visible = visible
+local function setKavoUIVisible(val)
+    for _, gui in ipairs(findKavoScreenGuis()) do
+        for _, child in ipairs(gui:GetChildren()) do
+            if child ~= nil and child ~= button and child ~= toggleGui then
+                if child:IsA("GuiObject") then
+                    child.Visible = val
+                end
+            end
         end
     end
-    toggleGui.Enabled = true -- Ensure button always visible
+end
+
+button.MouseButton1Click:Connect(function()
+    visible = not visible
+    setKavoUIVisible(visible)
+end)
+
+-- Prevent accidental hiding of the toggle button, and keep UI state synced
+RunService.RenderStepped:Connect(function()
+    toggleGui.Enabled = true
+    setKavoUIVisible(visible)
 end)
