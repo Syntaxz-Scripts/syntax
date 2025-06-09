@@ -1,4 +1,4 @@
--- v1.7 SCRIPT BY Syntaxz Scriptz Ui Loader by xHeptc
+-- [V1] Made by Syntaxz Scripts, Ui Loader by xHeptc
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- Utility: ClonedService for executor compatibility
@@ -13,9 +13,9 @@ local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 -- Credits Tab (FIRST)
 local CreditsTab = Window:NewTab("Credits")
 local CreditsSection = CreditsTab:NewSection("Script by Syntaxz Scripts")
-CreditsSection:NewLabel("All Features: Syntaxz Scripts")
+CreditsSection:NewLabel("ESP & UI: Syntaxz Scripts")
 CreditsSection:NewLabel("UI Library: Kavo UI Library by xHeptc")
-CreditsSection:NewLabel("Yes this is a private script")
+CreditsSection:NewLabel("Discord: no discord too lazy to setup")
 
 -- Forsaken Tab (SECOND)
 local ForsakenTab = Window:NewTab("Forsaken")
@@ -527,9 +527,12 @@ ForsakenSection:NewToggle("Emote Menu", "Show/Hide the emote menu (auto reopens 
     end
 end)
 
--- DRAGGABLE KAVO UI WINDOW --
+-- RELIABLE DRAGGABLE KAVO UI WINDOW --
 local function makeDraggable(frame)
+    local UIS = game:GetService("UserInputService")
     local dragging, dragInput, dragStart, startPos
+
+    frame.Active = true -- This is required for dragging
 
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -551,7 +554,7 @@ local function makeDraggable(frame)
         end
     end)
 
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
+    UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(
@@ -564,19 +567,16 @@ local function makeDraggable(frame)
     end)
 end
 
--- Wait for MainFrame and make draggable
+-- Wait for Kavo UI to appear, then make draggable
 task.spawn(function()
-    repeat task.wait() until game.CoreGui:FindFirstChildWhichIsA("ScreenGui")
-    local mainFrame
-    for _, gui in ipairs(game.CoreGui:GetChildren()) do
-        if gui:FindFirstChild("MainFrame") then
-            mainFrame = gui.MainFrame
-            break
+    while true do
+        for _, gui in ipairs(game.CoreGui:GetChildren()) do
+            local mf = gui:FindFirstChild("MainFrame")
+            if mf and mf:IsA("Frame") and not mf:GetAttribute("isDraggable") then
+                makeDraggable(mf)
+                mf:SetAttribute("isDraggable", true)
+            end
         end
-    end
-    if mainFrame then
-        makeDraggable(mainFrame)
+        task.wait(1)
     end
 end)
-
--- END SCRIPT
