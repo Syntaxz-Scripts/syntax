@@ -19,7 +19,6 @@ local ForsakenSection = ForsakenTab:NewSection("Fun")
 local UniversalTab = Window:NewTab("Universal")
 local UniversalSection = UniversalTab:NewSection("Universal Features")
 
-UniversalSection:NewLabel("TEST")
 
 -- ESP Script Logic
 local highlighted = {}
@@ -176,5 +175,28 @@ end)
 Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     if fullbrightEnabled and Lighting.Ambient ~= Color3.new(1,1,1) then
         enableFullbright()
+    end
+end)
+
+-- Anticheat Scanner Logic (toggleable)
+local anticheatScanEnabled = false
+
+local function scanAnticheatScripts()
+    for _, obj in ipairs(game:GetDescendants()) do
+        if obj:IsA("Script") or obj:IsA("LocalScript") then
+            local lowerName = obj.Name:lower()
+            if lowerName:find("anticheat") or lowerName:find("kick") or lowerName:find("ban") then
+                print("[Anticheat Scanner] Possible anticheat script found:", obj:GetFullName())
+            end
+        end
+    end
+end
+
+UniversalSection:NewToggle("Anticheat Scanner", "Scan for possible anticheat/kick/ban scripts", function(state)
+    anticheatScanEnabled = state
+    if anticheatScanEnabled then
+        scanAnticheatScripts()
+    else
+        print("[Anticheat Scanner] Anticheat scanner disabled.")
     end
 end)
