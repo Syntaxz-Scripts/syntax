@@ -580,3 +580,65 @@ task.spawn(function()
         task.wait(1)
     end
 end)
+
+-- Create a floating toggle button (not in Kavo UI, always visible)
+local StarterGui = game:GetService("StarterGui")
+local CoreGui = game:GetService("CoreGui")
+
+-- Helper: clean up any previous floating toggle button
+pcall(function()
+    if CoreGui:FindFirstChild("KAVO_UI_TOGGLE_BTN") then
+        CoreGui.KAVO_UI_TOGGLE_BTN:Destroy()
+    end
+end)
+
+-- Create the floating button
+local toggleGui = Instance.new("ScreenGui")
+toggleGui.Name = "KAVO_UI_TOGGLE_BTN"
+toggleGui.ResetOnSpawn = false
+toggleGui.IgnoreGuiInset = true
+toggleGui.Parent = CoreGui
+
+local button = Instance.new("TextButton")
+button.Name = "ToggleButton"
+button.Size = UDim2.new(0, 120, 0, 40)
+button.Position = UDim2.new(0, 8, 0, 8)
+button.Text = "Toggle UI"
+button.TextSize = 20
+button.TextColor3 = Color3.new(1,1,1)
+button.BackgroundColor3 = Color3.fromRGB(30,30,30)
+button.BorderSizePixel = 0
+button.AutoButtonColor = true
+button.Parent = toggleGui
+button.Active = true
+button.Draggable = true
+
+-- Utility: Find all Kavo main frames
+local function getKavoFrames()
+    local frames = {}
+    for _, gui in ipairs(CoreGui:GetChildren()) do
+        local mf = gui:FindFirstChild("MainFrame")
+        if mf and mf:IsA("Frame") then
+            table.insert(frames, mf)
+        end
+    end
+    return frames
+end
+
+local visible = true
+button.MouseButton1Click:Connect(function()
+    visible = not visible
+    for _, frame in ipairs(getKavoFrames()) do
+        frame.Visible = visible
+    end
+end)
+
+-- Keep Kavo UI visible if opened again, keep button always visible
+game:GetService("RunService").RenderStepped:Connect(function()
+    for _, frame in ipairs(getKavoFrames()) do
+        if frame.Visible ~= visible then
+            frame.Visible = visible
+        end
+    end
+    toggleGui.Enabled = true -- Ensure button always visible
+end)
