@@ -1,4 +1,4 @@
--- Ui Loader by xHeptc with Advanced Anti-Cheat Detector/Bypass by Syntaxz Scripts
+-- v1.7 SCRIPT BY Syntaxz Scriptz Ui Loader by xHeptc
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- Utility: ClonedService for executor compatibility
@@ -13,9 +13,9 @@ local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 -- Credits Tab (FIRST)
 local CreditsTab = Window:NewTab("Credits")
 local CreditsSection = CreditsTab:NewSection("Script by Syntaxz Scripts")
-CreditsSection:NewLabel("ESP & UI: Syntaxz Scripts")
+CreditsSection:NewLabel("All Features: Syntaxz Scripts")
 CreditsSection:NewLabel("UI Library: Kavo UI Library by xHeptc")
-CreditsSection:NewLabel("Discord: no discord too lazy to setup") -- Change to your Discord if you want
+CreditsSection:NewLabel("Yes this is a private script")
 
 -- Forsaken Tab (SECOND)
 local ForsakenTab = Window:NewTab("Forsaken")
@@ -307,7 +307,6 @@ local function blockKickFunction()
     if not player then return end
     if hookfunction then
         if not player.__kickHooked then
-            local oldKick = player.Kick
             hookfunction(player.Kick, function() return end)
             player.__kickHooked = true
         end
@@ -377,7 +376,7 @@ end
 
 local emoteButtons = {}
 local menuOpen = false
-local charConn -- CharacterAdded connection for respawn support
+local charConn
 
 local currentAnimation = nil
 local currentSound = nil
@@ -525,6 +524,58 @@ ForsakenSection:NewToggle("Emote Menu", "Show/Hide the emote menu (auto reopens 
     else
         hideEmoteButtons()
         if charConn then charConn:Disconnect() charConn = nil end
+    end
+end)
+
+-- DRAGGABLE KAVO UI WINDOW --
+local function makeDraggable(frame)
+    local dragging, dragInput, dragStart, startPos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+-- Wait for MainFrame and make draggable
+task.spawn(function()
+    repeat task.wait() until game.CoreGui:FindFirstChildWhichIsA("ScreenGui")
+    local mainFrame
+    for _, gui in ipairs(game.CoreGui:GetChildren()) do
+        if gui:FindFirstChild("MainFrame") then
+            mainFrame = gui.MainFrame
+            break
+        end
+    end
+    if mainFrame then
+        makeDraggable(mainFrame)
     end
 end)
 
