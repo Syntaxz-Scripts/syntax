@@ -66,6 +66,54 @@ GardenSection:NewButton("Duplicate Tools", "Duplicates all tools in your backpac
     end
 end)
 
+-- Username typer for ctools
+GardenSection:NewTextBox("Copy Tools (ctools)", "Type a username and click to copy their tools!", function(username)
+    -- ctools logic
+    local function ClonedService(name)
+        local Service = game.GetService
+        local Reference = (cloneref) or function(reference) return reference end
+        return Reference(Service(game, name))
+    end
+
+    local Players = ClonedService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local targetPlayer = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #username) == username:lower() then
+            targetPlayer = p
+            break
+        end
+    end
+
+    if not targetPlayer then
+        Library:Notify("No player found with the username: " .. username)
+        return
+    end
+
+    local function copyTool(tool)
+        local cloned = tool:Clone()
+        cloned.Parent = LocalPlayer.Backpack
+    end
+
+    -- Copy tools from character
+    if targetPlayer.Character then
+        for _, t in ipairs(targetPlayer.Character:GetChildren()) do
+            if t:IsA("Tool") then
+                copyTool(t)
+            end
+        end
+    end
+
+    -- Copy tools from backpack
+    for _, t in ipairs(targetPlayer.Backpack:GetChildren()) do
+        if t:IsA("Tool") then
+            copyTool(t)
+        end
+    end
+
+    Library:Notify("Copied all tools from " .. targetPlayer.Name)
+end)
+
 -- ESP Script Logic
 local highlighted = {}
 local espConnection
