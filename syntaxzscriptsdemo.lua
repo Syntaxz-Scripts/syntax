@@ -9,11 +9,17 @@ local CreditsTab = Window:NewTab("Credits")
 local CreditsSection = CreditsTab:NewSection("Script by Syntaxz Scripts")
 CreditsSection:NewLabel("ESP & UI: Syntaxz Scripts")
 CreditsSection:NewLabel("UI Library: Kavo UI Library by xHeptc")
-CreditsSection:NewLabel("Discord: discord.gg/yourserver") -- Change to your Discord if you want
+CreditsSection:NewLabel("Discord: no discord too lazy to setup") -- Change to your Discord if you want
 
 -- Main Tab (SECOND)
 local MainTab = Window:NewTab("Main")
 local MainSection = MainTab:NewSection("Fun")
+
+-- Universal Tab (THIRD)
+local UniversalTab = Window:NewTab("Universal")
+local UniversalSection = UniversalTab:NewSection("Universal Features")
+
+UniversalSection:NewLabel("TEST")
 
 -- ESP Script Logic
 local highlighted = {}
