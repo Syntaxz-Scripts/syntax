@@ -527,19 +527,19 @@ ForsakenSection:NewToggle("Emote Menu", "Show/Hide the emote menu (auto reopens 
     end
 end)
 
--- RELIABLE DRAGGABLE KAVO UI WINDOW --
-local function makeDraggable(frame)
-    local UIS = game:GetService("UserInputService")
+-- Reliable Kavo UI drag support
+local UIS = game:GetService("UserInputService")
+
+local function fallbackDragger(frame)
+    -- Only apply if not already handled
+    if frame:GetAttribute("SyntaxzDraggable") then return end
+    frame:SetAttribute("SyntaxzDraggable", true)
     local dragging, dragInput, dragStart, startPos
-
-    frame.Active = true -- This is required for dragging
-
     frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -547,13 +547,11 @@ local function makeDraggable(frame)
             end)
         end
     end)
-
     frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
     end)
-
     UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
@@ -567,14 +565,16 @@ local function makeDraggable(frame)
     end)
 end
 
--- Wait for Kavo UI to appear, then make draggable
 task.spawn(function()
     while true do
-        for _, gui in ipairs(game.CoreGui:GetChildren()) do
-            local mf = gui:FindFirstChild("MainFrame")
-            if mf and mf:IsA("Frame") and not mf:GetAttribute("isDraggable") then
-                makeDraggable(mf)
-                mf:SetAttribute("isDraggable", true)
+        for _,gui in ipairs(game.CoreGui:GetChildren()) do
+            local mainFrame = gui:FindFirstChild("MainFrame")
+            if mainFrame and mainFrame:IsA("Frame") then
+                -- Try native drag first
+                mainFrame.Active = true
+                pcall(function() mainFrame.Draggable = true end) -- Some exploits support this
+                -- If still not draggable, add fallback
+                fallbackDragger(mainFrame)
             end
         end
         task.wait(1)
