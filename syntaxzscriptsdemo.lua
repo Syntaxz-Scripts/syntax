@@ -1,7 +1,7 @@
 -- Kavo UI Loader
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
--- Create a single window with three tabs: Credits, Forsaken, and Universal
+-- Create a single window with four tabs: Credits, Forsaken, Universal, Grow a Garden
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 
 -- Credits Tab (FIRST)
@@ -18,7 +18,53 @@ local ForsakenSection = ForsakenTab:NewSection("Fun")
 -- Universal Tab (THIRD)
 local UniversalTab = Window:NewTab("Universal")
 local UniversalSection = UniversalTab:NewSection("Universal Features")
+UniversalSection:NewLabel("TEST")
 
+-- Grow a Garden Tab (FOURTH)
+local GardenTab = Window:NewTab("Grow a Garden")
+local GardenSection = GardenTab:NewSection("Garden Tools")
+
+GardenSection:NewButton("Duplicate Tools", "Duplicates all tools in your backpack", function()
+    -- Tool duplication logic
+    local function ClonedService(name)
+        local Service = game.GetService
+        local Reference = (cloneref) or function(reference) return reference end
+        return Reference(Service(game, name))
+    end
+
+    local block = Instance.new("Part")
+    local bp = Instance.new("BodyPosition")
+    block.CFrame = CFrame.new(9e9, 9e9, 9e9)
+    block.Anchored = true
+    local player = ClonedService("Players").LocalPlayer
+    local character = player.Character
+    local savepos = player.Character.HumanoidRootPart.CFrame
+    for i, v in pairs(player.Backpack:GetChildren()) do
+        player.Character.HumanoidRootPart.CFrame = block.CFrame
+        v.Parent = character
+        bp.Parent = v.Handle
+        bp.Position = block.Position
+        v.Handle.Velocity = Vector3.new(25.70, 0, 0)
+        v.Handle.RotVelocity = Vector3.new(9e9, 9e9, 9e9)
+        v.Parent = player.Backpack
+        wait(1)
+        v.Parent = character
+        task.wait(0)
+        v.Parent = workspace
+    end
+    character:ClearAllChildren()
+    wait(7)
+    for i, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Tool") then
+            v.Handle.CanCollide = false
+            bp:Destroy()
+            v.Handle.RotVelocity = Vector3.new(0, 0, 0)
+            player.Character.HumanoidRootPart.CFrame = savepos
+            v.Handle.CFrame = player.Character.HumanoidRootPart.CFrame
+            block:Destroy()
+        end
+    end
+end)
 
 -- ESP Script Logic
 local highlighted = {}
@@ -175,28 +221,5 @@ end)
 Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     if fullbrightEnabled and Lighting.Ambient ~= Color3.new(1,1,1) then
         enableFullbright()
-    end
-end)
-
--- Anticheat Scanner Logic (toggleable)
-local anticheatScanEnabled = false
-
-local function scanAnticheatScripts()
-    for _, obj in ipairs(game:GetDescendants()) do
-        if obj:IsA("Script") or obj:IsA("LocalScript") then
-            local lowerName = obj.Name:lower()
-            if lowerName:find("anticheat") or lowerName:find("kick") or lowerName:find("ban") then
-                print("[Anticheat Scanner] Possible anticheat script found:", obj:GetFullName())
-            end
-        end
-    end
-end
-
-UniversalSection:NewToggle("Anticheat Scanner", "Scan for possible anticheat/kick/ban scripts", function(state)
-    anticheatScanEnabled = state
-    if anticheatScanEnabled then
-        scanAnticheatScripts()
-    else
-        print("[Anticheat Scanner] Anticheat scanner disabled.")
     end
 end)
