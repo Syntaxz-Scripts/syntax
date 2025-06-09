@@ -12,8 +12,8 @@ CreditsSection:NewLabel("UI Library: Kavo UI Library by xHeptc")
 CreditsSection:NewLabel("Discord: no discord too lazy to setup") -- Change to your Discord if you want
 
 -- Main Tab (SECOND)
-local MainTab = Window:NewTab("Main")
-local MainSection = MainTab:NewSection("Fun")
+local ForsakenTab = Window:NewTab("Forsaken")
+local ForsakenSection = ForsakenTab:NewSection("Fun")
 
 -- Universal Tab (THIRD)
 local UniversalTab = Window:NewTab("Universal")
@@ -100,7 +100,7 @@ local function DisableESP()
 end
 
 -- ESP Toggle
-MainSection:NewToggle("Player ESP", "Toggles ESP", function(state)
+ForsakenSection:NewToggle("Player ESP", "Toggles ESP", function(state)
     if state then
         EnableESP()
     else
@@ -129,7 +129,7 @@ end
 
 task.spawn(monitorStamina)
 
-MainSection:NewToggle("Infinite Stamina", "Toggle Infinite Stamina", function(state)
+ForsakenSection:NewToggle("Infinite Stamina", "Toggle Infinite Stamina", function(state)
     infiniteStaminaEnabled = state
 end)
 
