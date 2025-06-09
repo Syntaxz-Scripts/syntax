@@ -1,7 +1,7 @@
 -- Kavo UI Loader
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
--- Create a single window with two tabs: Credits and Main (Credits first)
+-- Create a single window with three tabs: Credits, Forsaken, and Universal
 local Window = Library.CreateLib("Syntaxz Scripts DEMO", "DarkTheme")
 
 -- Credits Tab (FIRST)
@@ -11,7 +11,7 @@ CreditsSection:NewLabel("ESP & UI: Syntaxz Scripts")
 CreditsSection:NewLabel("UI Library: Kavo UI Library by xHeptc")
 CreditsSection:NewLabel("Discord: no discord too lazy to setup") -- Change to your Discord if you want
 
--- Main Tab (SECOND)
+-- Forsaken Tab (SECOND)
 local ForsakenTab = Window:NewTab("Forsaken")
 local ForsakenSection = ForsakenTab:NewSection("Fun")
 
@@ -163,7 +163,8 @@ local function disableFullbright()
     fullbrightEnabled = false
 end
 
-MainSection:NewToggle("Fullbright", "Toggle Fullbright", function(state)
+-- Move Fullbright Toggle to Universal Tab
+UniversalSection:NewToggle("Fullbright", "Toggle Fullbright", function(state)
     if state then
         enableFullbright()
     else
