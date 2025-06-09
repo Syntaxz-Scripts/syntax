@@ -1,4 +1,4 @@
--- Kavo UI Loader
+-- Ui Loader by xHeptc
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- Create a single window with four tabs: Credits, Forsaken, Universal, Grow a Garden
@@ -25,45 +25,25 @@ local GardenTab = Window:NewTab("Grow a Garden")
 local GardenSection = GardenTab:NewSection("Garden Tools")
 
 GardenSection:NewButton("Duplicate Tools", "Duplicates all tools in your backpack", function()
-    -- Tool duplication logic
+    -- Tool duplication logic (safe version)
     local function ClonedService(name)
         local Service = game.GetService
         local Reference = (cloneref) or function(reference) return reference end
         return Reference(Service(game, name))
     end
 
-    local block = Instance.new("Part")
-    local bp = Instance.new("BodyPosition")
-    block.CFrame = CFrame.new(9e9, 9e9, 9e9)
-    block.Anchored = true
     local player = ClonedService("Players").LocalPlayer
-    local character = player.Character
-    local savepos = player.Character.HumanoidRootPart.CFrame
-    for i, v in pairs(player.Backpack:GetChildren()) do
-        player.Character.HumanoidRootPart.CFrame = block.CFrame
-        v.Parent = character
-        bp.Parent = v.Handle
-        bp.Position = block.Position
-        v.Handle.Velocity = Vector3.new(25.70, 0, 0)
-        v.Handle.RotVelocity = Vector3.new(9e9, 9e9, 9e9)
-        v.Parent = player.Backpack
-        wait(1)
-        v.Parent = character
-        task.wait(0)
-        v.Parent = workspace
-    end
-    character:ClearAllChildren()
-    wait(7)
-    for i, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("Tool") then
-            v.Handle.CanCollide = false
-            bp:Destroy()
-            v.Handle.RotVelocity = Vector3.new(0, 0, 0)
-            player.Character.HumanoidRootPart.CFrame = savepos
-            v.Handle.CFrame = player.Character.HumanoidRootPart.CFrame
-            block:Destroy()
+    local backpack = player.Backpack
+
+    -- Duplicate each tool in the backpack
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            local cloned = tool:Clone()
+            cloned.Parent = backpack
         end
     end
+
+    Library:Notify("Duplicated all tools in your backpack!")
 end)
 
 -- Username typer for ctools
