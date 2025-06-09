@@ -581,17 +581,21 @@ task.spawn(function()
     end
 end)
 
--- toggle
+-- Button toggle v2
 
-local CoreGui = game:GetService("CoreGui")
-local RunService = game:GetService("RunService")
+-- Remove any old toggle button
+pcall(function()
+    if game.CoreGui:FindFirstChild("KAVO_UI_TOGGLE_BTN") then
+        game.CoreGui.KAVO_UI_TOGGLE_BTN:Destroy()
+    end
+end)
 
--- Make the floating toggle button
+-- Create the floating toggle button (always visible)
 local toggleGui = Instance.new("ScreenGui")
 toggleGui.Name = "KAVO_UI_TOGGLE_BTN"
 toggleGui.ResetOnSpawn = false
 toggleGui.IgnoreGuiInset = true
-toggleGui.Parent = CoreGui
+toggleGui.Parent = game.CoreGui
 
 local button = Instance.new("TextButton")
 button.Name = "ToggleButton"
@@ -607,10 +611,10 @@ button.Parent = toggleGui
 button.Active = true
 button.Draggable = true
 
--- Utility: Find all ScreenGuis created by Kavo UI (by looking for MainFrame)
+-- Utility: Find all Kavo UI ScreenGuis (has MainFrame) EXCLUDING the toggle itself
 local function findKavoScreenGuis()
     local uis = {}
-    for _, gui in ipairs(CoreGui:GetChildren()) do
+    for _, gui in ipairs(game.CoreGui:GetChildren()) do
         if gui:IsA("ScreenGui") and gui ~= toggleGui and gui:FindFirstChild("MainFrame") then
             table.insert(uis, gui)
         end
@@ -619,10 +623,12 @@ local function findKavoScreenGuis()
 end
 
 local visible = true
+
 local function setKavoUIVisible(val)
     for _, gui in ipairs(findKavoScreenGuis()) do
         for _, child in ipairs(gui:GetChildren()) do
             if child ~= nil and child ~= button and child ~= toggleGui then
+                -- Hide all visible UI objects except the toggle
                 if child:IsA("GuiObject") then
                     child.Visible = val
                 end
@@ -636,8 +642,8 @@ button.MouseButton1Click:Connect(function()
     setKavoUIVisible(visible)
 end)
 
--- Prevent accidental hiding of the toggle button, and keep UI state synced
-RunService.RenderStepped:Connect(function()
+-- Keep toggle button always visible, and keep UI in correct state (handles dynamic UI recreation)
+game:GetService("RunService").RenderStepped:Connect(function()
     toggleGui.Enabled = true
     setKavoUIVisible(visible)
 end)
