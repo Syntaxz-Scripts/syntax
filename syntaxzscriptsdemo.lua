@@ -18,7 +18,6 @@ local ForsakenSection = ForsakenTab:NewSection("Fun")
 -- Universal Tab (THIRD)
 local UniversalTab = Window:NewTab("Universal")
 local UniversalSection = UniversalTab:NewSection("Universal Features")
-UniversalSection:NewLabel("TEST")
 
 -- Grow a Garden Tab (FOURTH)
 local GardenTab = Window:NewTab("Grow a Garden")
