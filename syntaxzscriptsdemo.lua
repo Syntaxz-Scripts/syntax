@@ -1,5 +1,4 @@
 -- Ui Loader by xHeptc with Advanced Anti-Cheat Detector/Bypass by Syntaxz Scripts
-
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- Utility: ClonedService for executor compatibility
@@ -22,11 +21,10 @@ CreditsSection:NewLabel("Discord: no discord too lazy to setup") -- Change to yo
 local ForsakenTab = Window:NewTab("Forsaken")
 local ForsakenSection = ForsakenTab:NewSection("Fun")
 
--- Universal Tab (THIRD)
+-- UNIVERSAL & GARDEN TABS (as before)
 local UniversalTab = Window:NewTab("Universal")
 local UniversalSection = UniversalTab:NewSection("Universal Features")
 
--- Grow a Garden Tab (FOURTH)
 local GardenTab = Window:NewTab("Grow a Garden")
 local GardenSection = GardenTab:NewSection("Garden Tools")
 
@@ -34,7 +32,6 @@ GardenSection:NewButton("Duplicate Tools", "Duplicates all tools in your backpac
     local player = ClonedService("Players").LocalPlayer
     local backpack = player.Backpack
 
-    -- Duplicate each tool in the backpack
     for _, tool in ipairs(backpack:GetChildren()) do
         if tool:IsA("Tool") then
             local cloned = tool:Clone()
@@ -66,7 +63,6 @@ GardenSection:NewTextBox("Copy Tools (ctools)", "Type a username and click to co
         cloned.Parent = LocalPlayer.Backpack
     end
 
-    -- Copy tools from character
     if targetPlayer.Character then
         for _, t in ipairs(targetPlayer.Character:GetChildren()) do
             if t:IsA("Tool") then
@@ -75,7 +71,6 @@ GardenSection:NewTextBox("Copy Tools (ctools)", "Type a username and click to co
         end
     end
 
-    -- Copy tools from backpack
     for _, t in ipairs(targetPlayer.Backpack:GetChildren()) do
         if t:IsA("Tool") then
             copyTool(t)
@@ -326,7 +321,6 @@ local function unblockKickFunction()
 end
 
 local function enableACDetectorBypass()
-    -- Scan & notify
     local scripts = scanForAntiCheat()
     local remotes = scanForSuspiciousRemotes()
     if #scripts == 0 and #remotes == 0 then
@@ -335,11 +329,8 @@ local function enableACDetectorBypass()
         Library:Notify("Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
             "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none"))
     end
-    -- Disable suspicious scripts
     disableAntiCheatScripts()
-    -- Block suspicious remotes
     hookRemotes()
-    -- Prevent .Kick()
     blockKickFunction()
     acDetectorEnabled = true
 end
@@ -356,6 +347,184 @@ UniversalSection:NewToggle("Anti-Cheat Detector/Bypass", "Detects and disables b
         enableACDetectorBypass()
     else
         disableACDetectorBypass()
+    end
+end)
+
+-- EMOTE MENU FOR FORSAKEN TAB --
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = ClonedService("ReplicatedStorage")
+local Players = ClonedService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+local assetsFolder = ReplicatedStorage:FindFirstChild("Assets")
+local emotesFolder = assetsFolder and assetsFolder:FindFirstChild("Emotes")
+
+local emotes = {}
+if emotesFolder then
+    for _, module in pairs(emotesFolder:GetChildren()) do
+        if module:IsA("ModuleScript") then
+            local success, emoteData = pcall(require, module)
+            if success and typeof(emoteData) == "table" and typeof(emoteData.AssetID) == "string" then
+                emotes[module.Name] = emoteData
+            end
+        end
+    end
+end
+
+local emoteButtons = {}
+local menuOpen = false
+local charConn -- CharacterAdded connection for respawn support
+
+local currentAnimation = nil
+local currentSound = nil
+local currentClones = {}
+
+local function playEmote(emoteName, data)
+    if not humanoid then return end
+    if currentAnimation then
+        currentAnimation:Stop()
+        currentAnimation = nil
+    end
+    if currentSound then
+        currentSound:Stop()
+        currentSound = nil
+    end
+    for _, entry in pairs(currentClones) do
+        if entry.connection then entry.connection:Disconnect() end
+        if entry.clone then entry.clone:Destroy() end
+    end
+    currentClones = {}
+
+    local animator = humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator")
+    if animator then
+        local animation = Instance.new("Animation")
+        animation.AnimationId = data.AssetID
+        currentAnimation = animator:LoadAnimation(animation)
+        currentAnimation:Play()
+    end
+    if data.SFX then
+        currentSound = Instance.new("Sound")
+        currentSound.SoundId = data.SFX
+        currentSound.Parent = character
+        currentSound.Looped = data.SFXProperties and data.SFXProperties.Looped or false
+        currentSound.Volume = 2
+        currentSound:Play()
+        currentSound.Ended:Connect(function()
+            currentSound:Destroy()
+        end)
+    end
+    if emoteName == "Locked" and data.LockedEffect then
+        local lockedClone = data.LockedEffect:Clone()
+        lockedClone.Parent = character:FindFirstChild("HumanoidRootPart")
+        for _, part in ipairs(lockedClone:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+                part.Anchored = true
+            end
+        end
+        local connection
+        connection = RunService.Heartbeat:Connect(function()
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                if lockedClone.PrimaryPart then
+                    lockedClone:SetPrimaryPartCFrame(character.HumanoidRootPart.CFrame)
+                else
+                    for _, part in ipairs(lockedClone:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CFrame = character.HumanoidRootPart.CFrame
+                        end
+                    end
+                end
+            else
+                connection:Disconnect()
+            end
+        end)
+        table.insert(currentClones, {clone = lockedClone, connection = connection})
+    end
+    if emoteName == "MissTheQuiet" and data.EmoteLighting then
+        local lightingPart = data.EmoteLighting:FindFirstChild("lighting")
+        if lightingPart then
+            local cloneLighting = lightingPart:Clone()
+            cloneLighting.Parent = character:FindFirstChild("HumanoidRootPart")
+            cloneLighting.CanCollide = false
+            cloneLighting.Transparency = 1
+            cloneLighting.Anchored = true
+            cloneLighting.Position = character.HumanoidRootPart.Position
+            local connection
+            connection = RunService.Heartbeat:Connect(function()
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    cloneLighting.CFrame = character.HumanoidRootPart.CFrame
+                else
+                    connection:Disconnect()
+                end
+            end)
+            table.insert(currentClones, {clone = cloneLighting, connection = connection})
+        end
+    end
+    if emoteName == "HakariDance" and data.HakariBeamEffect then
+        local cloneBeam = data.HakariBeamEffect:Clone()
+        cloneBeam.Parent = character:FindFirstChild("HumanoidRootPart")
+        cloneBeam.CanCollide = false
+        cloneBeam.Transparency = 0
+        cloneBeam.Anchored = true
+        cloneBeam.Position = character.HumanoidRootPart.Position
+        local connection
+        connection = RunService.Heartbeat:Connect(function()
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                cloneBeam.CFrame = character.HumanoidRootPart.CFrame
+            else
+                connection:Disconnect()
+            end
+        end)
+        table.insert(currentClones, {clone = cloneBeam, connection = connection})
+    end
+end
+
+local function showEmoteButtons()
+    for emoteName, data in pairs(emotes) do
+        if not emoteButtons[emoteName] then
+            emoteButtons[emoteName] = ForsakenSection:NewButton(data.DisplayName or emoteName, "Play emote", function()
+                playEmote(emoteName, data)
+            end)
+        end
+    end
+end
+
+local function hideEmoteButtons()
+    for emoteName, btn in pairs(emoteButtons) do
+        btn:Remove()
+        emoteButtons[emoteName] = nil
+    end
+    if currentAnimation then currentAnimation:Stop() currentAnimation = nil end
+    if currentSound then currentSound:Stop() currentSound = nil end
+    for _, entry in pairs(currentClones) do
+        if entry.connection then entry.connection:Disconnect() end
+        if entry.clone then entry.clone:Destroy() end
+    end
+    currentClones = {}
+end
+
+local function onCharAdded(newChar)
+    character = newChar
+    humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
+    if menuOpen then
+        hideEmoteButtons()
+        showEmoteButtons()
+    end
+end
+
+ForsakenSection:NewToggle("Emote Menu", "Show/Hide the emote menu (auto reopens on respawn if on)", function(state)
+    menuOpen = state
+    if state then
+        showEmoteButtons()
+        if charConn then charConn:Disconnect() end
+        charConn = player.CharacterAdded:Connect(onCharAdded)
+    else
+        hideEmoteButtons()
+        if charConn then charConn:Disconnect() charConn = nil end
     end
 end)
 
