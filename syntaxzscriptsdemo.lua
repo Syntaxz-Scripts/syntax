@@ -1,4 +1,5 @@
 -- [V1] Made by Syntaxz Scripts, Ui Loader by xHeptc
+
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- Utility: ClonedService for executor compatibility
@@ -237,7 +238,7 @@ Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     end
 end)
 
--- === PROBE REMOTES (SECURITY TEST) BUTTON ===
+-- Universal Game Prober (Remote Security Probe)
 UniversalSection:NewButton("Probe Remotes (Security Test)", "Scan for remotes and test for flaws. Use on your own game!", function()
     local sg = Instance.new("ScreenGui")
     sg.Name = "ProbeResultsPopup"
@@ -336,7 +337,7 @@ UniversalSection:NewButton("Probe Remotes (Security Test)", "Scan for remotes an
     logLine("Check for: remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
 end)
 
--- Anti-Cheat Detector/Bypass Logic
+-- Anti-Cheat Detector/Bypass Logic (in Universal Tab)
 local acDetectorEnabled = false
 local acBypassConnections = {}
 local mt, oldNamecall, hookSet = nil, nil, false
@@ -575,126 +576,4 @@ local function playEmote(emoteName, data)
                 cloneBeam.CFrame = character.HumanoidRootPart.CFrame
             else
                 connection:Disconnect()
-            end
-        end)
-        table.insert(currentClones, {clone = cloneBeam, connection = connection})
-    end
-end
-
-local function showEmoteButtons()
-    for emoteName, data in pairs(emotes) do
-        if not emoteButtons[emoteName] then
-            emoteButtons[emoteName] = ForsakenSection:NewButton(data.DisplayName or emoteName, "Play emote", function()
-                playEmote(emoteName, data)
-            end)
-        end
-    end
-end
-
-local function hideEmoteButtons()
-    for emoteName, btn in pairs(emoteButtons) do
-        btn:Remove()
-        emoteButtons[emoteName] = nil
-    end
-    if currentAnimation then currentAnimation:Stop() currentAnimation = nil end
-    if currentSound then currentSound:Stop() currentSound = nil end
-    for _, entry in pairs(currentClones) do
-        if entry.connection then entry.connection:Disconnect() end
-        if entry.clone then entry.clone:Destroy() end
-    end
-    currentClones = {}
-end
-
-local function onCharAdded(newChar)
-    character = newChar
-    humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-    if menuOpen then
-        hideEmoteButtons()
-        showEmoteButtons()
-    end
-end
-
-ForsakenSection:NewToggle("Emote Menu", "Show/Hide the emote menu (auto reopens on respawn if on)", function(state)
-    menuOpen = state
-    if state then
-        showEmoteButtons()
-        if charConn then charConn:Disconnect() end
-        charConn = player.CharacterAdded:Connect(onCharAdded)
-    else
-        hideEmoteButtons()
-        if charConn then charConn:Disconnect() charConn = nil end
-    end
-end)
-
--- Reliable Kavo UI drag support
-local UIS = game:GetService("UserInputService")
-
-local function fallbackDragger(frame)
-    -- Only apply if not already handled
-    if frame:GetAttribute("SyntaxzDraggable") then return end
-    frame:SetAttribute("SyntaxzDraggable", true)
-    local dragging, dragInput, dragStart, startPos
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-end
-
-task.spawn(function()
-    while true do
-        for _,gui in ipairs(game.CoreGui:GetChildren()) do
-            local mainFrame = gui:FindFirstChild("MainFrame")
-            if mainFrame and mainFrame:IsA("Frame") then
-                -- Try native drag first
-                mainFrame.Active = true
-                pcall(function() mainFrame.Draggable = true end) -- Some exploits support this
-                -- If still not draggable, add fallback
-                fallbackDragger(mainFrame)
-            end
-        end
-        task.wait(1)
-    end
-end)
-
--- Button toggle v2
-
--- Remove any old toggle button
-pcall(function()
-    if game.CoreGui:FindFirstChild("KAVO_UI_TOGGLE_BTN") then
-        game.CoreGui.KAVO_UI_TOGGLE_BTN:Destroy()
-    end
-end)
-
--- Create the floating toggle button (always visible)
-local toggleGui = Instance.new("ScreenGui")
-toggleGui.Name = "KAVO_UI_TOGGLE_BTN"
-toggleGui.ResetOnSpawn = false
-toggleGui.IgnoreGuiInset = true
-toggleGui.Parent = game.CoreGui
-
-local button = Instance.new("TextButton")
-button
+            e
