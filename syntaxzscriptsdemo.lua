@@ -237,6 +237,105 @@ Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     end
 end)
 
+-- === PROBE REMOTES (SECURITY TEST) BUTTON ===
+UniversalSection:NewButton("Probe Remotes (Security Test)", "Scan for remotes and test for flaws. Use on your own game!", function()
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "ProbeResultsPopup"
+    sg.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+    local frame = Instance.new("Frame", sg)
+    frame.Size = UDim2.new(0, 520, 0, 380)
+    frame.Position = UDim2.new(0.5, -260, 0.5, -190)
+    frame.BackgroundColor3 = Color3.fromRGB(30,30,40)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+
+    local closeBtn = Instance.new("TextButton", frame)
+    closeBtn.Size = UDim2.new(0, 80, 0, 34)
+    closeBtn.Position = UDim2.new(1, -90, 0, 10)
+    closeBtn.Text = "Close"
+    closeBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    closeBtn.Font = Enum.Font.Gotham
+    closeBtn.TextSize = 18
+    closeBtn.MouseButton1Click:Connect(function()
+        sg:Destroy()
+    end)
+
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, -20, 0, 34)
+    title.Position = UDim2.new(0, 10, 0, 10)
+    title.Text = "Probe Remotes Results"
+    title.Font = Enum.Font.GothamBold
+    title.TextColor3 = Color3.fromRGB(200,255,200)
+    title.BackgroundTransparency = 1
+    title.TextSize = 24
+    title.TextXAlignment = Enum.TextXAlignment.Left
+
+    local scroll = Instance.new("ScrollingFrame", frame)
+    scroll.Size = UDim2.new(1, -20, 1, -64)
+    scroll.Position = UDim2.new(0, 10, 0, 54)
+    scroll.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    scroll.BorderSizePixel = 0
+    scroll.CanvasSize = UDim2.new(0,0,0,2000)
+    scroll.ScrollBarThickness = 8
+
+    local y = 0
+    local function logLine(txt, col)
+        local label = Instance.new("TextLabel", scroll)
+        label.Size = UDim2.new(1, -10, 0, 26)
+        label.Position = UDim2.new(0, 5, 0, y)
+        label.Text = txt
+        label.TextColor3 = col or Color3.fromRGB(200,200,200)
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.Code
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.TextSize = 17
+        y = y + 28
+        scroll.CanvasSize = UDim2.new(0,0,0,y+30)
+    end
+
+    local function getFullPath(obj)
+        if not obj or not obj.Parent then return obj.Name end
+        local path = obj.Name
+        local parent = obj.Parent
+        while parent and parent ~= game do
+            path = parent.Name .. "." .. path
+            parent = parent.Parent
+        end
+        return path
+    end
+
+    logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
+    for _, obj in ipairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local path = getFullPath(obj)
+            logLine("[RemoteEvent] "..path, Color3.fromRGB(255,200,100))
+            local ok, err = pcall(function()
+                obj:FireServer("probe", 123, true)
+            end)
+            if ok then
+                logLine("  Fired with test args.", Color3.fromRGB(150,255,100))
+            else
+                logLine("  ERROR: "..tostring(err), Color3.fromRGB(255,100,100))
+            end
+        elseif obj:IsA("RemoteFunction") then
+            local path = getFullPath(obj)
+            logLine("[RemoteFunction] "..path, Color3.fromRGB(100,200,255))
+            local ok, ret = pcall(function()
+                return obj:InvokeServer("probe", 42, false)
+            end)
+            if ok then
+                logLine("  Invoked, returned: "..tostring(ret), Color3.fromRGB(150,255,200))
+            else
+                logLine("  ERROR: "..tostring(ret), Color3.fromRGB(255,100,100))
+            end
+        end
+    end
+    logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
+    logLine("Check for: remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
+end)
+
 -- Anti-Cheat Detector/Bypass Logic
 local acDetectorEnabled = false
 local acBypassConnections = {}
@@ -598,52 +697,4 @@ toggleGui.IgnoreGuiInset = true
 toggleGui.Parent = game.CoreGui
 
 local button = Instance.new("TextButton")
-button.Name = "ToggleButton"
-button.Size = UDim2.new(0, 120, 0, 40)
-button.Position = UDim2.new(0, 8, 0, 8)
-button.Text = "Toggle UI"
-button.TextSize = 20
-button.TextColor3 = Color3.new(1,1,1)
-button.BackgroundColor3 = Color3.fromRGB(30,30,30)
-button.BorderSizePixel = 0
-button.AutoButtonColor = true
-button.Parent = toggleGui
-button.Active = true
-button.Draggable = true
-
--- Utility: Find all Kavo UI ScreenGuis (has MainFrame) EXCLUDING the toggle itself
-local function findKavoScreenGuis()
-    local uis = {}
-    for _, gui in ipairs(game.CoreGui:GetChildren()) do
-        if gui:IsA("ScreenGui") and gui ~= toggleGui and gui:FindFirstChild("MainFrame") then
-            table.insert(uis, gui)
-        end
-    end
-    return uis
-end
-
-local visible = true
-
-local function setKavoUIVisible(val)
-    for _, gui in ipairs(findKavoScreenGuis()) do
-        for _, child in ipairs(gui:GetChildren()) do
-            if child ~= nil and child ~= button and child ~= toggleGui then
-                -- Hide all visible UI objects except the toggle
-                if child:IsA("GuiObject") then
-                    child.Visible = val
-                end
-            end
-        end
-    end
-end
-
-button.MouseButton1Click:Connect(function()
-    visible = not visible
-    setKavoUIVisible(visible)
-end)
-
--- Keep toggle button always visible, and keep UI in correct state (handles dynamic UI recreation)
-game:GetService("RunService").RenderStepped:Connect(function()
-    toggleGui.Enabled = true
-    setKavoUIVisible(visible)
-end)
+button
