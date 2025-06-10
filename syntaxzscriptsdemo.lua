@@ -1,4 +1,4 @@
--- [V1] Made by Syntaxz Scripts, Ui Loader by xHeptc
+-- V1 Made by Syntaxz Scripts, Ui Loader by xHeptc
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
