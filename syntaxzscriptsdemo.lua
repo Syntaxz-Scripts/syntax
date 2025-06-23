@@ -1,4 +1,4 @@
--- Syntaxz Scripts 
+-- Syntaxz Scripts (educational purposes for coding school) 
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
