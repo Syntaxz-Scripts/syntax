@@ -1,57 +1,58 @@
--- Syntaxz Scripts (CUSTOM UI) 
+-- Syntaxz Scripts All Features Custom GUI
 
+-- Setup
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local player = Players.LocalPlayer
 
--- GUI Setup
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SyntaxzScriptsUI"
-ScreenGui.Parent = player:FindFirstChildOfClass("PlayerGui")
+-- Main GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "SyntaxzScriptsUI"
+gui.Parent = player:FindFirstChildOfClass("PlayerGui")
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 410, 0, 440)
-Frame.Position = UDim2.new(0.5, -205, 0.5, -220)
-Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 440, 0, 380)
+frame.Position = UDim2.new(0.5, -220, 0.5, -190)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
 
-local Title = Instance.new("TextLabel", Frame)
-Title.Text = "Syntaxz Scripts DEMO"
-Title.Size = UDim2.new(1, 0, 0, 36)
-Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(200, 240, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 26
+local title = Instance.new("TextLabel", frame)
+title.Text = "Syntaxz Scripts"
+title.Size = UDim2.new(1, 0, 0, 36)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(200, 240, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 28
 
-local tabButtons = {}
-local tabFrames = {}
+-- TABS
+local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
+local tabButtons, tabFrames = {}, {}
 
-local function createTabButton(name, index)
-    local tabBtn = Instance.new("TextButton", Frame)
-    tabBtn.Size = UDim2.new(0, 100, 0, 28)
-    tabBtn.Position = UDim2.new(0, 10 + (index-1)*105, 0, 40)
-    tabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-    tabBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.TextSize = 15
-    tabBtn.Text = name
-    return tabBtn
+local function createTabButton(name, idx)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0, 100, 0, 28)
+    btn.Position = UDim2.new(0, 10 + (idx-1)*110, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.Text = name
+    return btn
 end
 
 local function createTabFrame()
-    local tf = Instance.new("Frame", Frame)
-    tf.Size = UDim2.new(1, -20, 1, -78)
+    local tf = Instance.new("Frame", frame)
+    tf.Size = UDim2.new(1, -20, 1, -82)
     tf.Position = UDim2.new(0, 10, 0, 74)
     tf.BackgroundTransparency = 1
     tf.Visible = false
     return tf
 end
 
-local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
 for i, name in ipairs(tabNames) do
     tabButtons[name] = createTabButton(name, i)
     tabFrames[name] = createTabFrame()
@@ -63,38 +64,35 @@ local function showTab(tab)
         tabButtons[name].BackgroundColor3 = name == tab and Color3.fromRGB(80, 110, 140) or Color3.fromRGB(60, 60, 80)
     end
 end
-
 for _, name in ipairs(tabNames) do
-    tabButtons[name].MouseButton1Click:Connect(function()
-        showTab(name)
-    end)
+    tabButtons[name].MouseButton1Click:Connect(function() showTab(name) end)
 end
-
 showTab("Credits")
 
--- Helper function for notifications
-local notifLabel = Instance.new("TextLabel", Frame)
-notifLabel.BackgroundTransparency = 0.4
-notifLabel.BackgroundColor3 = Color3.fromRGB(45, 100, 60)
-notifLabel.Size = UDim2.new(1, -40, 0, 30)
-notifLabel.Position = UDim2.new(0, 20, 1, -38)
-notifLabel.Visible = false
-notifLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-notifLabel.Font = Enum.Font.GothamBold
-notifLabel.TextSize = 16
-notifLabel.Text = ""
+-- Notification label
+local notif = Instance.new("TextLabel", frame)
+notif.BackgroundTransparency = 0.3
+notif.BackgroundColor3 = Color3.fromRGB(45, 100, 60)
+notif.Size = UDim2.new(1, -40, 0, 26)
+notif.Position = UDim2.new(0, 20, 1, -34)
+notif.Visible = false
+notif.TextColor3 = Color3.fromRGB(250, 255, 250)
+notif.Font = Enum.Font.GothamBold
+notif.TextSize = 15
 
 local function notify(msg, col)
-    notifLabel.Text = msg
-    notifLabel.BackgroundColor3 = col or Color3.fromRGB(45, 100, 60)
-    notifLabel.Visible = true
-    delay(2, function() notifLabel.Visible = false end)
+    notif.Text = msg
+    notif.BackgroundColor3 = col or Color3.fromRGB(45, 100, 60)
+    notif.Visible = true
+    delay(2, function() notif.Visible = false end)
 end
 
--- CREDITS TAB
+-----------------------
+-- Credits Tab
+-----------------------
 do
     local tf = tabFrames["Credits"]
-    local function infoLabel(txt, ypos)
+    local function label(txt, ypos)
         local l = Instance.new("TextLabel", tf)
         l.Size = UDim2.new(1, -20, 0, 28)
         l.Position = UDim2.new(0, 10, 0, ypos)
@@ -106,20 +104,22 @@ do
         l.Text = txt
         return l
     end
-    infoLabel("ESP & UI: Syntaxz Scripts", 10)
-    infoLabel("UI: Custom Roblox GUI", 38)
-    infoLabel("Discord: no discord too lazy to setup", 66)
+    label("ESP & UI: Syntaxz Scripts", 10)
+    label("UI: Custom Roblox GUI", 38)
+    label("Discord: no discord too lazy to setup", 66)
 end
 
--- FORSAKEN TAB
+-----------------------
+-- Forsaken Tab
+-----------------------
 local forsakenVars = {
-    espEnabled = false,
-    infiniteStamina = false
+    esp = false,
+    stamina = false
 }
-
 do
     local tf = tabFrames["Forsaken"]
-    -- ESP Toggle
+
+    -- ESP
     local espBtn = Instance.new("TextButton", tf)
     espBtn.Size = UDim2.new(0, 170, 0, 32)
     espBtn.Position = UDim2.new(0, 10, 0, 10)
@@ -130,10 +130,8 @@ do
     espBtn.Text = "Player ESP: OFF"
 
     -- ESP Logic
-    local highlighted = {}
-    local espConnection
+    local highlighted, espConnection = {}, nil
     local ESP_LABEL_NAME = "ESPLabel"
-
     local function highlight(part, text, color)
         if not part:FindFirstChild(ESP_LABEL_NAME) then
             local gui = Instance.new("BillboardGui")
@@ -153,7 +151,6 @@ do
             label.TextColor3 = color
         end
     end
-
     local function handle(obj)
         if highlighted[obj] then return end
         if obj:IsA("Model") and obj.Name == "Generator" and obj.Parent and obj.Parent.Name == "Map" then
@@ -163,7 +160,6 @@ do
                 highlighted[obj] = true
             end
         end
-
         if obj:IsA("Tool") and obj.Parent and obj.Parent.Name == "Ingame" then
             local part = obj:FindFirstChildWhichIsA("BasePart")
             if part then
@@ -171,7 +167,6 @@ do
                 highlighted[obj] = true
             end
         end
-
         if obj:IsA("Model") and obj.Parent and obj.Parent.Name == "Killers" then
             local part = obj:FindFirstChildWhichIsA("BasePart")
             if part then
@@ -180,9 +175,8 @@ do
             end
         end
     end
-
     local function clearESP()
-        for obj, _ in pairs(highlighted) do
+        for obj in pairs(highlighted) do
             local part = obj:FindFirstChildWhichIsA("BasePart")
             if part then
                 local gui = part:FindFirstChild(ESP_LABEL_NAME)
@@ -191,35 +185,22 @@ do
             highlighted[obj] = nil
         end
     end
-
     local function EnableESP()
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            handle(obj)
-        end
+        for _, obj in ipairs(workspace:GetDescendants()) do handle(obj) end
         espConnection = workspace.DescendantAdded:Connect(handle)
     end
-
     local function DisableESP()
-        if espConnection then
-            espConnection:Disconnect()
-            espConnection = nil
-        end
+        if espConnection then espConnection:Disconnect() espConnection = nil end
         clearESP()
     end
-
     espBtn.MouseButton1Click:Connect(function()
-        forsakenVars.espEnabled = not forsakenVars.espEnabled
-        espBtn.Text = "Player ESP: " .. (forsakenVars.espEnabled and "ON" or "OFF")
-        if forsakenVars.espEnabled then
-            EnableESP()
-            notify("Player ESP enabled.")
-        else
-            DisableESP()
-            notify("Player ESP disabled.")
-        end
+        forsakenVars.esp = not forsakenVars.esp
+        espBtn.Text = "Player ESP: " .. (forsakenVars.esp and "ON" or "OFF")
+        if forsakenVars.esp then EnableESP() else DisableESP() end
+        notify("Player ESP " .. (forsakenVars.esp and "enabled" or "disabled"))
     end)
 
-    -- Infinite Stamina Toggle
+    -- Infinite Stamina
     local staminaBtn = Instance.new("TextButton", tf)
     staminaBtn.Size = UDim2.new(0, 170, 0, 32)
     staminaBtn.Position = UDim2.new(0, 10, 0, 52)
@@ -230,12 +211,10 @@ do
     staminaBtn.Text = "Infinite Stamina: OFF"
 
     staminaBtn.MouseButton1Click:Connect(function()
-        forsakenVars.infiniteStamina = not forsakenVars.infiniteStamina
-        staminaBtn.Text = "Infinite Stamina: " .. (forsakenVars.infiniteStamina and "ON" or "OFF")
-        notify("Infinite Stamina " .. (forsakenVars.infiniteStamina and "enabled." or "disabled."))
+        forsakenVars.stamina = not forsakenVars.stamina
+        staminaBtn.Text = "Infinite Stamina: " .. (forsakenVars.stamina and "ON" or "OFF")
+        notify("Infinite Stamina " .. (forsakenVars.stamina and "enabled." or "disabled."))
     end)
-
-    -- Infinite Stamina logic loop
     spawn(function()
         local Sprinting = ReplicatedStorage:FindFirstChild("Systems")
             and ReplicatedStorage.Systems:FindFirstChild("Character")
@@ -243,25 +222,20 @@ do
             and ReplicatedStorage.Systems.Character.Game:FindFirstChild("Sprinting")
         local m = Sprinting and require(Sprinting)
         while wait(0.15) do
-            if forsakenVars.infiniteStamina and m then
-                if m.Stamina <= 5 then
-                    m.Stamina = 20
-                end
+            if forsakenVars.stamina and m then
+                if m.Stamina <= 5 then m.Stamina = 20 end
             end
         end
     end)
 end
 
--- UNIVERSAL TAB
-local universalVars = {
-    fullbright = false,
-    acBypass = false
-}
-
+-----------------------
+-- Universal Tab
+-----------------------
+local universalVars = {fullbright = false, acBypass = false}
 do
     local tf = tabFrames["Universal"]
-
-    -- Fullbright toggle
+    -- Fullbright
     local fbBtn = Instance.new("TextButton", tf)
     fbBtn.Size = UDim2.new(0, 170, 0, 32)
     fbBtn.Position = UDim2.new(0, 10, 0, 10)
@@ -270,49 +244,31 @@ do
     fbBtn.Font = Enum.Font.Gotham
     fbBtn.TextSize = 16
     fbBtn.Text = "Fullbright: OFF"
-
-    local originalLighting = {
+    local orig = {
         Ambient = Lighting.Ambient,
         Brightness = Lighting.Brightness,
-        ColorShift_Top = Lighting.ColorShift_Top,
-        ColorShift_Bottom = Lighting.ColorShift_Bottom,
         OutdoorAmbient = Lighting.OutdoorAmbient,
         FogEnd = Lighting.FogEnd
     }
-
     local function enableFullbright()
-        Lighting.Ambient = Color3.new(1, 1, 1)
+        Lighting.Ambient = Color3.new(1,1,1)
         Lighting.Brightness = 5
-        Lighting.ColorShift_Top = Color3.new(0, 0, 0)
-        Lighting.ColorShift_Bottom = Color3.new(0, 0, 0)
-        Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+        Lighting.OutdoorAmbient = Color3.new(1,1,1)
         Lighting.FogEnd = 100000
         universalVars.fullbright = true
     end
-
     local function disableFullbright()
-        for property, value in pairs(originalLighting) do
-            Lighting[property] = value
-        end
+        for k,v in pairs(orig) do Lighting[k]=v end
         universalVars.fullbright = false
     end
-
     fbBtn.MouseButton1Click:Connect(function()
         universalVars.fullbright = not universalVars.fullbright
         fbBtn.Text = "Fullbright: " .. (universalVars.fullbright and "ON" or "OFF")
-        if universalVars.fullbright then
-            enableFullbright()
-            notify("Fullbright ON")
-        else
-            disableFullbright()
-            notify("Fullbright OFF")
-        end
+        if universalVars.fullbright then enableFullbright() else disableFullbright() end
+        notify("Fullbright " .. (universalVars.fullbright and "ON" or "OFF"))
     end)
-
     Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
-        if universalVars.fullbright and Lighting.Ambient ~= Color3.new(1,1,1) then
-            enableFullbright()
-        end
+        if universalVars.fullbright and Lighting.Ambient ~= Color3.new(1,1,1) then enableFullbright() end
     end)
 
     -- Anti-Cheat Detector/Bypass
@@ -324,10 +280,7 @@ do
     acBtn.Font = Enum.Font.Gotham
     acBtn.TextSize = 16
     acBtn.Text = "Anti-Cheat Detector/Bypass: OFF"
-
-    local acDetectorEnabled = false
-    local mt, oldNamecall, hookSet = nil, nil, false
-
+    local acDetectorEnabled, mt, oldNamecall, hookSet = false, nil, nil, false
     local function scanForAntiCheat()
         local keywords = {"AntiCheat", "AC", "Ban", "Kick", "Logger", "Admin", "Detector"}
         local found = {}
@@ -342,7 +295,6 @@ do
         end
         return found
     end
-
     local function scanForSuspiciousRemotes()
         local remotes = {}
         for _, obj in ipairs(game:GetDescendants()) do
@@ -354,7 +306,6 @@ do
         end
         return remotes
     end
-
     local function disableAntiCheatScripts()
         for _, obj in ipairs(game:GetDescendants()) do
             if (obj:IsA("LocalScript") or obj:IsA("Script")) and obj.Name:lower():find("anticheat") then
@@ -362,24 +313,21 @@ do
             end
         end
     end
-
     local function hookRemotes()
         if hookSet then return end
         mt = getrawmetatable(game)
         oldNamecall = mt.__namecall
-
         setreadonly(mt, false)
         mt.__namecall = newcclosure(function(self, ...)
             local method = getnamecallmethod()
             if (self.Name:lower():find("kick") or self.Name:lower():find("ban") or self.Name:lower():find("cheat")) and (method == "FireServer" or method == "InvokeServer") then
-                return -- Block the call
+                return
             end
             return oldNamecall(self, ...)
         end)
         setreadonly(mt, true)
         hookSet = true
     end
-
     local function unhookRemotes()
         if not hookSet or not mt or not oldNamecall then return end
         setreadonly(mt, false)
@@ -387,7 +335,6 @@ do
         setreadonly(mt, true)
         hookSet = false
     end
-
     local function blockKickFunction()
         if not player then return end
         if hookfunction then
@@ -399,38 +346,30 @@ do
             player.Kick = function() return end
         end
     end
-
     local function unblockKickFunction() end
-
     local function enableACDetectorBypass()
         local scripts = scanForAntiCheat()
         local remotes = scanForSuspiciousRemotes()
         if #scripts == 0 and #remotes == 0 then
             notify("No obvious anti-cheat found.", Color3.fromRGB(60,120,60))
         else
-            notify("Anti-cheat scripts & remotes found!", Color3.fromRGB(150,100,50))
+            notify("Anti-cheat scripts/remotes found!", Color3.fromRGB(150,100,50))
         end
         disableAntiCheatScripts()
         hookRemotes()
         blockKickFunction()
         acDetectorEnabled = true
     end
-
     local function disableACDetectorBypass()
         unhookRemotes()
         unblockKickFunction()
         acDetectorEnabled = false
         notify("Anti-cheat bypass disabled.", Color3.fromRGB(120,60,60))
     end
-
     acBtn.MouseButton1Click:Connect(function()
         acDetectorEnabled = not acDetectorEnabled
         acBtn.Text = "Anti-Cheat Detector/Bypass: " .. (acDetectorEnabled and "ON" or "OFF")
-        if acDetectorEnabled then
-            enableACDetectorBypass()
-        else
-            disableACDetectorBypass()
-        end
+        if acDetectorEnabled then enableACDetectorBypass() else disableACDetectorBypass() end
     end)
 
     -- Probe Remotes Button
@@ -442,7 +381,6 @@ do
     probeBtn.Font = Enum.Font.Gotham
     probeBtn.TextSize = 16
     probeBtn.Text = "Probe Remotes (Security Test)"
-
     probeBtn.MouseButton1Click:Connect(function()
         local popup = Instance.new("ScreenGui")
         popup.Name = "ProbeResultsPopup"
@@ -463,9 +401,7 @@ do
         closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
         closeBtn.Font = Enum.Font.Gotham
         closeBtn.TextSize = 18
-        closeBtn.MouseButton1Click:Connect(function()
-            popup:Destroy()
-        end)
+        closeBtn.MouseButton1Click:Connect(function() popup:Destroy() end)
 
         local title = Instance.new("TextLabel", frame)
         title.Size = UDim2.new(1, -20, 0, 34)
@@ -538,14 +474,15 @@ do
             end
         end
         logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
-        logLine("Check for: remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
+        logLine("Check for remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
     end)
 end
 
--- GARDEN TAB
+-----------------------
+-- Garden Tab
+-----------------------
 do
     local tf = tabFrames["Garden"]
-
     -- Duplicate Tools
     local dupBtn = Instance.new("TextButton", tf)
     dupBtn.Size = UDim2.new(0, 170, 0, 32)
@@ -589,8 +526,6 @@ do
 
     copyBtn.MouseButton1Click:Connect(function()
         local username = box.Text
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
         local targetPlayer = nil
         for _, p in ipairs(Players:GetPlayers()) do
             if p.Name:lower():sub(1, #username) == username:lower() then
@@ -598,17 +533,14 @@ do
                 break
             end
         end
-
         if not targetPlayer then
             notify("No player found: " .. username, Color3.fromRGB(120,60,60))
             return
         end
-
         local function copyTool(tool)
             local cloned = tool:Clone()
-            cloned.Parent = LocalPlayer.Backpack
+            cloned.Parent = player.Backpack
         end
-
         if targetPlayer.Character then
             for _, t in ipairs(targetPlayer.Character:GetChildren()) do
                 if t:IsA("Tool") then
@@ -616,19 +548,17 @@ do
                 end
             end
         end
-
         for _, t in ipairs(targetPlayer.Backpack:GetChildren()) do
             if t:IsA("Tool") then
                 copyTool(t)
             end
         end
-
         notify("Copied all tools from " .. targetPlayer.Name)
     end)
 end
 
 -- Close Button
-local closeBtn = Instance.new("TextButton", Frame)
+local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.new(0, 100, 0, 28)
 closeBtn.Position = UDim2.new(1, -110, 1, -38)
 closeBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
@@ -636,4 +566,4 @@ closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 18
 closeBtn.Text = "Close"
-closeBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
