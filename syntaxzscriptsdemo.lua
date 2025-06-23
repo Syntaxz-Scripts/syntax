@@ -1,85 +1,94 @@
--- V1 Made by Syntaxz Scripts
+-- Syntaxz Scripts
 
-local Venyx = loadstring(game:HttpGet('https://raw.githubusercontent.com/venyxcloud/venyx-ui-library/main/source.lua'))()
-local venyx = Venyx.new("Syntaxz Scripts DEMO", 5013109572)
+local Material = loadstring(game:HttpGet("https://raw.githubusercontent.com/Kinlei/MaterialLua/main/Module.lua"))()
 
--- Utility: ClonedService for executor compatibility
-local function ClonedService(name)
-    local Reference = (cloneref) or function(reference) return reference end
-    return Reference(game:GetService(name))
-end
+local UI = Material.Load({
+    Title = "Syntaxz Scripts DEMO",
+    Style = 1,
+    SizeX = 400,
+    SizeY = 350,
+    Theme = "Dark"
+})
 
--- Create tabs/pages
-local creditsPage = venyx:addPage("Credits", 5012544693)
-local forsakenPage = venyx:addPage("Forsaken", 5012544693)
-local universalPage = venyx:addPage("Universal", 5012544693)
-local gardenPage = venyx:addPage("Grow a Garden", 5012544693)
+-- Credits Tab
+local Credits = UI.New({
+    Title = "Credits"
+})
+Credits.TextField({
+    Text = "ESP & UI: Syntaxz Scripts\nUI: Material Lua UI\nDiscord: no discord too lazy to setup",
+    Callback = function() end
+})
 
--- Credits Section
-local creditsSection = creditsPage:addSection("Script Info")
-creditsSection:addParagraph("ESP & UI", "Syntaxz Scripts")
-creditsSection:addParagraph("UI Library", "Venyx UI (ported from Kavo)")
-creditsSection:addParagraph("Discord", "no discord too lazy to setup")
+-- Forsaken Tab
+local Forsaken = UI.New({
+    Title = "Forsaken"
+})
 
--- Forsaken Section
-local forsakenSection = forsakenPage:addSection("Fun")
+-- Universal Tab
+local Universal = UI.New({
+    Title = "Universal"
+})
 
--- Universal Section
-local universalSection = universalPage:addSection("Universal Features")
+-- Grow a Garden Tab
+local Garden = UI.New({
+    Title = "Grow a Garden"
+})
 
--- Garden Section
-local gardenSection = gardenPage:addSection("Garden Tools")
+Garden.Button({
+    Text = "Duplicate Tools",
+    Callback = function()
+        local player = game:GetService("Players").LocalPlayer
+        local backpack = player.Backpack
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                local cloned = tool:Clone()
+                cloned.Parent = backpack
+            end
+        end
+        Material.Banner({Text = "Duplicated all tools in your backpack!"})
+    end
+})
 
-gardenSection:addButton("Duplicate Tools", function()
-    local player = ClonedService("Players").LocalPlayer
-    local backpack = player.Backpack
-    for _, tool in ipairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") then
+Garden.TextField({
+    Text = "Copy Tools (ctools)",
+    Callback = function(username)
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local targetPlayer = nil
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Name:lower():sub(1, #username) == username:lower() then
+                targetPlayer = p
+                break
+            end
+        end
+
+        if not targetPlayer then
+            Material.Banner({Text = "No player found with the username: " .. username})
+            return
+        end
+
+        local function copyTool(tool)
             local cloned = tool:Clone()
-            cloned.Parent = backpack
+            cloned.Parent = LocalPlayer.Backpack
         end
-    end
-    venyx:Notify("Duplicated all tools in your backpack!")
-end)
 
-gardenSection:addTextbox("Copy Tools (ctools)", "Type a username and click to copy their tools!", function(username, focusLost)
-    if not focusLost then return end
-    local Players = ClonedService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local targetPlayer = nil
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p.Name:lower():sub(1, #username) == username:lower() then
-            targetPlayer = p
-            break
+        if targetPlayer.Character then
+            for _, t in ipairs(targetPlayer.Character:GetChildren()) do
+                if t:IsA("Tool") then
+                    copyTool(t)
+                end
+            end
         end
-    end
 
-    if not targetPlayer then
-        venyx:Notify("No player found with the username: " .. username)
-        return
-    end
-
-    local function copyTool(tool)
-        local cloned = tool:Clone()
-        cloned.Parent = LocalPlayer.Backpack
-    end
-
-    if targetPlayer.Character then
-        for _, t in ipairs(targetPlayer.Character:GetChildren()) do
+        for _, t in ipairs(targetPlayer.Backpack:GetChildren()) do
             if t:IsA("Tool") then
                 copyTool(t)
             end
         end
-    end
 
-    for _, t in ipairs(targetPlayer.Backpack:GetChildren()) do
-        if t:IsA("Tool") then
-            copyTool(t)
-        end
+        Material.Banner({Text = "Copied all tools from " .. targetPlayer.Name})
     end
-
-    venyx:Notify("Copied all tools from " .. targetPlayer.Name)
-end)
+})
 
 -- ESP Script Logic
 local highlighted = {}
@@ -159,16 +168,19 @@ local function DisableESP()
     clearESP()
 end
 
-forsakenSection:addToggle("Player ESP", false, function(state)
-    if state then
-        EnableESP()
-    else
-        DisableESP()
+Forsaken.Toggle({
+    Text = "Player ESP",
+    Callback = function(state)
+        if state then
+            EnableESP()
+        else
+            DisableESP()
+        end
     end
-end)
+})
 
 -- Infinite Stamina Logic
-local ReplicatedStorage = ClonedService("ReplicatedStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Sprinting = ReplicatedStorage:FindFirstChild("Systems")
     and ReplicatedStorage.Systems:FindFirstChild("Character")
     and ReplicatedStorage.Systems.Character:FindFirstChild("Game")
@@ -190,9 +202,12 @@ end
 
 task.spawn(monitorStamina)
 
-forsakenSection:addToggle("Infinite Stamina", false, function(state)
-    infiniteStaminaEnabled = state
-end)
+Forsaken.Toggle({
+    Text = "Infinite Stamina",
+    Callback = function(state)
+        infiniteStaminaEnabled = state
+    end
+})
 
 -- Fullbright Logic (toggleable)
 local Lighting = game:GetService("Lighting")
@@ -224,13 +239,16 @@ local function disableFullbright()
     fullbrightEnabled = false
 end
 
-universalSection:addToggle("Fullbright", false, function(state)
-    if state then
-        enableFullbright()
-    else
-        disableFullbright()
+Universal.Toggle({
+    Text = "Fullbright",
+    Callback = function(state)
+        if state then
+            enableFullbright()
+        else
+            disableFullbright()
+        end
     end
-end)
+})
 
 Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     if fullbrightEnabled and Lighting.Ambient ~= Color3.new(1,1,1) then
@@ -239,103 +257,106 @@ Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
 end)
 
 -- Universal Game Prober (Remote Security Probe)
-universalSection:addButton("Probe Remotes (Security Test)", function()
-    local sg = Instance.new("ScreenGui")
-    sg.Name = "ProbeResultsPopup"
-    sg.Parent = game:GetService("Players").LocalPlayer.PlayerGui
-    local frame = Instance.new("Frame", sg)
-    frame.Size = UDim2.new(0, 520, 0, 380)
-    frame.Position = UDim2.new(0.5, -260, 0.5, -190)
-    frame.BackgroundColor3 = Color3.fromRGB(30,30,40)
-    frame.BorderSizePixel = 0
-    frame.Active = true
-    frame.Draggable = true
+Universal.Button({
+    Text = "Probe Remotes (Security Test)",
+    Callback = function()
+        local sg = Instance.new("ScreenGui")
+        sg.Name = "ProbeResultsPopup"
+        sg.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+        local frame = Instance.new("Frame", sg)
+        frame.Size = UDim2.new(0, 520, 0, 380)
+        frame.Position = UDim2.new(0.5, -260, 0.5, -190)
+        frame.BackgroundColor3 = Color3.fromRGB(30,30,40)
+        frame.BorderSizePixel = 0
+        frame.Active = true
+        frame.Draggable = true
 
-    local closeBtn = Instance.new("TextButton", frame)
-    closeBtn.Size = UDim2.new(0, 80, 0, 34)
-    closeBtn.Position = UDim2.new(1, -90, 0, 10)
-    closeBtn.Text = "Close"
-    closeBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    closeBtn.Font = Enum.Font.Gotham
-    closeBtn.TextSize = 18
-    closeBtn.MouseButton1Click:Connect(function()
-        sg:Destroy()
-    end)
+        local closeBtn = Instance.new("TextButton", frame)
+        closeBtn.Size = UDim2.new(0, 80, 0, 34)
+        closeBtn.Position = UDim2.new(1, -90, 0, 10)
+        closeBtn.Text = "Close"
+        closeBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+        closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        closeBtn.Font = Enum.Font.Gotham
+        closeBtn.TextSize = 18
+        closeBtn.MouseButton1Click:Connect(function()
+            sg:Destroy()
+        end)
 
-    local title = Instance.new("TextLabel", frame)
-    title.Size = UDim2.new(1, -20, 0, 34)
-    title.Position = UDim2.new(0, 10, 0, 10)
-    title.Text = "Probe Remotes Results"
-    title.Font = Enum.Font.GothamBold
-    title.TextColor3 = Color3.fromRGB(200,255,200)
-    title.BackgroundTransparency = 1
-    title.TextSize = 24
-    title.TextXAlignment = Enum.TextXAlignment.Left
+        local title = Instance.new("TextLabel", frame)
+        title.Size = UDim2.new(1, -20, 0, 34)
+        title.Position = UDim2.new(0, 10, 0, 10)
+        title.Text = "Probe Remotes Results"
+        title.Font = Enum.Font.GothamBold
+        title.TextColor3 = Color3.fromRGB(200,255,200)
+        title.BackgroundTransparency = 1
+        title.TextSize = 24
+        title.TextXAlignment = Enum.TextXAlignment.Left
 
-    local scroll = Instance.new("ScrollingFrame", frame)
-    scroll.Size = UDim2.new(1, -20, 1, -64)
-    scroll.Position = UDim2.new(0, 10, 0, 54)
-    scroll.BackgroundColor3 = Color3.fromRGB(20,20,20)
-    scroll.BorderSizePixel = 0
-    scroll.CanvasSize = UDim2.new(0,0,0,2000)
-    scroll.ScrollBarThickness = 8
+        local scroll = Instance.new("ScrollingFrame", frame)
+        scroll.Size = UDim2.new(1, -20, 1, -64)
+        scroll.Position = UDim2.new(0, 10, 0, 54)
+        scroll.BackgroundColor3 = Color3.fromRGB(20,20,20)
+        scroll.BorderSizePixel = 0
+        scroll.CanvasSize = UDim2.new(0,0,0,2000)
+        scroll.ScrollBarThickness = 8
 
-    local y = 0
-    local function logLine(txt, col)
-        local label = Instance.new("TextLabel", scroll)
-        label.Size = UDim2.new(1, -10, 0, 26)
-        label.Position = UDim2.new(0, 5, 0, y)
-        label.Text = txt
-        label.TextColor3 = col or Color3.fromRGB(200,200,200)
-        label.BackgroundTransparency = 1
-        label.Font = Enum.Font.Code
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.TextSize = 17
-        y = y + 28
-        scroll.CanvasSize = UDim2.new(0,0,0,y+30)
-    end
-
-    local function getFullPath(obj)
-        if not obj or not obj.Parent then return obj.Name end
-        local path = obj.Name
-        local parent = obj.Parent
-        while parent and parent ~= game do
-            path = parent.Name .. "." .. path
-            parent = parent.Parent
+        local y = 0
+        local function logLine(txt, col)
+            local label = Instance.new("TextLabel", scroll)
+            label.Size = UDim2.new(1, -10, 0, 26)
+            label.Position = UDim2.new(0, 5, 0, y)
+            label.Text = txt
+            label.TextColor3 = col or Color3.fromRGB(200,200,200)
+            label.BackgroundTransparency = 1
+            label.Font = Enum.Font.Code
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.TextSize = 17
+            y = y + 28
+            scroll.CanvasSize = UDim2.new(0,0,0,y+30)
         end
-        return path
-    end
 
-    logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
-    for _, obj in ipairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local path = getFullPath(obj)
-            logLine("[RemoteEvent] "..path, Color3.fromRGB(255,200,100))
-            local ok, err = pcall(function()
-                obj:FireServer("probe", 123, true)
-            end)
-            if ok then
-                logLine("  Fired with test args.", Color3.fromRGB(150,255,100))
-            else
-                logLine("  ERROR: "..tostring(err), Color3.fromRGB(255,100,100))
+        local function getFullPath(obj)
+            if not obj or not obj.Parent then return obj.Name end
+            local path = obj.Name
+            local parent = obj.Parent
+            while parent and parent ~= game do
+                path = parent.Name .. "." .. path
+                parent = parent.Parent
             end
-        elseif obj:IsA("RemoteFunction") then
-            local path = getFullPath(obj)
-            logLine("[RemoteFunction] "..path, Color3.fromRGB(100,200,255))
-            local ok, ret = pcall(function()
-                return obj:InvokeServer("probe", 42, false)
-            end)
-            if ok then
-                logLine("  Invoked, returned: "..tostring(ret), Color3.fromRGB(150,255,200))
-            else
-                logLine("  ERROR: "..tostring(ret), Color3.fromRGB(255,100,100))
+            return path
+        end
+
+        logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
+        for _, obj in ipairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") then
+                local path = getFullPath(obj)
+                logLine("[RemoteEvent] "..path, Color3.fromRGB(255,200,100))
+                local ok, err = pcall(function()
+                    obj:FireServer("probe", 123, true)
+                end)
+                if ok then
+                    logLine("  Fired with test args.", Color3.fromRGB(150,255,100))
+                else
+                    logLine("  ERROR: "..tostring(err), Color3.fromRGB(255,100,100))
+                end
+            elseif obj:IsA("RemoteFunction") then
+                local path = getFullPath(obj)
+                logLine("[RemoteFunction] "..path, Color3.fromRGB(100,200,255))
+                local ok, ret = pcall(function()
+                    return obj:InvokeServer("probe", 42, false)
+                end)
+                if ok then
+                    logLine("  Invoked, returned: "..tostring(ret), Color3.fromRGB(150,255,200))
+                else
+                    logLine("  ERROR: "..tostring(ret), Color3.fromRGB(255,100,100))
+                end
             end
         end
+        logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
+        logLine("Check for: remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
     end
-    logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
-    logLine("Check for: remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
-end)
+})
 
 -- Anti-Cheat Detector/Bypass Logic (in Universal Tab)
 local acDetectorEnabled = false
@@ -423,10 +444,10 @@ local function enableACDetectorBypass()
     local scripts = scanForAntiCheat()
     local remotes = scanForSuspiciousRemotes()
     if #scripts == 0 and #remotes == 0 then
-        venyx:Notify("No obvious anti-cheat found.")
+        Material.Banner({Text = "No obvious anti-cheat found."})
     else
-        venyx:Notify("Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
-            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none"))
+        Material.Banner({Text = "Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
+            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none")})
     end
     disableAntiCheatScripts()
     hookRemotes()
@@ -438,16 +459,16 @@ local function disableACDetectorBypass()
     unhookRemotes()
     unblockKickFunction()
     acDetectorEnabled = false
-    venyx:Notify("Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)")
+    Material.Banner({Text = "Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)"})
 end
 
-universalSection:addToggle("Anti-Cheat Detector/Bypass", false, function(state)
-    if state then
-        enableACDetectorBypass()
-    else
-        disableACDetectorBypass()
+Universal.Toggle({
+    Text = "Anti-Cheat Detector/Bypass",
+    Callback = function(state)
+        if state then
+            enableACDetectorBypass()
+        else
+            disableACDetectorBypass()
+        end
     end
-end)
-
--- Show UI
-venyx:SelectPage(venyx.pages[1], true)
+})
