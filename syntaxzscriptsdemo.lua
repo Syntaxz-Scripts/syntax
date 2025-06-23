@@ -510,7 +510,7 @@ end
 -- Garden Tab
 -----------------------
 do
-    local tf = tabFrames["Grow a Garden"]
+    local tf = tabFrames["Garden"]
     -- Duplicate Tools
     local dupBtn = Instance.new("TextButton", tf)
     dupBtn.Size = UDim2.new(0, 170, 0, 32)
