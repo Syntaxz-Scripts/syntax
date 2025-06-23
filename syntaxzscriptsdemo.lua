@@ -1,41 +1,44 @@
--- Syntaxz Scripts
+-- Syntaxz Scripts (Mercury UI Version)
 
-local Material = loadstring(game:HttpGet("https://raw.githubusercontent.com/Kinlei/MaterialLua/main/Module.lua"))()
+local Mercury = loadstring(game:HttpGet("https://raw.githubusercontent.com/deeeity/mercury-lib/main/src.lua"))()
 
-local UI = Material.Load({
+local UI = Mercury:CreateWindow({
     Title = "Syntaxz Scripts DEMO",
-    Style = 1,
-    SizeX = 400,
-    SizeY = 350,
-    Theme = "Dark"
+    Size = UDim2.fromOffset(400, 350)
 })
 
 -- Credits Tab
-local Credits = UI.New({
-    Title = "Credits"
+local Credits = UI:CreateTab({
+    Name = "Credits",
+    Icon = "rbxassetid://8569322835"
 })
-Credits.TextField({
-    Text = "ESP & UI: Syntaxz Scripts\nUI: Material Lua UI\nDiscord: no discord too lazy to setup",
-    Callback = function() end
+Credits:CreateTextbox({
+    Name = "Credits",
+    PlaceholderText = "Credits",
+    Callback = function() end,
+    Text = "ESP & UI: Syntaxz Scripts\nUI: Mercury UI\nDiscord: no discord too lazy to setup"
 })
 
 -- Forsaken Tab
-local Forsaken = UI.New({
-    Title = "Forsaken"
+local Forsaken = UI:CreateTab({
+    Name = "Forsaken",
+    Icon = "rbxassetid://8569322835"
 })
 
 -- Universal Tab
-local Universal = UI.New({
-    Title = "Universal"
+local Universal = UI:CreateTab({
+    Name = "Universal",
+    Icon = "rbxassetid://8569322835"
 })
 
 -- Grow a Garden Tab
-local Garden = UI.New({
-    Title = "Grow a Garden"
+local Garden = UI:CreateTab({
+    Name = "Grow a Garden",
+    Icon = "rbxassetid://8569322835"
 })
 
-Garden.Button({
-    Text = "Duplicate Tools",
+Garden:CreateButton({
+    Name = "Duplicate Tools",
     Callback = function()
         local player = game:GetService("Players").LocalPlayer
         local backpack = player.Backpack
@@ -45,12 +48,17 @@ Garden.Button({
                 cloned.Parent = backpack
             end
         end
-        Material.Banner({Text = "Duplicated all tools in your backpack!"})
+        Mercury:Notification({
+            Title = "Garden",
+            Text = "Duplicated all tools in your backpack!",
+            Duration = 3
+        })
     end
 })
 
-Garden.TextField({
-    Text = "Copy Tools (ctools)",
+Garden:CreateTextbox({
+    Name = "Copy Tools (ctools)",
+    PlaceholderText = "Enter username",
     Callback = function(username)
         local Players = game:GetService("Players")
         local LocalPlayer = Players.LocalPlayer
@@ -63,7 +71,7 @@ Garden.TextField({
         end
 
         if not targetPlayer then
-            Material.Banner({Text = "No player found with the username: " .. username})
+            Mercury:Notification({Title = "Garden", Text = "No player found with the username: " .. username, Duration = 4})
             return
         end
 
@@ -86,7 +94,7 @@ Garden.TextField({
             end
         end
 
-        Material.Banner({Text = "Copied all tools from " .. targetPlayer.Name})
+        Mercury:Notification({Title = "Garden", Text = "Copied all tools from " .. targetPlayer.Name, Duration = 3})
     end
 })
 
@@ -168,8 +176,9 @@ local function DisableESP()
     clearESP()
 end
 
-Forsaken.Toggle({
-    Text = "Player ESP",
+Forsaken:CreateToggle({
+    Name = "Player ESP",
+    StartingState = false,
     Callback = function(state)
         if state then
             EnableESP()
@@ -202,8 +211,9 @@ end
 
 task.spawn(monitorStamina)
 
-Forsaken.Toggle({
-    Text = "Infinite Stamina",
+Forsaken:CreateToggle({
+    Name = "Infinite Stamina",
+    StartingState = false,
     Callback = function(state)
         infiniteStaminaEnabled = state
     end
@@ -239,8 +249,9 @@ local function disableFullbright()
     fullbrightEnabled = false
 end
 
-Universal.Toggle({
-    Text = "Fullbright",
+Universal:CreateToggle({
+    Name = "Fullbright",
+    StartingState = false,
     Callback = function(state)
         if state then
             enableFullbright()
@@ -257,13 +268,13 @@ Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
 end)
 
 -- Universal Game Prober (Remote Security Probe)
-Universal.Button({
-    Text = "Probe Remotes (Security Test)",
+Universal:CreateButton({
+    Name = "Probe Remotes (Security Test)",
     Callback = function()
-        local sg = Instance.new("ScreenGui")
-        sg.Name = "ProbeResultsPopup"
-        sg.Parent = game:GetService("Players").LocalPlayer.PlayerGui
-        local frame = Instance.new("Frame", sg)
+        local MercuryPopup = Instance.new("ScreenGui")
+        MercuryPopup.Name = "ProbeResultsPopup"
+        MercuryPopup.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+        local frame = Instance.new("Frame", MercuryPopup)
         frame.Size = UDim2.new(0, 520, 0, 380)
         frame.Position = UDim2.new(0.5, -260, 0.5, -190)
         frame.BackgroundColor3 = Color3.fromRGB(30,30,40)
@@ -280,7 +291,7 @@ Universal.Button({
         closeBtn.Font = Enum.Font.Gotham
         closeBtn.TextSize = 18
         closeBtn.MouseButton1Click:Connect(function()
-            sg:Destroy()
+            MercuryPopup:Destroy()
         end)
 
         local title = Instance.new("TextLabel", frame)
@@ -443,12 +454,13 @@ end
 local function enableACDetectorBypass()
     local scripts = scanForAntiCheat()
     local remotes = scanForSuspiciousRemotes()
-    if #scripts == 0 and #remotes == 0 then
-        Material.Banner({Text = "No obvious anti-cheat found."})
-    else
-        Material.Banner({Text = "Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
-            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none")})
-    end
+    Mercury:Prompt({
+        Title = "Anti-Cheat Detector",
+        Text = (#scripts == 0 and #remotes == 0) and "No obvious anti-cheat found." or
+            ("Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
+            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none")),
+        Buttons = {"OK"}
+    })
     disableAntiCheatScripts()
     hookRemotes()
     blockKickFunction()
@@ -459,11 +471,12 @@ local function disableACDetectorBypass()
     unhookRemotes()
     unblockKickFunction()
     acDetectorEnabled = false
-    Material.Banner({Text = "Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)"})
+    Mercury:Notification({Title = "Anti-Cheat", Text = "Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)", Duration = 4})
 end
 
-Universal.Toggle({
-    Text = "Anti-Cheat Detector/Bypass",
+Universal:CreateToggle({
+    Name = "Anti-Cheat Detector/Bypass",
+    StartingState = false,
     Callback = function(state)
         if state then
             enableACDetectorBypass()
