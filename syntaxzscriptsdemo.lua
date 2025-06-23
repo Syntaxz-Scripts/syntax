@@ -1,102 +1,70 @@
--- Syntaxz Scripts (Mercury UI Version)
+-- Syntaxz Scripts (Venus UI Version)
+-- Venus UI: https://github.com/alexR32/venus-ui
 
-local Mercury = loadstring(game:HttpGet("https://raw.githubusercontent.com/deeeity/mercury-lib/main/src.lua"))()
+local Venus = loadstring(game:HttpGet("https://raw.githubusercontent.com/alexR32/venus-ui/main/lib.lua"))()
+local Window = Venus.new("Syntaxz Scripts DEMO")
 
-local UI = Mercury:CreateWindow({
-    Title = "Syntaxz Scripts DEMO",
-    Size = UDim2.fromOffset(400, 350)
-})
+-- Tabs
+local CreditsTab = Window:Tab("Credits")
+local ForsakenTab = Window:Tab("Forsaken")
+local UniversalTab = Window:Tab("Universal")
+local GardenTab = Window:Tab("Grow a Garden")
 
 -- Credits Tab
-local Credits = UI:CreateTab({
-    Name = "Credits",
-    Icon = "rbxassetid://8569322835"
-})
-Credits:CreateTextbox({
-    Name = "Credits",
-    PlaceholderText = "Credits",
-    Callback = function() end,
-    Text = "ESP & UI: Syntaxz Scripts\nUI: Mercury UI\nDiscord: no discord too lazy to setup"
-})
+CreditsTab:Label("ESP & UI: Syntaxz Scripts")
+CreditsTab:Label("UI: Venus UI")
+CreditsTab:Label("Discord: no discord too lazy to setup")
 
--- Forsaken Tab
-local Forsaken = UI:CreateTab({
-    Name = "Forsaken",
-    Icon = "rbxassetid://8569322835"
-})
-
--- Universal Tab
-local Universal = UI:CreateTab({
-    Name = "Universal",
-    Icon = "rbxassetid://8569322835"
-})
-
--- Grow a Garden Tab
-local Garden = UI:CreateTab({
-    Name = "Grow a Garden",
-    Icon = "rbxassetid://8569322835"
-})
-
-Garden:CreateButton({
-    Name = "Duplicate Tools",
-    Callback = function()
-        local player = game:GetService("Players").LocalPlayer
-        local backpack = player.Backpack
-        for _, tool in ipairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") then
-                local cloned = tool:Clone()
-                cloned.Parent = backpack
-            end
-        end
-        Mercury:Notification({
-            Title = "Garden",
-            Text = "Duplicated all tools in your backpack!",
-            Duration = 3
-        })
-    end
-})
-
-Garden:CreateTextbox({
-    Name = "Copy Tools (ctools)",
-    PlaceholderText = "Enter username",
-    Callback = function(username)
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-        local targetPlayer = nil
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p.Name:lower():sub(1, #username) == username:lower() then
-                targetPlayer = p
-                break
-            end
-        end
-
-        if not targetPlayer then
-            Mercury:Notification({Title = "Garden", Text = "No player found with the username: " .. username, Duration = 4})
-            return
-        end
-
-        local function copyTool(tool)
+-- Garden Tab
+GardenTab:Button("Duplicate Tools", function()
+    local player = game:GetService("Players").LocalPlayer
+    local backpack = player.Backpack
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") then
             local cloned = tool:Clone()
-            cloned.Parent = LocalPlayer.Backpack
+            cloned.Parent = backpack
         end
+    end
+    Venus:Notification("Success", "Duplicated all tools in your backpack!", 3)
+end)
 
-        if targetPlayer.Character then
-            for _, t in ipairs(targetPlayer.Character:GetChildren()) do
-                if t:IsA("Tool") then
-                    copyTool(t)
-                end
-            end
+GardenTab:Box("Copy Tools (ctools)", function(username)
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local targetPlayer = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #username) == username:lower() then
+            targetPlayer = p
+            break
         end
+    end
 
-        for _, t in ipairs(targetPlayer.Backpack:GetChildren()) do
+    if not targetPlayer then
+        Venus:Notification("Error", "No player found with the username: " .. username, 3)
+        return
+    end
+
+    local function copyTool(tool)
+        local cloned = tool:Clone()
+        cloned.Parent = LocalPlayer.Backpack
+    end
+
+    if targetPlayer.Character then
+        for _, t in ipairs(targetPlayer.Character:GetChildren()) do
             if t:IsA("Tool") then
                 copyTool(t)
             end
         end
-
-        Mercury:Notification({Title = "Garden", Text = "Copied all tools from " .. targetPlayer.Name, Duration = 3})
     end
-})
+
+    for _, t in ipairs(targetPlayer.Backpack:GetChildren()) do
+        if t:IsA("Tool") then
+            copyTool(t)
+        end
+    end
+
+    Venus:Notification("Success", "Copied all tools from " .. targetPlayer.Name, 3)
+end, {placeholder = "Enter username"})
 
 -- ESP Script Logic
 local highlighted = {}
@@ -176,17 +144,13 @@ local function DisableESP()
     clearESP()
 end
 
-Forsaken:CreateToggle({
-    Name = "Player ESP",
-    StartingState = false,
-    Callback = function(state)
-        if state then
-            EnableESP()
-        else
-            DisableESP()
-        end
+ForsakenTab:Toggle("Player ESP", false, function(state)
+    if state then
+        EnableESP()
+    else
+        DisableESP()
     end
-})
+end)
 
 -- Infinite Stamina Logic
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -211,13 +175,9 @@ end
 
 task.spawn(monitorStamina)
 
-Forsaken:CreateToggle({
-    Name = "Infinite Stamina",
-    StartingState = false,
-    Callback = function(state)
-        infiniteStaminaEnabled = state
-    end
-})
+ForsakenTab:Toggle("Infinite Stamina", false, function(state)
+    infiniteStaminaEnabled = state
+end)
 
 -- Fullbright Logic (toggleable)
 local Lighting = game:GetService("Lighting")
@@ -249,17 +209,13 @@ local function disableFullbright()
     fullbrightEnabled = false
 end
 
-Universal:CreateToggle({
-    Name = "Fullbright",
-    StartingState = false,
-    Callback = function(state)
-        if state then
-            enableFullbright()
-        else
-            disableFullbright()
-        end
+UniversalTab:Toggle("Fullbright", false, function(state)
+    if state then
+        enableFullbright()
+    else
+        disableFullbright()
     end
-})
+end)
 
 Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     if fullbrightEnabled and Lighting.Ambient ~= Color3.new(1,1,1) then
@@ -268,106 +224,103 @@ Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
 end)
 
 -- Universal Game Prober (Remote Security Probe)
-Universal:CreateButton({
-    Name = "Probe Remotes (Security Test)",
-    Callback = function()
-        local MercuryPopup = Instance.new("ScreenGui")
-        MercuryPopup.Name = "ProbeResultsPopup"
-        MercuryPopup.Parent = game:GetService("Players").LocalPlayer.PlayerGui
-        local frame = Instance.new("Frame", MercuryPopup)
-        frame.Size = UDim2.new(0, 520, 0, 380)
-        frame.Position = UDim2.new(0.5, -260, 0.5, -190)
-        frame.BackgroundColor3 = Color3.fromRGB(30,30,40)
-        frame.BorderSizePixel = 0
-        frame.Active = true
-        frame.Draggable = true
+UniversalTab:Button("Probe Remotes (Security Test)", function()
+    local VenusPopup = Instance.new("ScreenGui")
+    VenusPopup.Name = "ProbeResultsPopup"
+    VenusPopup.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+    local frame = Instance.new("Frame", VenusPopup)
+    frame.Size = UDim2.new(0, 520, 0, 380)
+    frame.Position = UDim2.new(0.5, -260, 0.5, -190)
+    frame.BackgroundColor3 = Color3.fromRGB(30,30,40)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
 
-        local closeBtn = Instance.new("TextButton", frame)
-        closeBtn.Size = UDim2.new(0, 80, 0, 34)
-        closeBtn.Position = UDim2.new(1, -90, 0, 10)
-        closeBtn.Text = "Close"
-        closeBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-        closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-        closeBtn.Font = Enum.Font.Gotham
-        closeBtn.TextSize = 18
-        closeBtn.MouseButton1Click:Connect(function()
-            MercuryPopup:Destroy()
-        end)
+    local closeBtn = Instance.new("TextButton", frame)
+    closeBtn.Size = UDim2.new(0, 80, 0, 34)
+    closeBtn.Position = UDim2.new(1, -90, 0, 10)
+    closeBtn.Text = "Close"
+    closeBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    closeBtn.Font = Enum.Font.Gotham
+    closeBtn.TextSize = 18
+    closeBtn.MouseButton1Click:Connect(function()
+        VenusPopup:Destroy()
+    end)
 
-        local title = Instance.new("TextLabel", frame)
-        title.Size = UDim2.new(1, -20, 0, 34)
-        title.Position = UDim2.new(0, 10, 0, 10)
-        title.Text = "Probe Remotes Results"
-        title.Font = Enum.Font.GothamBold
-        title.TextColor3 = Color3.fromRGB(200,255,200)
-        title.BackgroundTransparency = 1
-        title.TextSize = 24
-        title.TextXAlignment = Enum.TextXAlignment.Left
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, -20, 0, 34)
+    title.Position = UDim2.new(0, 10, 0, 10)
+    title.Text = "Probe Remotes Results"
+    title.Font = Enum.Font.GothamBold
+    title.TextColor3 = Color3.fromRGB(200,255,200)
+    title.BackgroundTransparency = 1
+    title.TextSize = 24
+    title.TextXAlignment = Enum.TextXAlignment.Left
 
-        local scroll = Instance.new("ScrollingFrame", frame)
-        scroll.Size = UDim2.new(1, -20, 1, -64)
-        scroll.Position = UDim2.new(0, 10, 0, 54)
-        scroll.BackgroundColor3 = Color3.fromRGB(20,20,20)
-        scroll.BorderSizePixel = 0
-        scroll.CanvasSize = UDim2.new(0,0,0,2000)
-        scroll.ScrollBarThickness = 8
+    local scroll = Instance.new("ScrollingFrame", frame)
+    scroll.Size = UDim2.new(1, -20, 1, -64)
+    scroll.Position = UDim2.new(0, 10, 0, 54)
+    scroll.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    scroll.BorderSizePixel = 0
+    scroll.CanvasSize = UDim2.new(0,0,0,2000)
+    scroll.ScrollBarThickness = 8
 
-        local y = 0
-        local function logLine(txt, col)
-            local label = Instance.new("TextLabel", scroll)
-            label.Size = UDim2.new(1, -10, 0, 26)
-            label.Position = UDim2.new(0, 5, 0, y)
-            label.Text = txt
-            label.TextColor3 = col or Color3.fromRGB(200,200,200)
-            label.BackgroundTransparency = 1
-            label.Font = Enum.Font.Code
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.TextSize = 17
-            y = y + 28
-            scroll.CanvasSize = UDim2.new(0,0,0,y+30)
-        end
-
-        local function getFullPath(obj)
-            if not obj or not obj.Parent then return obj.Name end
-            local path = obj.Name
-            local parent = obj.Parent
-            while parent and parent ~= game do
-                path = parent.Name .. "." .. path
-                parent = parent.Parent
-            end
-            return path
-        end
-
-        logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
-        for _, obj in ipairs(game:GetDescendants()) do
-            if obj:IsA("RemoteEvent") then
-                local path = getFullPath(obj)
-                logLine("[RemoteEvent] "..path, Color3.fromRGB(255,200,100))
-                local ok, err = pcall(function()
-                    obj:FireServer("probe", 123, true)
-                end)
-                if ok then
-                    logLine("  Fired with test args.", Color3.fromRGB(150,255,100))
-                else
-                    logLine("  ERROR: "..tostring(err), Color3.fromRGB(255,100,100))
-                end
-            elseif obj:IsA("RemoteFunction") then
-                local path = getFullPath(obj)
-                logLine("[RemoteFunction] "..path, Color3.fromRGB(100,200,255))
-                local ok, ret = pcall(function()
-                    return obj:InvokeServer("probe", 42, false)
-                end)
-                if ok then
-                    logLine("  Invoked, returned: "..tostring(ret), Color3.fromRGB(150,255,200))
-                else
-                    logLine("  ERROR: "..tostring(ret), Color3.fromRGB(255,100,100))
-                end
-            end
-        end
-        logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
-        logLine("Check for: remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
+    local y = 0
+    local function logLine(txt, col)
+        local label = Instance.new("TextLabel", scroll)
+        label.Size = UDim2.new(1, -10, 0, 26)
+        label.Position = UDim2.new(0, 5, 0, y)
+        label.Text = txt
+        label.TextColor3 = col or Color3.fromRGB(200,200,200)
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.Code
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.TextSize = 17
+        y = y + 28
+        scroll.CanvasSize = UDim2.new(0,0,0,y+30)
     end
-})
+
+    local function getFullPath(obj)
+        if not obj or not obj.Parent then return obj.Name end
+        local path = obj.Name
+        local parent = obj.Parent
+        while parent and parent ~= game do
+            path = parent.Name .. "." .. path
+            parent = parent.Parent
+        end
+        return path
+    end
+
+    logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
+    for _, obj in ipairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local path = getFullPath(obj)
+            logLine("[RemoteEvent] "..path, Color3.fromRGB(255,200,100))
+            local ok, err = pcall(function()
+                obj:FireServer("probe", 123, true)
+            end)
+            if ok then
+                logLine("  Fired with test args.", Color3.fromRGB(150,255,100))
+            else
+                logLine("  ERROR: "..tostring(err), Color3.fromRGB(255,100,100))
+            end
+        elseif obj:IsA("RemoteFunction") then
+            local path = getFullPath(obj)
+            logLine("[RemoteFunction] "..path, Color3.fromRGB(100,200,255))
+            local ok, ret = pcall(function()
+                return obj:InvokeServer("probe", 42, false)
+            end)
+            if ok then
+                logLine("  Invoked, returned: "..tostring(ret), Color3.fromRGB(150,255,200))
+            else
+                logLine("  ERROR: "..tostring(ret), Color3.fromRGB(255,100,100))
+            end
+        end
+    end
+    logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
+    logLine("Check for: remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
+end)
 
 -- Anti-Cheat Detector/Bypass Logic (in Universal Tab)
 local acDetectorEnabled = false
@@ -454,13 +407,13 @@ end
 local function enableACDetectorBypass()
     local scripts = scanForAntiCheat()
     local remotes = scanForSuspiciousRemotes()
-    Mercury:Prompt({
-        Title = "Anti-Cheat Detector",
-        Text = (#scripts == 0 and #remotes == 0) and "No obvious anti-cheat found." or
-            ("Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
-            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none")),
-        Buttons = {"OK"}
-    })
+    if #scripts == 0 and #remotes == 0 then
+        Venus:Notification("Anti-Cheat", "No obvious anti-cheat found.", 3)
+    else
+        Venus:Notification("Anti-Cheat", 
+            "Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
+            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none"), 6)
+    end
     disableAntiCheatScripts()
     hookRemotes()
     blockKickFunction()
@@ -471,17 +424,13 @@ local function disableACDetectorBypass()
     unhookRemotes()
     unblockKickFunction()
     acDetectorEnabled = false
-    Mercury:Notification({Title = "Anti-Cheat", Text = "Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)", Duration = 4})
+    Venus:Notification("Anti-Cheat", "Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)", 4)
 end
 
-Universal:CreateToggle({
-    Name = "Anti-Cheat Detector/Bypass",
-    StartingState = false,
-    Callback = function(state)
-        if state then
-            enableACDetectorBypass()
-        else
-            disableACDetectorBypass()
-        end
+UniversalTab:Toggle("Anti-Cheat Detector/Bypass", false, function(state)
+    if state then
+        enableACDetectorBypass()
+    else
+        disableACDetectorBypass()
     end
-})
+end)
