@@ -1,22 +1,26 @@
--- Syntaxz Scripts (Venus UI Version)
--- Venus UI: https://github.com/alexR32/venus-ui
+-- Syntaxz Scripts (Linoria UI Version)
+-- Linoria: https://github.com/violin-suzutsuki/linoria
 
-local Venus = loadstring(game:HttpGet("https://raw.githubusercontent.com/alexR32/venus-ui/main/lib.lua"))()
-local Window = Venus.new("Syntaxz Scripts DEMO")
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/linoria/main/Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/linoria/main/addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/linoria/main/addons/SaveManager.lua"))()
 
--- Tabs
-local CreditsTab = Window:Tab("Credits")
-local ForsakenTab = Window:Tab("Forsaken")
-local UniversalTab = Window:Tab("Universal")
-local GardenTab = Window:Tab("Grow a Garden")
+local Window = Library:CreateWindow({Title = 'Syntaxz Scripts DEMO', Center = true, AutoShow = true})
+
+local Tabs = {
+    Credits = Window:AddTab('Credits'),
+    Forsaken = Window:AddTab('Forsaken'),
+    Universal = Window:AddTab('Universal'),
+    Garden = Window:AddTab('Grow a Garden')
+}
 
 -- Credits Tab
-CreditsTab:Label("ESP & UI: Syntaxz Scripts")
-CreditsTab:Label("UI: Venus UI")
-CreditsTab:Label("Discord: no discord too lazy to setup")
+Tabs.Credits:AddLabel('ESP & UI: Syntaxz Scripts')
+Tabs.Credits:AddLabel('UI: Linoria UI')
+Tabs.Credits:AddLabel('Discord: no discord too lazy to setup')
 
 -- Garden Tab
-GardenTab:Button("Duplicate Tools", function()
+Tabs.Garden:AddButton('Duplicate Tools', function()
     local player = game:GetService("Players").LocalPlayer
     local backpack = player.Backpack
     for _, tool in ipairs(backpack:GetChildren()) do
@@ -25,10 +29,10 @@ GardenTab:Button("Duplicate Tools", function()
             cloned.Parent = backpack
         end
     end
-    Venus:Notification("Success", "Duplicated all tools in your backpack!", 3)
+    Library:Notify('Duplicated all tools in your backpack!', 3)
 end)
 
-GardenTab:Box("Copy Tools (ctools)", function(username)
+Tabs.Garden:AddInput('Copy Tools (ctools)', function(username)
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     local targetPlayer = nil
@@ -40,7 +44,7 @@ GardenTab:Box("Copy Tools (ctools)", function(username)
     end
 
     if not targetPlayer then
-        Venus:Notification("Error", "No player found with the username: " .. username, 3)
+        Library:Notify('No player found with the username: ' .. username, 3)
         return
     end
 
@@ -63,8 +67,8 @@ GardenTab:Box("Copy Tools (ctools)", function(username)
         end
     end
 
-    Venus:Notification("Success", "Copied all tools from " .. targetPlayer.Name, 3)
-end, {placeholder = "Enter username"})
+    Library:Notify('Copied all tools from ' .. targetPlayer.Name, 3)
+end)
 
 -- ESP Script Logic
 local highlighted = {}
@@ -144,7 +148,9 @@ local function DisableESP()
     clearESP()
 end
 
-ForsakenTab:Toggle("Player ESP", false, function(state)
+local PlayerESP_Toggle = false
+Tabs.Forsaken:AddToggle('Player ESP', {Text = 'Player ESP', Default = false}):OnChanged(function(state)
+    PlayerESP_Toggle = state
     if state then
         EnableESP()
     else
@@ -175,7 +181,7 @@ end
 
 task.spawn(monitorStamina)
 
-ForsakenTab:Toggle("Infinite Stamina", false, function(state)
+Tabs.Forsaken:AddToggle('Infinite Stamina', {Text = 'Infinite Stamina', Default = false}):OnChanged(function(state)
     infiniteStaminaEnabled = state
 end)
 
@@ -209,7 +215,7 @@ local function disableFullbright()
     fullbrightEnabled = false
 end
 
-UniversalTab:Toggle("Fullbright", false, function(state)
+Tabs.Universal:AddToggle('Fullbright', {Text = 'Fullbright', Default = false}):OnChanged(function(state)
     if state then
         enableFullbright()
     else
@@ -224,11 +230,11 @@ Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
 end)
 
 -- Universal Game Prober (Remote Security Probe)
-UniversalTab:Button("Probe Remotes (Security Test)", function()
-    local VenusPopup = Instance.new("ScreenGui")
-    VenusPopup.Name = "ProbeResultsPopup"
-    VenusPopup.Parent = game:GetService("Players").LocalPlayer.PlayerGui
-    local frame = Instance.new("Frame", VenusPopup)
+Tabs.Universal:AddButton('Probe Remotes (Security Test)', function()
+    local LinoriaPopup = Instance.new("ScreenGui")
+    LinoriaPopup.Name = "ProbeResultsPopup"
+    LinoriaPopup.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+    local frame = Instance.new("Frame", LinoriaPopup)
     frame.Size = UDim2.new(0, 520, 0, 380)
     frame.Position = UDim2.new(0.5, -260, 0.5, -190)
     frame.BackgroundColor3 = Color3.fromRGB(30,30,40)
@@ -245,7 +251,7 @@ UniversalTab:Button("Probe Remotes (Security Test)", function()
     closeBtn.Font = Enum.Font.Gotham
     closeBtn.TextSize = 18
     closeBtn.MouseButton1Click:Connect(function()
-        VenusPopup:Destroy()
+        LinoriaPopup:Destroy()
     end)
 
     local title = Instance.new("TextLabel", frame)
@@ -408,11 +414,13 @@ local function enableACDetectorBypass()
     local scripts = scanForAntiCheat()
     local remotes = scanForSuspiciousRemotes()
     if #scripts == 0 and #remotes == 0 then
-        Venus:Notification("Anti-Cheat", "No obvious anti-cheat found.", 3)
+        Library:Notify('No obvious anti-cheat found.', 3)
     else
-        Venus:Notification("Anti-Cheat", 
+        Library:Notify(
             "Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
-            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none"), 6)
+            "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none"),
+            6
+        )
     end
     disableAntiCheatScripts()
     hookRemotes()
@@ -424,13 +432,18 @@ local function disableACDetectorBypass()
     unhookRemotes()
     unblockKickFunction()
     acDetectorEnabled = false
-    Venus:Notification("Anti-Cheat", "Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)", 4)
+    Library:Notify('Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)', 4)
 end
 
-UniversalTab:Toggle("Anti-Cheat Detector/Bypass", false, function(state)
+Tabs.Universal:AddToggle('Anti-Cheat Detector/Bypass', {Text = 'Anti-Cheat Detector/Bypass', Default = false}):OnChanged(function(state)
     if state then
         enableACDetectorBypass()
     else
         disableACDetectorBypass()
     end
 end)
+
+ThemeManager:ApplyToTab(Window)
+SaveManager:SetLibrary(Library)
+SaveManager:BuildConfigSection(Window)
+SaveManager:LoadAutoloadConfig()
