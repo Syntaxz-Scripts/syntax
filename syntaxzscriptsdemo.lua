@@ -1,6 +1,4 @@
--- Syntaxz Scripts All Features Custom GUI (with Toggle & Respawn Persistence)
--- Place this at the top of your script, or use as a replacement for your loader!
--- The GUI will not be deleted on respawn, and you can toggle it with RightShift
+-- Syntaxz Scripts (V3) 
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -612,7 +610,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- ==========================
--- Make GUI re-appear on respawn!
+-- Gui Respawn System
 -- ==========================
 local function ensureGuiOnSpawn()
     -- Wait for PlayerGui to exist (it sometimes gets recreated)
