@@ -1,8 +1,7 @@
--- V2 Made by Syntaxz Scripts, Finity UI Loader
+-- V1 Made by Syntaxz Scripts
 
-local Finity = loadstring(game:HttpGet("https://pastebin.com/raw/fPP3m7MM"))()
-local Window = Finity.new(true, "Syntaxz Scripts DEMO")
-Window.ChangeToggleKey(Enum.KeyCode.RightControl)
+local Venyx = loadstring(game:HttpGet('https://raw.githubusercontent.com/venyxcloud/venyx-ui-library/main/source.lua'))()
+local venyx = Venyx.new("Syntaxz Scripts DEMO", 5013109572)
 
 -- Utility: ClonedService for executor compatibility
 local function ClonedService(name)
@@ -10,26 +9,28 @@ local function ClonedService(name)
     return Reference(game:GetService(name))
 end
 
--- CREDITS TAB
-local CreditsCat = Window:CreateCategory("Credits")
-local CreditsSec = CreditsCat:CreateSection("Script Info")
-CreditsSec:CreateLabel("ESP & UI: Syntaxz Scripts")
-CreditsSec:CreateLabel("UI Library: Finity (ported from Kavo UI Library by xHeptc)")
-CreditsSec:CreateLabel("Discord: no discord too lazy to setup")
+-- Create tabs/pages
+local creditsPage = venyx:addPage("Credits", 5012544693)
+local forsakenPage = venyx:addPage("Forsaken", 5012544693)
+local universalPage = venyx:addPage("Universal", 5012544693)
+local gardenPage = venyx:addPage("Grow a Garden", 5012544693)
 
--- FORSAKEN TAB
-local ForsakenCat = Window:CreateCategory("Forsaken")
-local ForsakenSec = ForsakenCat:CreateSection("Fun")
+-- Credits Section
+local creditsSection = creditsPage:addSection("Script Info")
+creditsSection:addParagraph("ESP & UI", "Syntaxz Scripts")
+creditsSection:addParagraph("UI Library", "Venyx UI (ported from Kavo)")
+creditsSection:addParagraph("Discord", "no discord too lazy to setup")
 
--- UNIVERSAL TAB
-local UniversalCat = Window:CreateCategory("Universal")
-local UniversalSec = UniversalCat:CreateSection("Universal Features")
+-- Forsaken Section
+local forsakenSection = forsakenPage:addSection("Fun")
 
--- GROW A GARDEN TAB
-local GardenCat = Window:CreateCategory("Grow a Garden")
-local GardenSec = GardenCat:CreateSection("Garden Tools")
+-- Universal Section
+local universalSection = universalPage:addSection("Universal Features")
 
-GardenSec:CreateButton("Duplicate Tools", function()
+-- Garden Section
+local gardenSection = gardenPage:addSection("Garden Tools")
+
+gardenSection:addButton("Duplicate Tools", function()
     local player = ClonedService("Players").LocalPlayer
     local backpack = player.Backpack
     for _, tool in ipairs(backpack:GetChildren()) do
@@ -38,10 +39,11 @@ GardenSec:CreateButton("Duplicate Tools", function()
             cloned.Parent = backpack
         end
     end
-    Finity:Notify("Duplicated all tools in your backpack!")
+    venyx:Notify("Duplicated all tools in your backpack!")
 end)
 
-GardenSec:CreateTextbox("Copy Tools (ctools)", function(username)
+gardenSection:addTextbox("Copy Tools (ctools)", "Type a username and click to copy their tools!", function(username, focusLost)
+    if not focusLost then return end
     local Players = ClonedService("Players")
     local LocalPlayer = Players.LocalPlayer
     local targetPlayer = nil
@@ -53,7 +55,7 @@ GardenSec:CreateTextbox("Copy Tools (ctools)", function(username)
     end
 
     if not targetPlayer then
-        Finity:Notify("No player found with the username: " .. username)
+        venyx:Notify("No player found with the username: " .. username)
         return
     end
 
@@ -76,8 +78,8 @@ GardenSec:CreateTextbox("Copy Tools (ctools)", function(username)
         end
     end
 
-    Finity:Notify("Copied all tools from " .. targetPlayer.Name)
-end, "Type a username and click to copy their tools!")
+    venyx:Notify("Copied all tools from " .. targetPlayer.Name)
+end)
 
 -- ESP Script Logic
 local highlighted = {}
@@ -157,7 +159,7 @@ local function DisableESP()
     clearESP()
 end
 
-ForsakenSec:CreateToggle("Player ESP", function(state)
+forsakenSection:addToggle("Player ESP", false, function(state)
     if state then
         EnableESP()
     else
@@ -188,7 +190,7 @@ end
 
 task.spawn(monitorStamina)
 
-ForsakenSec:CreateToggle("Infinite Stamina", function(state)
+forsakenSection:addToggle("Infinite Stamina", false, function(state)
     infiniteStaminaEnabled = state
 end)
 
@@ -222,7 +224,7 @@ local function disableFullbright()
     fullbrightEnabled = false
 end
 
-UniversalSec:CreateToggle("Fullbright", function(state)
+universalSection:addToggle("Fullbright", false, function(state)
     if state then
         enableFullbright()
     else
@@ -237,7 +239,7 @@ Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
 end)
 
 -- Universal Game Prober (Remote Security Probe)
-UniversalSec:CreateButton("Probe Remotes (Security Test)", function()
+universalSection:addButton("Probe Remotes (Security Test)", function()
     local sg = Instance.new("ScreenGui")
     sg.Name = "ProbeResultsPopup"
     sg.Parent = game:GetService("Players").LocalPlayer.PlayerGui
@@ -421,9 +423,9 @@ local function enableACDetectorBypass()
     local scripts = scanForAntiCheat()
     local remotes = scanForSuspiciousRemotes()
     if #scripts == 0 and #remotes == 0 then
-        Finity:Notify("No obvious anti-cheat found.")
+        venyx:Notify("No obvious anti-cheat found.")
     else
-        Finity:Notify("Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
+        venyx:Notify("Anti-cheat scripts: " .. (#scripts > 0 and "\n" .. table.concat(scripts, "\n") or "none") ..
             "\nRemotes: " .. (#remotes > 0 and "\n" .. table.concat(remotes, "\n") or "none"))
     end
     disableAntiCheatScripts()
@@ -436,10 +438,10 @@ local function disableACDetectorBypass()
     unhookRemotes()
     unblockKickFunction()
     acDetectorEnabled = false
-    Finity:Notify("Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)")
+    venyx:Notify("Anti-cheat bypass disabled. (Some protections may require rejoin to fully reset.)")
 end
 
-UniversalSec:CreateToggle("Anti-Cheat Detector/Bypass", function(state)
+universalSection:addToggle("Anti-Cheat Detector/Bypass", false, function(state)
     if state then
         enableACDetectorBypass()
     else
@@ -447,5 +449,5 @@ UniversalSec:CreateToggle("Anti-Cheat Detector/Bypass", function(state)
     end
 end)
 
--- The rest of your emote menu logic can be ported similarly!
--- (Finity does not support dropdown menus natively, but you can use CreateDropdown or CreateTextbox for custom input.)
+-- Show UI
+venyx:SelectPage(venyx.pages[1], true)
