@@ -1,4 +1,4 @@
--- Syntaxz Scripts (V3) 
+-- Syntaxz Scripts 
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -610,7 +610,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- ==========================
--- Gui Respawn System
+-- Make GUI re-appear on respawn!
 -- ==========================
 local function ensureGuiOnSpawn()
     -- Wait for PlayerGui to exist (it sometimes gets recreated)
