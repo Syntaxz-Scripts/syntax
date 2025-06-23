@@ -1,16 +1,42 @@
--- Syntaxz Scripts All Features Custom GUI
+-- Syntaxz Scripts All Features Custom GUI (with Toggle & Respawn Persistence)
+-- Place this at the top of your script, or use as a replacement for your loader!
+-- The GUI will not be deleted on respawn, and you can toggle it with RightShift
 
--- Setup
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
+local UIS = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
--- Main GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "SyntaxzScriptsUI"
-gui.Parent = player:FindFirstChildOfClass("PlayerGui")
+-- Make sure GUI is always present, even after respawn
+local guiName = "SyntaxzScriptsUI"
+local function getOrCreateGui()
+    local gui = player.PlayerGui:FindFirstChild(guiName)
+    if not gui then
+        gui = Instance.new("ScreenGui")
+        gui.Name = guiName
+        gui.ResetOnSpawn = false -- Don't remove on respawn!
+        gui.Parent = player.PlayerGui
+    end
+    return gui
+end
 
+-- Remove old duplicate GUIs (if any)
+for _,g in ipairs(player.PlayerGui:GetChildren()) do
+    if g:IsA("ScreenGui") and g.Name == guiName and g ~= player.PlayerGui:FindFirstChild(guiName) then
+        g:Destroy()
+    end
+end
+
+local gui = getOrCreateGui()
+gui.Enabled = true -- always visible at first
+
+-- If the gui already exists (from respawn), clear it to avoid duplicate frames
+for _, child in ipairs(gui:GetChildren()) do
+    child:Destroy()
+end
+
+-- Main GUI frame
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 440, 0, 380)
 frame.Position = UDim2.new(0.5, -220, 0.5, -190)
@@ -86,6 +112,10 @@ local function notify(msg, col)
     notif.Visible = true
     delay(2, function() notif.Visible = false end)
 end
+
+-- ==========================
+-- Tabs content (as in your original script)
+-- ==========================
 
 -----------------------
 -- Credits Tab
@@ -566,4 +596,35 @@ closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 18
 closeBtn.Text = "Close"
-closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
+closeBtn.MouseButton1Click:Connect(function() gui.Enabled = false end)
+
+-- ==========================
+-- TOGGLE KEYBIND (RightShift)
+-- ==========================
+local toggling = false
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed and not toggling then
+        toggling = true
+        gui.Enabled = not gui.Enabled
+        wait(0.2)
+        toggling = false
+    end
+end)
+
+-- ==========================
+-- Make GUI re-appear on respawn!
+-- ==========================
+local function ensureGuiOnSpawn()
+    -- Wait for PlayerGui to exist (it sometimes gets recreated)
+    local function onCharacterAdded()
+        wait(1)
+        local gui = player.PlayerGui:FindFirstChild(guiName)
+        if not gui then
+            getOrCreateGui()
+        else
+            gui.Enabled = true
+        end
+    end
+    player.CharacterAdded:Connect(onCharacterAdded)
+end
+ensureGuiOnSpawn()
