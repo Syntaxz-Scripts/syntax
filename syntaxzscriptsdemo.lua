@@ -393,7 +393,7 @@ do
         end
     end)
 
-    -- Probe Remotes Button (safe listing, only probes clearly safe remotes)
+    -- Fire all remote events
     local probeBtn = Instance.new("TextButton", tf)
     probeBtn.Size = UDim2.new(0, 220, 0, 32)
     probeBtn.Position = UDim2.new(0, 200, 0, 52)
@@ -401,10 +401,10 @@ do
     probeBtn.TextColor3 = Color3.fromRGB(255,255,255)
     probeBtn.Font = Enum.Font.Gotham
     probeBtn.TextSize = 16
-    probeBtn.Text = "Probe Remotes (Security Test)"
+    probeBtn.Text = "Fire all Remotes"
     probeBtn.MouseButton1Click:Connect(function()
         local popup = Instance.new("ScreenGui")
-        popup.Name = "ProbeResultsPopup"
+        popup.Name = "FireResultsPopup"
         popup.Parent = player.PlayerGui
         local frame = Instance.new("Frame", popup)
         frame.Size = UDim2.new(0, 520, 0, 380)
@@ -427,7 +427,7 @@ do
         local title = Instance.new("TextLabel", frame)
         title.Size = UDim2.new(1, -20, 0, 34)
         title.Position = UDim2.new(0, 10, 0, 10)
-        title.Text = "Probe Remotes Results"
+        title.Text = "Fire Remotes Results"
         title.Font = Enum.Font.GothamBold
         title.TextColor3 = Color3.fromRGB(200,255,200)
         title.BackgroundTransparency = 1
@@ -507,7 +507,7 @@ do
                     logLine("[DANGEROUS] "..(obj.ClassName).." "..path, Color3.fromRGB(255,80,80))
                 elseif isLikelySafe then
                     logLine("[SAFE] "..(obj.ClassName).." "..path, Color3.fromRGB(150,255,100))
-                    -- Actually probe safe remotes
+                    -- fire safe remotes
                     local ok, result = pcall(function()
                         if obj:IsA("RemoteEvent") then
                             obj:FireServer("probe", 123, true)
@@ -536,7 +536,7 @@ end
 -- Garden Tab
 -----------------------
 do
-    local tf = tabFrames["Garden"]
+    local tf = tabFrames["Grow a Garden"]
     -- Duplicate Tools
     local dupBtn = Instance.new("TextButton", tf)
     dupBtn.Size = UDim2.new(0, 170, 0, 32)
