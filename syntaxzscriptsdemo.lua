@@ -1,4 +1,4 @@
--- Syntaxz Scripts (educational purposes for coding school) 
+-- Syntaxz Scripts All Features Custom GUI (with Toggle & Respawn Persistence)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -299,11 +299,7 @@ do
         if universalVars.fullbright and Lighting.Ambient ~= Color3.new(1,1,1) then enableFullbright() end
     end)
 
-    
-        hookSet = true
-end 
-
-    -- Anti-Cheat Detector/Bypass (SAFE)
+    -- Anti-Cheat Detector/Bypass (Safe)
     local acBtn = Instance.new("TextButton", tf)
     acBtn.Size = UDim2.new(0, 220, 0, 32)
     acBtn.Position = UDim2.new(0, 200, 0, 10)
@@ -342,7 +338,7 @@ end
         return remotes
     end
 
-    -- Just disables LocalScripts named "anticheat"
+    -- SAFER: Just disables LocalScripts named "anticheat"
     local function disableAntiCheatScripts()
         for _, obj in ipairs(game:GetDescendants()) do
             if obj:IsA("LocalScript") and obj.Name:lower():find("anticheat") then
@@ -351,7 +347,7 @@ end
         end
     end
 
-    -- Kick Blocker V2 (works only if it's hookfunction) 
+    -- SAFER Kick-block: Only works if hookfunction is available
     local function blockKickFunction()
         if not player then return end
         if typeof(hookfunction) == "function" then
@@ -362,7 +358,6 @@ end
                 end)
             end
         else
-            -- fallback: very basic, but doesn't freeze
             player.Kick = function() return end
         end
     end
@@ -381,7 +376,6 @@ end
     end
 
     local function disableACDetectorBypass()
-        -- Can't unhook safely, so just notify and reset flag
         acDetectorEnabled = false
         notify("Anti-cheat bypass disabled. (Some changes may persist)", Color3.fromRGB(120,60,60))
     end
@@ -399,7 +393,7 @@ end
         end
     end)
 
-    -- Probe Remotes Button
+    -- Probe Remotes Button (safe listing, only probes clearly safe remotes)
     local probeBtn = Instance.new("TextButton", tf)
     probeBtn.Size = UDim2.new(0, 220, 0, 32)
     probeBtn.Position = UDim2.new(0, 200, 0, 52)
@@ -440,9 +434,19 @@ end
         title.TextSize = 24
         title.TextXAlignment = Enum.TextXAlignment.Left
 
+        local warn = Instance.new("TextLabel", frame)
+        warn.Size = UDim2.new(1, -20, 0, 22)
+        warn.Position = UDim2.new(0, 10, 0, 44)
+        warn.Text = "⚠️ Only listing remotes. Dangerous remotes are NOT triggered."
+        warn.Font = Enum.Font.Gotham
+        warn.TextColor3 = Color3.fromRGB(255,220,140)
+        warn.BackgroundTransparency = 1
+        warn.TextSize = 16
+        warn.TextXAlignment = Enum.TextXAlignment.Left
+
         local scroll = Instance.new("ScrollingFrame", frame)
-        scroll.Size = UDim2.new(1, -20, 1, -64)
-        scroll.Position = UDim2.new(0, 10, 0, 54)
+        scroll.Size = UDim2.new(1, -20, 1, -74)
+        scroll.Position = UDim2.new(0, 10, 0, 66)
         scroll.BackgroundColor3 = Color3.fromRGB(20,20,20)
         scroll.BorderSizePixel = 0
         scroll.CanvasSize = UDim2.new(0,0,0,2000)
@@ -474,34 +478,57 @@ end
             return path
         end
 
+        -- Blocklist: dangerous keywords, don't fire these
+        local dangerous = {"kick", "ban", "admin", "devconsole", "delete", "reset", "shutdown", "punish", "log", "report", "exploit"}
+        -- Allowlist: safe for probing
+        local likelySafe = {"probe", "test", "info", "get", "fetch", "load"}
+
         logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
         for _, obj in ipairs(game:GetDescendants()) do
-            if obj:IsA("RemoteEvent") then
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
                 local path = getFullPath(obj)
-                logLine("[RemoteEvent] "..path, Color3.fromRGB(255,200,100))
-                local ok, err = pcall(function()
-                    obj:FireServer("probe", 123, true)
-                end)
-                if ok then
-                    logLine("  Fired with test args.", Color3.fromRGB(150,255,100))
-                else
-                    logLine("  ERROR: "..tostring(err), Color3.fromRGB(255,100,100))
+                local lowerName = obj.Name:lower()
+                local isDangerous = false
+                for _, s in ipairs(dangerous) do
+                    if lowerName:find(s) then
+                        isDangerous = true
+                        break
+                    end
                 end
-            elseif obj:IsA("RemoteFunction") then
-                local path = getFullPath(obj)
-                logLine("[RemoteFunction] "..path, Color3.fromRGB(100,200,255))
-                local ok, ret = pcall(function()
-                    return obj:InvokeServer("probe", 42, false)
-                end)
-                if ok then
-                    logLine("  Invoked, returned: "..tostring(ret), Color3.fromRGB(150,255,200))
+                local isLikelySafe = false
+                for _, s in ipairs(likelySafe) do
+                    if lowerName:find(s) then
+                        isLikelySafe = true
+                        break
+                    end
+                end
+
+                if isDangerous then
+                    logLine("[DANGEROUS] "..(obj.ClassName).." "..path, Color3.fromRGB(255,80,80))
+                elseif isLikelySafe then
+                    logLine("[SAFE] "..(obj.ClassName).." "..path, Color3.fromRGB(150,255,100))
+                    -- Actually probe safe remotes
+                    local ok, result = pcall(function()
+                        if obj:IsA("RemoteEvent") then
+                            obj:FireServer("probe", 123, true)
+                            return "Fired test args"
+                        elseif obj:IsA("RemoteFunction") then
+                            return obj:InvokeServer("probe", 42, false)
+                        end
+                    end)
+                    if ok then
+                        logLine("   ✔️ Success: "..tostring(result), Color3.fromRGB(120,255,180))
+                    else
+                        logLine("   ⚠️ ERROR: "..tostring(result), Color3.fromRGB(255,120,120))
+                    end
                 else
-                    logLine("  ERROR: "..tostring(ret), Color3.fromRGB(255,100,100))
+                    logLine("[LISTED] "..(obj.ClassName).." "..path, Color3.fromRGB(120,180,255))
                 end
             end
         end
+
         logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
-        logLine("Check for remotes that change stats/items, unexpected effects, or errors.", Color3.fromRGB(255,255,150))
+        logLine("Only safe/test remotes were called. Anything marked [DANGEROUS] was NOT triggered.", Color3.fromRGB(255,255,150))
     end)
 end
 
