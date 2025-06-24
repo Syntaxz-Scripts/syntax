@@ -286,7 +286,7 @@ do
         btn.TextColor3 = Color3.fromRGB(255,255,255)
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 20
-        btn.Text = "TpWalk (0.2s)"
+        btn.Text = "Skip Time"
         btn.Parent = extScreenGui
         btn.Active = true
         btn.Draggable = true
@@ -302,7 +302,7 @@ do
             end
             -- Move forward for 0.2s
             local direction = hrp.CFrame.LookVector
-            local speed = 32 -- studs/sec
+            local speed = 70 -- studs/sec
             local duration = 0.2
             local start = tick()
             local connection
@@ -319,7 +319,7 @@ do
         externalBtn = btn
     end
 
-    -- Button in your GUI to create the external button (in Universal tab)
+    
     local makeBtn = Instance.new("TextButton", tf)
     makeBtn.Size = UDim2.new(0, 220, 0, 32)
     makeBtn.Position = UDim2.new(0, 200, 0, 94)
@@ -327,7 +327,7 @@ do
     makeBtn.TextColor3 = Color3.fromRGB(255,255,255)
     makeBtn.Font = Enum.Font.GothamBold
     makeBtn.TextSize = 16
-    makeBtn.Text = "Create TpWalk Button (external)"
+    makeBtn.Text = "Skip Time"
 
     makeBtn.MouseButton1Click:Connect(function()
         createExternalTpWalkBtn()
