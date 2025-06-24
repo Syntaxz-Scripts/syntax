@@ -6,7 +6,6 @@ local Lighting = game:GetService("Lighting")
 local UIS = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
--- Make sure GUI is always present, even after respawn
 local guiName = "SyntaxzScriptsUI"
 local function getOrCreateGui()
     local gui = player.PlayerGui:FindFirstChild(guiName)
@@ -19,7 +18,7 @@ local function getOrCreateGui()
     return gui
 end
 
--- Remove old duplicate GUIs (if any)
+-- Removes old duplicate GUIs (if any)
 for _,g in ipairs(player.PlayerGui:GetChildren()) do
     if g:IsA("ScreenGui") and g.Name == guiName and g ~= player.PlayerGui:FindFirstChild(guiName) then
         g:Destroy()
@@ -27,9 +26,9 @@ for _,g in ipairs(player.PlayerGui:GetChildren()) do
 end
 
 local gui = getOrCreateGui()
-gui.Enabled = true -- always visible at first
+gui.Enabled = true -- always visible at first 
 
--- If the gui already exists (from respawn), clear it to avoid duplicate frames
+
 for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
 end
@@ -260,7 +259,7 @@ end
 -----------------------
 -- Universal Tab
 -----------------------
-local universalVars = {fullbright = false, acBypass = false}
+local universalVars = {fullbright = false, acBypass = false, infHealth = false}
 do
     local tf = tabFrames["Universal"]
     -- Fullbright
@@ -530,13 +529,111 @@ do
         logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
         logLine("Only safe/test remotes were called. Anything marked [DANGEROUS] was NOT triggered.", Color3.fromRGB(255,255,150))
     end)
+
+    -- Infinite Health Button & Logic
+    local infHealthBtn = Instance.new("TextButton", tf)
+    infHealthBtn.Size = UDim2.new(0, 170, 0, 32)
+    infHealthBtn.Position = UDim2.new(0, 10, 0, 52)
+    infHealthBtn.BackgroundColor3 = Color3.fromRGB(90, 60, 90)
+    infHealthBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    infHealthBtn.Font = Enum.Font.Gotham
+    infHealthBtn.TextSize = 16
+    infHealthBtn.Text = "Infinite Health: OFF"
+
+    -- Infinite health logic
+    local infHealthLoop = nil
+    local lastHealth = nil
+    local healthChangedConn = nil
+
+    local function startInfHealth()
+        local function getHumanoid()
+            local char = player.Character
+            if char then
+                for _, v in ipairs(char:GetChildren()) do
+                    if v:IsA("Humanoid") then
+                        return v
+                    end
+                end
+            end
+        end
+
+        infHealthLoop = coroutine.create(function()
+            while universalVars.infHealth do
+                local humanoid = getHumanoid()
+                if humanoid then
+                    -- Set MaxHealth very high if not already
+                    if humanoid.MaxHealth < 1e9 then
+                        pcall(function() humanoid.MaxHealth = 1e9 end)
+                    end
+                    -- Always set Health to MaxHealth
+                    if humanoid.Health < humanoid.MaxHealth then
+                        pcall(function() humanoid.Health = humanoid.MaxHealth end)
+                    end
+                end
+                wait(0.08)
+            end
+        end)
+        coroutine.resume(infHealthLoop)
+
+        -- Healing factor repeat: boost healing whenever healing is detected
+        if healthChangedConn then pcall(function() healthChangedConn:Disconnect() end) end
+        local humanoid = getHumanoid()
+        if humanoid then
+            lastHealth = humanoid.Health
+            healthChangedConn = humanoid.HealthChanged:Connect(function(newHealth)
+                if universalVars.infHealth then
+                    if newHealth > lastHealth then
+                        -- Healing detected, repeat it
+                        for i = 1, 3 do
+                            pcall(function()
+                                humanoid.Health = math.min(humanoid.Health + (newHealth - lastHealth), humanoid.MaxHealth)
+                            end)
+                            wait(0.03)
+                        end
+                    end
+                    lastHealth = humanoid.Health
+                end
+            end)
+        end
+    end
+
+    local function stopInfHealth()
+        universalVars.infHealth = false
+        if infHealthLoop then
+            infHealthLoop = nil
+        end
+        if healthChangedConn then
+            pcall(function() healthChangedConn:Disconnect() end)
+            healthChangedConn = nil
+        end
+    end
+
+    infHealthBtn.MouseButton1Click:Connect(function()
+        universalVars.infHealth = not universalVars.infHealth
+        infHealthBtn.Text = "Infinite Health: " .. (universalVars.infHealth and "ON" or "OFF")
+        if universalVars.infHealth then
+            notify("Infinite Health enabled!")
+            startInfHealth()
+        else
+            notify("Infinite Health disabled.")
+            stopInfHealth()
+        end
+    end)
+
+    -- Persist infinite health on respawn
+    player.CharacterAdded:Connect(function()
+        if universalVars.infHealth then
+            wait(1)
+            startInfHealth()
+        end
+    end)
 end
 
 -----------------------
 -- Garden Tab
 -----------------------
 do
-    local tf = tabFrames["Grow a Garden"]
+    local tf = tabFrames["Garden"]
     -- Duplicate Tools
     local dupBtn = Instance.new("TextButton", tf)
     dupBtn.Size = UDim2.new(0, 170, 0, 32)
