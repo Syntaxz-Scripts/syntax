@@ -26,8 +26,9 @@ for _,g in ipairs(player.PlayerGui:GetChildren()) do
 end
 
 local gui = getOrCreateGui()
-gui.Enabled = true -- always visible at first 
+gui.Enabled = true -- always visible at first
 
+-- Clear old children from GUI
 for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
 end
