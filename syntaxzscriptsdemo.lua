@@ -299,7 +299,11 @@ do
         if universalVars.fullbright and Lighting.Ambient ~= Color3.new(1,1,1) then enableFullbright() end
     end)
 
-    -- Anti-Cheat Detector/Bypass
+    
+        hookSet = true
+end 
+
+    -- Anti-Cheat Detector/Bypass (SAFE)
     local acBtn = Instance.new("TextButton", tf)
     acBtn.Size = UDim2.new(0, 220, 0, 32)
     acBtn.Position = UDim2.new(0, 200, 0, 10)
@@ -308,7 +312,9 @@ do
     acBtn.Font = Enum.Font.Gotham
     acBtn.TextSize = 16
     acBtn.Text = "Anti-Cheat Detector/Bypass: OFF"
-    local acDetectorEnabled, mt, oldNamecall, hookSet = false, nil, nil, false
+
+    local acDetectorEnabled = false
+
     local function scanForAntiCheat()
         local keywords = {"AntiCheat", "AC", "Ban", "Kick", "Logger", "Admin", "Detector"}
         local found = {}
@@ -323,6 +329,7 @@ do
         end
         return found
     end
+
     local function scanForSuspiciousRemotes()
         local remotes = {}
         for _, obj in ipairs(game:GetDescendants()) do
@@ -334,47 +341,32 @@ do
         end
         return remotes
     end
+
+    -- Just disables LocalScripts named "anticheat"
     local function disableAntiCheatScripts()
         for _, obj in ipairs(game:GetDescendants()) do
-            if (obj:IsA("LocalScript") or obj:IsA("Script")) and obj.Name:lower():find("anticheat") then
-                obj.Disabled = true
+            if obj:IsA("LocalScript") and obj.Name:lower():find("anticheat") then
+                pcall(function() obj.Disabled = true end)
             end
         end
     end
-    local function hookRemotes()
-        if hookSet then return end
-        mt = getrawmetatable(game)
-        oldNamecall = mt.__namecall
-        setreadonly(mt, false)
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if (self.Name:lower():find("kick") or self.Name:lower():find("ban") or self.Name:lower():find("cheat")) and (method == "FireServer" or method == "InvokeServer") then
-                return
-            end
-            return oldNamecall(self, ...)
-        end)
-        setreadonly(mt, true)
-        hookSet = true
-    end
-    local function unhookRemotes()
-        if not hookSet or not mt or not oldNamecall then return end
-        setreadonly(mt, false)
-        mt.__namecall = oldNamecall
-        setreadonly(mt, true)
-        hookSet = false
-    end
+
+    -- Kick Blocker V2 (works only if it's hookfunction) 
     local function blockKickFunction()
         if not player then return end
-        if hookfunction then
+        if typeof(hookfunction) == "function" then
             if not player.__kickHooked then
-                hookfunction(player.Kick, function() return end)
-                player.__kickHooked = true
+                pcall(function()
+                    hookfunction(player.Kick, function() return end)
+                    player.__kickHooked = true
+                end)
             end
         else
+            -- fallback: very basic, but doesn't freeze
             player.Kick = function() return end
         end
     end
-    local function unblockKickFunction() end
+
     local function enableACDetectorBypass()
         local scripts = scanForAntiCheat()
         local remotes = scanForSuspiciousRemotes()
@@ -384,20 +376,27 @@ do
             notify("Anti-cheat scripts/remotes found!", Color3.fromRGB(150,100,50))
         end
         disableAntiCheatScripts()
-        hookRemotes()
         blockKickFunction()
         acDetectorEnabled = true
     end
+
     local function disableACDetectorBypass()
-        unhookRemotes()
-        unblockKickFunction()
+        -- Can't unhook safely, so just notify and reset flag
         acDetectorEnabled = false
-        notify("Anti-cheat bypass disabled.", Color3.fromRGB(120,60,60))
+        notify("Anti-cheat bypass disabled. (Some changes may persist)", Color3.fromRGB(120,60,60))
     end
+
     acBtn.MouseButton1Click:Connect(function()
         acDetectorEnabled = not acDetectorEnabled
         acBtn.Text = "Anti-Cheat Detector/Bypass: " .. (acDetectorEnabled and "ON" or "OFF")
-        if acDetectorEnabled then enableACDetectorBypass() else disableACDetectorBypass() end
+        if acDetectorEnabled then
+            local ok, err = pcall(enableACDetectorBypass)
+            if not ok then
+                notify("Anti-cheat bypass error: " .. tostring(err), Color3.fromRGB(180,50,50))
+            end
+        else
+            disableACDetectorBypass()
+        end
     end)
 
     -- Probe Remotes Button
