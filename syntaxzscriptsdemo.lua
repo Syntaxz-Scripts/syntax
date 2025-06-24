@@ -1,4 +1,5 @@
 -- Syntaxz Scripts v4
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
@@ -252,18 +253,14 @@ do
 end
 
 -----------------------
--- Universal Tab
------------------------
--- ... (rest of your script unchanged above Universal tab) ...
-
------------------------
--- Universal Tab
+-- Universal Tab (FIXED, ALL FEATURES IN ONE BLOCK)
 -----------------------
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
 do
     local tf = tabFrames["Universal"]
+
     --------------------------------------------------------------------------------
-    -- Time skip button
+    -- Time skip button (TpWalk external GUI button)
     --------------------------------------------------------------------------------
     local externalBtn = nil
 
@@ -281,7 +278,7 @@ do
             extScreenGui.Parent = player.PlayerGui
         end
         local btn = Instance.new("TextButton")
-        btn.Name = "Skip Time"
+        btn.Name = "TpWalkButton"
         btn.Size = UDim2.new(0, 170, 0, 45)
         btn.Position = UDim2.new(1, -180, 1, -60)
         btn.AnchorPoint = Vector2.new(0,0)
@@ -295,30 +292,34 @@ do
         btn.Draggable = true
 
         btn.MouseButton1Click:Connect(function()
-            -- TpWalk logic
+            -- TpWalk logic:
             local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
             local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if not (char and hum) then
+            if not (char and hrp and hum) then
                 notify("Character not found!", Color3.fromRGB(200,50,50))
                 return
             end
-            local prevSpeed = hum.WalkSpeed
-            hum.WalkSpeed = 60
-            notify("Timeskip enabled! (0.2s, speed 60)", Color3.fromRGB(90,200,255))
-            task.spawn(function()
-                wait(0.2)
-                
-                if hum and hum.Parent then
-                    hum.WalkSpeed = prevSpeed
+            -- Move forward for 0.2s
+            local direction = hrp.CFrame.LookVector
+            local speed = 32 -- studs/sec
+            local duration = 0.2
+            local start = tick()
+            local connection
+            connection = game:GetService("RunService").RenderStepped:Connect(function(dt)
+                if tick()-start > duration then
+                    connection:Disconnect()
+                    return
                 end
-                notify("TpWalk ended. Speed restored.", Color3.fromRGB(90,200,255))
+                hrp.CFrame = hrp.CFrame + direction * speed * dt
             end)
+            notify("TpWalked for 0.2s!", Color3.fromRGB(90,200,255))
         end)
 
         externalBtn = btn
     end
 
-    -- Button for time skip
+    -- Button in your GUI to create the external button (in Universal tab)
     local makeBtn = Instance.new("TextButton", tf)
     makeBtn.Size = UDim2.new(0, 220, 0, 32)
     makeBtn.Position = UDim2.new(0, 200, 0, 94)
@@ -326,21 +327,20 @@ do
     makeBtn.TextColor3 = Color3.fromRGB(255,255,255)
     makeBtn.Font = Enum.Font.GothamBold
     makeBtn.TextSize = 16
-    makeBtn.Text = "Skip Time"
+    makeBtn.Text = "Create TpWalk Button (external)"
 
     makeBtn.MouseButton1Click:Connect(function()
         createExternalTpWalkBtn()
-        notify("Timeskip button created at bottom right!", Color3.fromRGB(90,200,255))
+        notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
     end)
 
-    
+    -- External button persists on respawn
     player.CharacterAdded:Connect(function()
         wait(1)
         if externalBtn and externalBtn.Parent then
             externalBtn.Visible = true
         end
     end)
-end
 
     -- Fullbright
     local fbBtn = Instance.new("TextButton", tf)
@@ -705,90 +705,6 @@ end
         if universalVars.infHealth then
             wait(1)
             startInfHealth()
-        end
-    end)
-
-    --------------------------------------------------------------------------------
-    -- Custom Feature: Out-of-GUI Button That TpWalks You For 0.2 Seconds
-    --------------------------------------------------------------------------------
-    -- 1. Button in GUI to spawn the out-of-gui button
-    local externalBtn = nil
-
-    local function createExternalTpWalkBtn()
-        -- If already exists, just show it
-        if externalBtn and externalBtn.Parent then
-            externalBtn.Visible = true
-            return
-        end
-        local extScreenGui = player.PlayerGui:FindFirstChild("SyntaxzExternalTpBtnGui")
-        if not extScreenGui then
-            extScreenGui = Instance.new("ScreenGui")
-            extScreenGui.Name = "SyntaxzExternalTpBtnGui"
-            extScreenGui.ResetOnSpawn = false
-            extScreenGui.Parent = player.PlayerGui
-        end
-        local btn = Instance.new("TextButton")
-        btn.Name = "TpWalkButton"
-        btn.Size = UDim2.new(0, 170, 0, 45)
-        btn.Position = UDim2.new(1, -180, 1, -60)
-        btn.AnchorPoint = Vector2.new(0,0)
-        btn.BackgroundColor3 = Color3.fromRGB(65, 140, 180)
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 20
-        btn.Text = "TpWalk (0.2s)"
-        btn.Parent = extScreenGui
-        btn.Active = true
-        btn.Draggable = true
-
-        btn.MouseButton1Click:Connect(function()
-            -- TpWalk logic:
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if not (char and hrp and hum) then
-                notify("Character not found!", Color3.fromRGB(200,50,50))
-                return
-            end
-            -- Move forward for 0.2s
-            local direction = hrp.CFrame.LookVector
-            local speed = 32 -- studs/sec
-            local duration = 0.2
-            local start = tick()
-            local connection
-            connection = game:GetService("RunService").RenderStepped:Connect(function(dt)
-                if tick()-start > duration then
-                    connection:Disconnect()
-                    return
-                end
-                hrp.CFrame = hrp.CFrame + direction * speed * dt
-            end)
-            notify("TpWalked for 0.2s!", Color3.fromRGB(90,200,255))
-        end)
-
-        externalBtn = btn
-    end
-
-    -- Button in your GUI to create the external button (in Universal tab)
-    local makeBtn = Instance.new("TextButton", tf)
-    makeBtn.Size = UDim2.new(0, 220, 0, 32)
-    makeBtn.Position = UDim2.new(0, 200, 0, 94)
-    makeBtn.BackgroundColor3 = Color3.fromRGB(65, 140, 180)
-    makeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    makeBtn.Font = Enum.Font.GothamBold
-    makeBtn.TextSize = 16
-    makeBtn.Text = "Create TpWalk Button (external)"
-
-    makeBtn.MouseButton1Click:Connect(function()
-        createExternalTpWalkBtn()
-        notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
-    end)
-
-    -- External button persists on respawn
-    player.CharacterAdded:Connect(function()
-        wait(1)
-        if externalBtn and externalBtn.Parent then
-            externalBtn.Visible = true
         end
     end)
 end
