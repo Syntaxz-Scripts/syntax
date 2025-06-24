@@ -1,5 +1,4 @@
--- Syntaxz Scripts All Features Custom GUI (with Toggle & Respawn Persistence)
--- Now with: Out-of-GUI TpWalk Button
+-- Syntaxz Scripts v4
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
