@@ -282,7 +282,7 @@ do
             extScreenGui.Parent = player.PlayerGui
         end
         local btn = Instance.new("TextButton")
-        btn.Name = "TpWalkButton"
+        btn.Name = "Skip Time"
         btn.Size = UDim2.new(0, 170, 0, 45)
         btn.Position = UDim2.new(1, -180, 1, -60)
         btn.AnchorPoint = Vector2.new(0,0)
@@ -305,7 +305,7 @@ do
             end
             local prevSpeed = hum.WalkSpeed
             hum.WalkSpeed = 60
-            notify("TpWalk enabled! (0.2s, speed 60)", Color3.fromRGB(90,200,255))
+            notify("Timeskip enabled! (0.2s, speed 60)", Color3.fromRGB(90,200,255))
             task.spawn(function()
                 wait(0.2)
                 
@@ -327,11 +327,11 @@ do
     makeBtn.TextColor3 = Color3.fromRGB(255,255,255)
     makeBtn.Font = Enum.Font.GothamBold
     makeBtn.TextSize = 16
-    makeBtn.Text = "Create TpWalk Button (external)"
+    makeBtn.Text = "Skip Time"
 
     makeBtn.MouseButton1Click:Connect(function()
         createExternalTpWalkBtn()
-        notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
+        notify("Timeskip button created at bottom right!", Color3.fromRGB(90,200,255))
     end)
 
     
