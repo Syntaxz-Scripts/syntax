@@ -342,6 +342,99 @@ do
         end
     end)
 
+    -- ============================
+    -- Super Speed
+    -- ============================
+    local externalSpeedBtn = nil
+
+    local function createExternalSpeedBtn()
+        if externalSpeedBtn and externalSpeedBtn.Parent then
+            externalSpeedBtn.Visible = true
+            return
+        end
+        local extScreenGui = player.PlayerGui:FindFirstChild("SyntaxzExternalSpeedBtnGui")
+        if not extScreenGui then
+            extScreenGui = Instance.new("ScreenGui")
+            extScreenGui.Name = "SyntaxzExternalSpeedBtnGui"
+            extScreenGui.ResetOnSpawn = false
+            extScreenGui.Parent = player.PlayerGui
+        end
+        local btn = Instance.new("TextButton")
+        btn.Name = "SpeedButton"
+        btn.Size = UDim2.new(0, 170, 0, 45)
+        btn.Position = UDim2.new(1, -180, 1, -110)
+        btn.AnchorPoint = Vector2.new(0,0)
+        btn.BackgroundColor3 = Color3.fromRGB(240, 170, 50)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 20
+        btn.Text = "Super Speed"
+        btn.Parent = extScreenGui
+        btn.Active = true
+        btn.Draggable = true
+
+        local boosting = false
+
+        btn.MouseButton1Click:Connect(function()
+            if boosting then return end
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if not (char and hrp and hum) then
+                notify("Character not found!", Color3.fromRGB(200,50,50))
+                return
+            end
+            boosting = true
+            btn.Text = "Boosting..."
+            local origSpeed = hum.WalkSpeed
+            hum.WalkSpeed = origSpeed * 6
+            local cam = workspace.CurrentCamera
+            local start = tick()
+            local runService = game:GetService("RunService")
+            local moveConn; moveConn = runService.RenderStepped:Connect(function()
+                if not char or not char.Parent or not hrp or not hum or not cam then return end
+                if tick() - start > 6 then
+                    moveConn:Disconnect()
+                    return
+                end
+                -- Force movement in camera direction
+                local look = cam.CFrame.LookVector
+                local y = hrp.CFrame.Position.Y
+                local newPos = hrp.Position + Vector3.new(look.X, 0, look.Z) * hum.WalkSpeed * runService.RenderStepped:Wait()
+                -- Move HRP forcibly
+                hrp.Velocity = Vector3.new(look.X, 0, look.Z) * hum.WalkSpeed
+                hrp.CFrame = CFrame.new(newPos.X, y, newPos.Z, look.X, 0, look.Z, 0, 1, 0, -look.Z, 0, look.X)
+                -- Also repeatedly set MoveDirection (if not swimming/falling)
+                if hum:GetState() == Enum.HumanoidStateType.Physics or hum:GetState() == Enum.HumanoidStateType.Freefall then
+                    -- Allow physics/falling
+                else
+                    hum:Move(look, true)
+                end
+            end)
+            -- Wait 6 seconds, then restore
+            task.wait(6)
+            if hum then hum.WalkSpeed = origSpeed end
+            boosting = false
+            btn.Text = "Speed Boost"
+        end)
+
+        externalSpeedBtn = btn
+    end
+
+    local makeSpeedBtn = Instance.new("TextButton", tf)
+    makeSpeedBtn.Size = UDim2.new(0, 220, 0, 32)
+    makeSpeedBtn.Position = UDim2.new(0, 200, 0, 134)
+    makeSpeedBtn.BackgroundColor3 = Color3.fromRGB(240, 170, 50)
+    makeSpeedBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    makeSpeedBtn.Font = Enum.Font.GothamBold
+    makeSpeedBtn.TextSize = 16
+    makeSpeedBtn.Text = "Create Speed Button"
+
+    makeSpeedBtn.MouseButton1Click:Connect(function()
+        createExternalSpeedBtn()
+        notify("Speed Boost button created at bottom right!", Color3.fromRGB(240,170,50))
+    end)
+    
     -- Fullbright
     local fbBtn = Instance.new("TextButton", tf)
     fbBtn.Size = UDim2.new(0, 170, 0, 32)
