@@ -302,7 +302,7 @@ do
             end
             -- Move forward for 0.2s
             local direction = hrp.CFrame.LookVector
-            local speed = 250 -- studs/sec
+            local speed = 150 -- studs/sec
             local duration = 0.21
             local start = tick()
             local connection
