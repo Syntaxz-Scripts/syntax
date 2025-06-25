@@ -253,7 +253,7 @@ do
 end
 
 -----------------------
--- Universal Tab (FIXED, ALL FEATURES IN ONE BLOCK)
+-- Universal Tab
 -----------------------
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
 do
@@ -302,7 +302,7 @@ do
             end
             -- Move forward for 0.2s
             local direction = hrp.CFrame.LookVector
-            local speed = 200 -- studs/sec
+            local speed = 400 -- studs/sec
             local duration = 0.1
             local start = tick()
             local connection
