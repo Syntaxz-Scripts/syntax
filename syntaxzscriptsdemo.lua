@@ -303,7 +303,7 @@ do
             -- Move forward for 0.2s
             local direction = hrp.CFrame.LookVector
             local speed = 200 -- studs/sec
-            local duration = 0.14
+            local duration = 0.08
             local start = tick()
             local connection
             connection = game:GetService("RunService").RenderStepped:Connect(function(dt)
