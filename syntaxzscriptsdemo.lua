@@ -28,7 +28,7 @@ end
 local gui = getOrCreateGui()
 gui.Enabled = true -- always visible at first
 
--- Clear old children from GUI
+-- Clears old children from GUI
 for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
 end
@@ -342,9 +342,9 @@ do
         end
     end)
 
-    -- ============================
-    -- Super Speed
-    -- ============================
+    -- ==================================================================
+    -- Super Speed (DOESN'T WORK, REPLACE WITH NEW SCRIPT YOU LAZY NGR
+    -- ==================================================================
     local externalSpeedBtn = nil
 
     local function createExternalSpeedBtn()
@@ -565,7 +565,7 @@ do
         end
     end)
 
-    -- Fire all remote events
+    -- Fire all remote events (CLIENT SIDED) 
     local probeBtn = Instance.new("TextButton", tf)
     probeBtn.Size = UDim2.new(0, 220, 0, 32)
     probeBtn.Position = UDim2.new(0, 200, 0, 52)
@@ -652,7 +652,7 @@ do
 
         -- Blocklist: dangerous keywords, don't fire these
         local dangerous = {"kick", "ban", "admin", "devconsole", "delete", "reset", "shutdown", "punish", "log", "report", "exploit"}
-        -- Allowlist: safe for probing
+        -- Allowlist: safe for firing
         local likelySafe = {"probe", "test", "info", "get", "fetch", "load"}
 
         logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
@@ -703,7 +703,7 @@ do
         logLine("Only safe/test remotes were called. Anything marked [DANGEROUS] was NOT triggered.", Color3.fromRGB(255,255,150))
     end)
 
-    -- Infinite Health Button & Logic
+    -- Infinite Health Button & Logic (Works on some games) 
     local infHealthBtn = Instance.new("TextButton", tf)
     infHealthBtn.Size = UDim2.new(0, 170, 0, 32)
     infHealthBtn.Position = UDim2.new(0, 10, 0, 52)
