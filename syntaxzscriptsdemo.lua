@@ -270,7 +270,7 @@ do
         local NUM_BOLTS = 50
         local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255))
         local LIGHTNING_DURATION = 0.5
-        local LIGHTNING_RADIUS = 4
+        local LIGHTNING_RADIUS = 7
 
         local function zap(startPos, endPos, color)
             local part0 = Instance.new("Part", workspace)
@@ -297,9 +297,9 @@ do
             beam.Width1 = 0.2 + math.random() * 0.2
             beam.Color = color or LIGHTNING_COLOR
             beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-            beam.LightEmission = 2
-            beam.CurveSize0 = math.random(-8,8)
-            beam.CurveSize1 = math.random(-8,8)
+            beam.LightEmission = 7
+            beam.CurveSize0 = math.random(-3,8)
+            beam.CurveSize1 = math.random(-8,3)
             beam.FaceCamera = true
 
             -- zap sound 
