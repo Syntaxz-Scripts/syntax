@@ -267,9 +267,9 @@ do
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local center = hrp.Position
-        local NUM_BOLTS = 16
-        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(50, 150, 255), Color3.fromRGB(40, 80, 255))
-        local LIGHTNING_DURATION = 0.35
+        local NUM_BOLTS = 45
+        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255))
+        local LIGHTNING_DURATION = 0.1
         local LIGHTNING_RADIUS = 4
 
         local function zap(startPos, endPos, color)
