@@ -249,7 +249,7 @@ do
 end
 
 -----------------------
--- Universal Tab (Skip Time + Forward Lightning)
+-- Universal Tab
 -----------------------
 
 -- Lightning Aura for skip time startup
@@ -259,7 +259,7 @@ local function lightningAura(center, radius, duration)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     local NUM_BOLTS = 10
-    local COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255))
+    local COLOR = ColorSequence.new(Color3.fromRGB(180, 230, 255), Color3.fromRGB(180, 230, 255))
     for i = 1, NUM_BOLTS do
         local angle = math.rad((i / NUM_BOLTS) * 360)
         local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
@@ -411,9 +411,9 @@ do
                 notify("Character not found!", Color3.fromRGB(200,50,50))
                 return
             end
-            -- Startup: Lightning Aura
+            -- Startup VFX
             lightningAura(hrp.Position, 6, 0.13)
-            notify("Charging...", Color3.fromRGB(90,200,255))
+            notify("Charging...", Color3.fromRGB(180,230,255))
             task.delay(0.1, function()
                 -- Move forward for SKIP_DURATION
                 local direction = hrp.CFrame.LookVector
@@ -429,7 +429,7 @@ do
                     hrp.CFrame = hrp.CFrame + direction * speed * dt
                 end)
                 summonForwardLightningBurst(speed * duration)
-                notify("TpWalked for 0.2s!", Color3.fromRGB(90,200,255))
+                notify("TpWalked for 0.2s!", Color3.fromRGB(180,230,255))
             end)
         end)
 
