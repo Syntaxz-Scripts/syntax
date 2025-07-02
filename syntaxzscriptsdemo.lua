@@ -292,7 +292,7 @@ do
             beam.Attachment0 = att0
             beam.Attachment1 = att1
             beam.Width0 = 0.3 + math.random() * 0.2
-            beam.Width1 = 0.2 + math.random() * 0.35
+            beam.Width1 = 0.2 + math.random() * 0.2
             beam.Color = color or LIGHTNING_COLOR
             beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
             beam.LightEmission = 5
