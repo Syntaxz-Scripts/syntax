@@ -266,7 +266,7 @@ do
         local forward = hrp.CFrame.LookVector
         local up = hrp.CFrame.UpVector
         local right = hrp.CFrame.RightVector
-        local NUM_BOLTS = 12
+        local NUM_BOLTS = 40
         local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255)) -- light blue
         local LIGHTNING_DURATION = 0.35
 
@@ -295,7 +295,7 @@ do
             beam.Width1 = 0.2 + math.random() * 0.2
             beam.Color = color or LIGHTNING_COLOR
             beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-            beam.LightEmission = 1
+            beam.LightEmission = 3
             beam.CurveSize0 = math.random(-8,8)
             beam.CurveSize1 = math.random(-8,8)
             beam.FaceCamera = true
