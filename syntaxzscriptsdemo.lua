@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 local guiName = "SyntaxzScriptsUI"
@@ -12,13 +13,12 @@ local function getOrCreateGui()
     if not gui then
         gui = Instance.new("ScreenGui")
         gui.Name = guiName
-        gui.ResetOnSpawn = false -- Don't remove on respawn!
+        gui.ResetOnSpawn = false
         gui.Parent = player.PlayerGui
     end
     return gui
 end
 
--- Removes old duplicate GUIs (if any)
 for _,g in ipairs(player.PlayerGui:GetChildren()) do
     if g:IsA("ScreenGui") and g.Name == guiName and g ~= player.PlayerGui:FindFirstChild(guiName) then
         g:Destroy()
@@ -26,14 +26,12 @@ for _,g in ipairs(player.PlayerGui:GetChildren()) do
 end
 
 local gui = getOrCreateGui()
-gui.Enabled = true -- always visible at first
+gui.Enabled = true
 
--- Clear old children from GUI
 for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
 end
 
--- Main GUI frame
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 440, 0, 380)
 frame.Position = UDim2.new(0.5, -220, 0.5, -190)
@@ -51,7 +49,6 @@ title.TextColor3 = Color3.fromRGB(200, 240, 255)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 28
 
--- TABS
 local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
 local tabButtons, tabFrames = {}, {}
 
@@ -92,7 +89,6 @@ for _, name in ipairs(tabNames) do
 end
 showTab("Credits")
 
--- Notification label
 local notif = Instance.new("TextLabel", frame)
 notif.BackgroundTransparency = 0.3
 notif.BackgroundColor3 = Color3.fromRGB(45, 100, 60)
@@ -253,24 +249,26 @@ do
 end
 
 -----------------------
--- Universal Tab (includes Lightning VFX on Skip Time)
+-- Universal Tab (Skip Time + Forward Lightning)
 -----------------------
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
 do
     local tf = tabFrames["Universal"]
 
-    --------------------------------------------------------------------------------
-    -- Lightning Burst VFX for Skip Time
-    --------------------------------------------------------------------------------
-    local function summonForwardLightningBurst()
+    -----------------------------------------------------------------------------
+    -- Forward Lightning Burst for Skip Time effect
+    -----------------------------------------------------------------------------
+    local function summonForwardLightningBurst(skipDistance)
         local char = player.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local center = hrp.Position
-        local NUM_BOLTS = 75
-        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255))
-        local LIGHTNING_DURATION = 0.3
-        local LIGHTNING_RADIUS = 20
+        local forward = hrp.CFrame.LookVector
+        local up = hrp.CFrame.UpVector
+        local right = hrp.CFrame.RightVector
+        local NUM_BOLTS = 12
+        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255)) -- light blue
+        local LIGHTNING_DURATION = 0.35
 
         local function zap(startPos, endPos, color)
             local part0 = Instance.new("Part", workspace)
@@ -297,16 +295,10 @@ do
             beam.Width1 = 0.2 + math.random() * 0.2
             beam.Color = color or LIGHTNING_COLOR
             beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-            beam.LightEmission = 7
-            beam.CurveSize0 = math.random(-3,8)
-            beam.CurveSize1 = math.random(-8,3)
+            beam.LightEmission = 1
+            beam.CurveSize0 = math.random(-8,8)
+            beam.CurveSize1 = math.random(-8,8)
             beam.FaceCamera = true
-
-            -- zap sound 
-            -- local zap = Instance.new("Sound", part0)
-            -- zap.SoundId = "rbxassetid://9118828567"
-            -- zap.Volume = 0.25
-            -- zap:Play()
 
             task.delay(LIGHTNING_DURATION, function()
                 part0:Destroy()
@@ -315,19 +307,27 @@ do
         end
 
         for i = 1, NUM_BOLTS do
-            local angle = math.random() * math.pi * 2
-            local offset = Vector3.new(math.cos(angle), math.random()*0.9+0.2, math.sin(angle)) * (LIGHTNING_RADIUS + math.random()*1)
-            local startPos = center + offset
-            local endOffset = offset.Unit * (1 + math.random()*1.2)
-            local endPos = center + endOffset + Vector3.new(0,math.random()*2-1,0)
+            -- Small spread for start and end positions
+            local offsetRight = right * math.random(-3,3)
+            local offsetUp = up * math.random(-1,1)
+            local startOffset = offsetRight + offsetUp
+            local startPos = center + startOffset
+            -- End position: forward at skipDistance, with a bit of random spread
+            local endOffset = forward * skipDistance
+                + right * math.random(-2,2)
+                + up * math.random(-1,1)
+            local endPos = center + endOffset
             zap(startPos, endPos, LIGHTNING_COLOR)
         end
     end
 
-    --------------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     -- Time skip button (TpWalk external GUI button)
-    --------------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     local externalBtn = nil
+    local SKIP_DISTANCE = 200 * 0.1 -- speed * duration (same as movement done by skip time)
+    local SKIP_SPEED = 200
+    local SKIP_DURATION = 0.1
 
     local function createExternalTpWalkBtn()
         if externalBtn and externalBtn.Parent then
@@ -356,7 +356,6 @@ do
         btn.Draggable = true
 
         btn.MouseButton1Click:Connect(function()
-            -- TpWalk logic:
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -364,20 +363,20 @@ do
                 notify("Character not found!", Color3.fromRGB(200,50,50))
                 return
             end
-            -- Move forward for 0.2s
+            -- Move forward for SKIP_DURATION
             local direction = hrp.CFrame.LookVector
-            local speed = 200 -- studs/sec
-            local duration = 0.1
+            local speed = SKIP_SPEED
+            local duration = SKIP_DURATION
             local start = tick()
             local connection
-            connection = game:GetService("RunService").RenderStepped:Connect(function(dt)
+            connection = RunService.RenderStepped:Connect(function(dt)
                 if tick()-start > duration then
                     connection:Disconnect()
                     return
                 end
                 hrp.CFrame = hrp.CFrame + direction * speed * dt
             end)
-            summonLightningBurst() -- Lightning VFX here!
+            summonForwardLightningBurst(speed * duration)
             notify("TpWalked for 0.2s!", Color3.fromRGB(90,200,255))
         end)
 
@@ -395,11 +394,10 @@ do
 
     makeBtn.MouseButton1Click:Connect(function()
         createExternalTpWalkBtn()
-        summonLightningBurst() -- Lightning burst when creating the button!
+        summonForwardLightningBurst(SKIP_DISTANCE)
         notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
     end)
 
-    -- External button persists on respawn
     player.CharacterAdded:Connect(function()
         wait(1)
         if externalBtn and externalBtn.Parent then
@@ -491,7 +489,6 @@ do
         end
     end
 
-    -- SAFER Kick-block: Only works if hookfunction is available
     local function blockKickFunction()
         if not player then return end
         if typeof(hookfunction) == "function" then
@@ -622,9 +619,7 @@ do
             return path
         end
 
-        -- Blocklist: dangerous keywords, don't fire these
         local dangerous = {"kick", "ban", "admin", "devconsole", "delete", "reset", "shutdown", "punish", "log", "report", "exploit"}
-        -- Allowlist: safe for probing
         local likelySafe = {"probe", "test", "info", "get", "fetch", "load"}
 
         logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
@@ -651,7 +646,6 @@ do
                     logLine("[DANGEROUS] "..(obj.ClassName).." "..path, Color3.fromRGB(255,80,80))
                 elseif isLikelySafe then
                     logLine("[SAFE] "..(obj.ClassName).." "..path, Color3.fromRGB(150,255,100))
-                    -- fire safe remotes
                     local ok, result = pcall(function()
                         if obj:IsA("RemoteEvent") then
                             obj:FireServer("probe", 123, true)
@@ -685,7 +679,6 @@ do
     infHealthBtn.TextSize = 16
     infHealthBtn.Text = "Infinite Health: OFF"
 
-    -- Infinite health logic
     local infHealthLoop = nil
     local lastHealth = nil
     local healthChangedConn = nil
@@ -706,11 +699,9 @@ do
             while universalVars.infHealth do
                 local humanoid = getHumanoid()
                 if humanoid then
-                    -- Set MaxHealth very high if not already
                     if humanoid.MaxHealth < 1e9 then
                         pcall(function() humanoid.MaxHealth = 1e9 end)
                     end
-                    -- Always set Health to MaxHealth
                     if humanoid.Health < humanoid.MaxHealth then
                         pcall(function() humanoid.Health = humanoid.MaxHealth end)
                     end
@@ -720,7 +711,6 @@ do
         end)
         coroutine.resume(infHealthLoop)
 
-        -- Healing factor repeat: boost healing whenever healing is detected
         if healthChangedConn then pcall(function() healthChangedConn:Disconnect() end) end
         local humanoid = getHumanoid()
         if humanoid then
@@ -728,7 +718,6 @@ do
             healthChangedConn = humanoid.HealthChanged:Connect(function(newHealth)
                 if universalVars.infHealth then
                     if newHealth > lastHealth then
-                        -- Healing detected, repeat it
                         for i = 1, 3 do
                             pcall(function()
                                 humanoid.Health = math.min(humanoid.Health + (newHealth - lastHealth), humanoid.MaxHealth)
@@ -765,7 +754,6 @@ do
         end
     end)
 
-    -- Persist infinite health on respawn
     player.CharacterAdded:Connect(function()
         if universalVars.infHealth then
             wait(1)
@@ -881,7 +869,6 @@ end)
 -- Make GUI re-appear on respawn!
 -- ==========================
 local function ensureGuiOnSpawn()
-    -- Wait for PlayerGui to exist (it sometimes gets recreated)
     local function onCharacterAdded()
         wait(1)
         local gui = player.PlayerGui:FindFirstChild(guiName)
