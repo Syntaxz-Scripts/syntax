@@ -262,15 +262,15 @@ do
     --------------------------------------------------------------------------------
     -- Lightning Burst VFX for Skip Time
     --------------------------------------------------------------------------------
-    local function summonLightningBurst()
+    local function summonForwardLightningBurst()
         local char = player.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local center = hrp.Position
-        local NUM_BOLTS = 50
+        local NUM_BOLTS = 75
         local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255))
-        local LIGHTNING_DURATION = 0.5
-        local LIGHTNING_RADIUS = 7
+        local LIGHTNING_DURATION = 0.3
+        local LIGHTNING_RADIUS = 20
 
         local function zap(startPos, endPos, color)
             local part0 = Instance.new("Part", workspace)
