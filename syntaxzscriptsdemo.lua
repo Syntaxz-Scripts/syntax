@@ -1,4 +1,4 @@
--- Syntaxz Scripts v5
+-- Syntaxz Scripts v5 (with "Skip Time" 0.1s startup and lightning aura)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -251,6 +251,56 @@ end
 -----------------------
 -- Universal Tab (Skip Time + Forward Lightning)
 -----------------------
+
+-- Lightning Aura for skip time startup
+local function lightningAura(center, radius, duration)
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local NUM_BOLTS = 10
+    local COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255))
+    for i = 1, NUM_BOLTS do
+        local angle = math.rad((i / NUM_BOLTS) * 360)
+        local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
+        local startPos = hrp.Position
+        local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
+        local part0 = Instance.new("Part", workspace)
+        part0.Anchored = true
+        part0.CanCollide = false
+        part0.Transparency = 1
+        part0.Size = Vector3.new(0.2, 0.2, 0.2)
+        part0.Position = startPos
+
+        local part1 = Instance.new("Part", workspace)
+        part1.Anchored = true
+        part1.CanCollide = false
+        part1.Transparency = 1
+        part1.Size = Vector3.new(0.2, 0.2, 0.2)
+        part1.Position = endPos
+
+        local att0 = Instance.new("Attachment", part0)
+        local att1 = Instance.new("Attachment", part1)
+
+        local beam = Instance.new("Beam", part0)
+        beam.Attachment0 = att0
+        beam.Attachment1 = att1
+        beam.Width0 = 0.35 + math.random()*0.15
+        beam.Width1 = 0.25 + math.random()*0.15
+        beam.Color = COLOR
+        beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
+        beam.LightEmission = 5
+        beam.CurveSize0 = math.random(-4,4)
+        beam.CurveSize1 = math.random(-4,4)
+        beam.FaceCamera = true
+
+        task.delay(duration or 0.13, function()
+            part0:Destroy()
+            part1:Destroy()
+        end)
+    end
+end
+
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
 do
     local tf = tabFrames["Universal"]
@@ -307,12 +357,10 @@ do
         end
 
         for i = 1, NUM_BOLTS do
-            -- Small spread for start and end positions
             local offsetRight = right * math.random(-3,3)
             local offsetUp = up * math.random(-1,1)
             local startOffset = offsetRight + offsetUp
             local startPos = center + startOffset
-            -- End position: forward at skipDistance, with a bit of random spread
             local endOffset = forward * skipDistance
                 + right * math.random(-2,2)
                 + up * math.random(-1,1)
@@ -325,7 +373,7 @@ do
     -- Time skip button (TpWalk external GUI button)
     -----------------------------------------------------------------------------
     local externalBtn = nil
-    local SKIP_DISTANCE = 200 * 0.1 -- speed * duration (same as movement done by skip time)
+    local SKIP_DISTANCE = 200 * 0.1
     local SKIP_SPEED = 200
     local SKIP_DURATION = 0.1
 
@@ -363,21 +411,26 @@ do
                 notify("Character not found!", Color3.fromRGB(200,50,50))
                 return
             end
-            -- Move forward for SKIP_DURATION
-            local direction = hrp.CFrame.LookVector
-            local speed = SKIP_SPEED
-            local duration = SKIP_DURATION
-            local start = tick()
-            local connection
-            connection = RunService.RenderStepped:Connect(function(dt)
-                if tick()-start > duration then
-                    connection:Disconnect()
-                    return
-                end
-                hrp.CFrame = hrp.CFrame + direction * speed * dt
+            -- Startup: Lightning Aura
+            lightningAura(hrp.Position, 6, 0.13)
+            notify("Charging...", Color3.fromRGB(90,200,255))
+            task.delay(0.1, function()
+                -- Move forward for SKIP_DURATION
+                local direction = hrp.CFrame.LookVector
+                local speed = SKIP_SPEED
+                local duration = SKIP_DURATION
+                local start = tick()
+                local connection
+                connection = RunService.RenderStepped:Connect(function(dt)
+                    if tick()-start > duration then
+                        connection:Disconnect()
+                        return
+                    end
+                    hrp.CFrame = hrp.CFrame + direction * speed * dt
+                end)
+                summonForwardLightningBurst(speed * duration)
+                notify("TpWalked for 0.2s!", Color3.fromRGB(90,200,255))
             end)
-            summonForwardLightningBurst(speed * duration)
-            notify("TpWalked for 0.2s!", Color3.fromRGB(90,200,255))
         end)
 
         externalBtn = btn
@@ -393,9 +446,17 @@ do
     makeBtn.Text = "Skip Time"
 
     makeBtn.MouseButton1Click:Connect(function()
-        createExternalTpWalkBtn()
-        summonForwardLightningBurst(SKIP_DISTANCE)
-        notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            lightningAura(hrp.Position, 6, 0.13)
+        end
+        notify("Charging...", Color3.fromRGB(90,200,255))
+        task.delay(0.1, function()
+            createExternalTpWalkBtn()
+            summonForwardLightningBurst(SKIP_DISTANCE)
+            notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
+        end)
     end)
 
     player.CharacterAdded:Connect(function()
@@ -763,7 +824,7 @@ do
 end
 
 -----------------------
--- Garden Tab
+-- Grow a Garden Tab
 -----------------------
 do
     local tf = tabFrames["Garden"]
