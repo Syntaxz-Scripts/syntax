@@ -267,9 +267,9 @@ do
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local center = hrp.Position
-        local NUM_BOLTS = 45
+        local NUM_BOLTS = 50
         local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255))
-        local LIGHTNING_DURATION = 0.1
+        local LIGHTNING_DURATION = 0.5
         local LIGHTNING_RADIUS = 4
 
         local function zap(startPos, endPos, color)
@@ -297,7 +297,7 @@ do
             beam.Width1 = 0.2 + math.random() * 0.2
             beam.Color = color or LIGHTNING_COLOR
             beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-            beam.LightEmission = 1
+            beam.LightEmission = 2
             beam.CurveSize0 = math.random(-8,8)
             beam.CurveSize1 = math.random(-8,8)
             beam.FaceCamera = true
