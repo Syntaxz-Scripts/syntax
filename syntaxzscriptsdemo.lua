@@ -266,9 +266,9 @@ do
         local forward = hrp.CFrame.LookVector
         local up = hrp.CFrame.UpVector
         local right = hrp.CFrame.RightVector
-        local NUM_BOLTS = 60
+        local NUM_BOLTS = 20
         local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(173, 216, 230), Color3.fromRGB(40, 80, 255)) -- light blue
-        local LIGHTNING_DURATION = 0.35
+        local LIGHTNING_DURATION = 0.2
 
         local function zap(startPos, endPos, color)
             local part0 = Instance.new("Part", workspace)
