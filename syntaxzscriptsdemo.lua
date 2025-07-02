@@ -415,7 +415,7 @@ do
             lightningAura(hrp.Position, 6, 0.13)
             notify("Charging...", Color3.fromRGB(180,230,255))
             task.delay(0.1, function()
-                -- Move forward for SKIP_DURATION
+                -- Move forward for skip duration
                 local direction = hrp.CFrame.LookVector
                 local speed = SKIP_SPEED
                 local duration = SKIP_DURATION
