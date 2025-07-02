@@ -1,4 +1,4 @@
--- Syntaxz Scripts v4
+-- Syntaxz Scripts v5
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,7 +28,7 @@ end
 local gui = getOrCreateGui()
 gui.Enabled = true -- always visible at first
 
--- Clears old children from GUI
+-- Clear old children from GUI
 for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
 end
@@ -253,11 +253,76 @@ do
 end
 
 -----------------------
--- Universal Tab
+-- Universal Tab (includes Lightning VFX on Skip Time)
 -----------------------
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
 do
     local tf = tabFrames["Universal"]
+
+    --------------------------------------------------------------------------------
+    -- Lightning Burst VFX for Skip Time
+    --------------------------------------------------------------------------------
+    local function summonLightningBurst()
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local center = hrp.Position
+        local NUM_BOLTS = 16
+        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(50, 150, 255), Color3.fromRGB(40, 80, 255))
+        local LIGHTNING_DURATION = 0.35
+        local LIGHTNING_RADIUS = 4
+
+        local function zap(startPos, endPos, color)
+            local part0 = Instance.new("Part", workspace)
+            part0.Anchored = true
+            part0.CanCollide = false
+            part0.Transparency = 1
+            part0.Size = Vector3.new(0.2, 0.2, 0.2)
+            part0.Position = startPos
+
+            local part1 = Instance.new("Part", workspace)
+            part1.Anchored = true
+            part1.CanCollide = false
+            part1.Transparency = 1
+            part1.Size = Vector3.new(0.2, 0.2, 0.2)
+            part1.Position = endPos
+
+            local att0 = Instance.new("Attachment", part0)
+            local att1 = Instance.new("Attachment", part1)
+
+            local beam = Instance.new("Beam", part0)
+            beam.Attachment0 = att0
+            beam.Attachment1 = att1
+            beam.Width0 = 0.3 + math.random() * 0.2
+            beam.Width1 = 0.2 + math.random() * 0.2
+            beam.Color = color or LIGHTNING_COLOR
+            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
+            beam.LightEmission = 1
+            beam.CurveSize0 = math.random(-8,8)
+            beam.CurveSize1 = math.random(-8,8)
+            beam.FaceCamera = true
+
+            -- zap sound 
+            -- local zap = Instance.new("Sound", part0)
+            -- zap.SoundId = "rbxassetid://9118828567"
+            -- zap.Volume = 0.25
+            -- zap:Play()
+
+            task.delay(LIGHTNING_DURATION, function()
+                part0:Destroy()
+                part1:Destroy()
+            end)
+        end
+
+        for i = 1, NUM_BOLTS do
+            local angle = math.random() * math.pi * 2
+            local offset = Vector3.new(math.cos(angle), math.random()*0.9+0.2, math.sin(angle)) * (LIGHTNING_RADIUS + math.random()*1)
+            local startPos = center + offset
+            local endOffset = offset.Unit * (1 + math.random()*1.2)
+            local endPos = center + endOffset + Vector3.new(0,math.random()*2-1,0)
+            zap(startPos, endPos, LIGHTNING_COLOR)
+        end
+    end
 
     --------------------------------------------------------------------------------
     -- Time skip button (TpWalk external GUI button)
@@ -265,7 +330,6 @@ do
     local externalBtn = nil
 
     local function createExternalTpWalkBtn()
-        -- If already exists, just show it
         if externalBtn and externalBtn.Parent then
             externalBtn.Visible = true
             return
@@ -302,8 +366,8 @@ do
             end
             -- Move forward for 0.2s
             local direction = hrp.CFrame.LookVector
-            local speed = 150 -- studs/sec
-            local duration = 0.2
+            local speed = 200 -- studs/sec
+            local duration = 0.1
             local start = tick()
             local connection
             connection = game:GetService("RunService").RenderStepped:Connect(function(dt)
@@ -313,13 +377,13 @@ do
                 end
                 hrp.CFrame = hrp.CFrame + direction * speed * dt
             end)
+            summonLightningBurst() -- Lightning VFX here!
             notify("TpWalked for 0.2s!", Color3.fromRGB(90,200,255))
         end)
 
         externalBtn = btn
     end
 
-    
     local makeBtn = Instance.new("TextButton", tf)
     makeBtn.Size = UDim2.new(0, 220, 0, 32)
     makeBtn.Position = UDim2.new(0, 200, 0, 94)
@@ -331,6 +395,7 @@ do
 
     makeBtn.MouseButton1Click:Connect(function()
         createExternalTpWalkBtn()
+        summonLightningBurst() -- Lightning burst when creating the button!
         notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
     end)
 
@@ -342,99 +407,6 @@ do
         end
     end)
 
-    -- ==================================================================
-    -- Super Speed (DOESN'T WORK, REPLACE WITH NEW SCRIPT YOU LAZY NGR
-    -- ==================================================================
-    local externalSpeedBtn = nil
-
-    local function createExternalSpeedBtn()
-        if externalSpeedBtn and externalSpeedBtn.Parent then
-            externalSpeedBtn.Visible = true
-            return
-        end
-        local extScreenGui = player.PlayerGui:FindFirstChild("SyntaxzExternalSpeedBtnGui")
-        if not extScreenGui then
-            extScreenGui = Instance.new("ScreenGui")
-            extScreenGui.Name = "SyntaxzExternalSpeedBtnGui"
-            extScreenGui.ResetOnSpawn = false
-            extScreenGui.Parent = player.PlayerGui
-        end
-        local btn = Instance.new("TextButton")
-        btn.Name = "SpeedButton"
-        btn.Size = UDim2.new(0, 170, 0, 45)
-        btn.Position = UDim2.new(1, -180, 1, -110)
-        btn.AnchorPoint = Vector2.new(0,0)
-        btn.BackgroundColor3 = Color3.fromRGB(240, 170, 50)
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 20
-        btn.Text = "Super Speed"
-        btn.Parent = extScreenGui
-        btn.Active = true
-        btn.Draggable = true
-
-        local boosting = false
-
-        btn.MouseButton1Click:Connect(function()
-            if boosting then return end
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if not (char and hrp and hum) then
-                notify("Character not found!", Color3.fromRGB(200,50,50))
-                return
-            end
-            boosting = true
-            btn.Text = "Boosting..."
-            local origSpeed = hum.WalkSpeed
-            hum.WalkSpeed = origSpeed * 6
-            local cam = workspace.CurrentCamera
-            local start = tick()
-            local runService = game:GetService("RunService")
-            local moveConn; moveConn = runService.RenderStepped:Connect(function()
-                if not char or not char.Parent or not hrp or not hum or not cam then return end
-                if tick() - start > 6 then
-                    moveConn:Disconnect()
-                    return
-                end
-                -- Force movement in camera direction
-                local look = cam.CFrame.LookVector
-                local y = hrp.CFrame.Position.Y
-                local newPos = hrp.Position + Vector3.new(look.X, 0, look.Z) * hum.WalkSpeed * runService.RenderStepped:Wait()
-                -- Move HRP forcibly
-                hrp.Velocity = Vector3.new(look.X, 0, look.Z) * hum.WalkSpeed
-                hrp.CFrame = CFrame.new(newPos.X, y, newPos.Z, look.X, 0, look.Z, 0, 1, 0, -look.Z, 0, look.X)
-                -- Also repeatedly set MoveDirection (if not swimming/falling)
-                if hum:GetState() == Enum.HumanoidStateType.Physics or hum:GetState() == Enum.HumanoidStateType.Freefall then
-                    -- Allow physics/falling
-                else
-                    hum:Move(look, true)
-                end
-            end)
-            -- Wait 6 seconds, then restore
-            task.wait(6)
-            if hum then hum.WalkSpeed = origSpeed end
-            boosting = false
-            btn.Text = "Speed Boost"
-        end)
-
-        externalSpeedBtn = btn
-    end
-
-    local makeSpeedBtn = Instance.new("TextButton", tf)
-    makeSpeedBtn.Size = UDim2.new(0, 220, 0, 32)
-    makeSpeedBtn.Position = UDim2.new(0, 200, 0, 134)
-    makeSpeedBtn.BackgroundColor3 = Color3.fromRGB(240, 170, 50)
-    makeSpeedBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    makeSpeedBtn.Font = Enum.Font.GothamBold
-    makeSpeedBtn.TextSize = 16
-    makeSpeedBtn.Text = "Create Speed Button"
-
-    makeSpeedBtn.MouseButton1Click:Connect(function()
-        createExternalSpeedBtn()
-        notify("Speed Boost button created at bottom right!", Color3.fromRGB(240,170,50))
-    end)
-    
     -- Fullbright
     local fbBtn = Instance.new("TextButton", tf)
     fbBtn.Size = UDim2.new(0, 170, 0, 32)
@@ -565,7 +537,7 @@ do
         end
     end)
 
-    -- Fire all remote events (CLIENT SIDED) 
+    -- Fire all remote events
     local probeBtn = Instance.new("TextButton", tf)
     probeBtn.Size = UDim2.new(0, 220, 0, 32)
     probeBtn.Position = UDim2.new(0, 200, 0, 52)
@@ -652,7 +624,7 @@ do
 
         -- Blocklist: dangerous keywords, don't fire these
         local dangerous = {"kick", "ban", "admin", "devconsole", "delete", "reset", "shutdown", "punish", "log", "report", "exploit"}
-        -- Allowlist: safe for firing
+        -- Allowlist: safe for probing
         local likelySafe = {"probe", "test", "info", "get", "fetch", "load"}
 
         logLine("== Remote Security Probe ==", Color3.fromRGB(200,255,200))
@@ -703,7 +675,7 @@ do
         logLine("Only safe/test remotes were called. Anything marked [DANGEROUS] was NOT triggered.", Color3.fromRGB(255,255,150))
     end)
 
-    -- Infinite Health Button & Logic (Works on some games) 
+    -- Infinite Health Button & Logic
     local infHealthBtn = Instance.new("TextButton", tf)
     infHealthBtn.Size = UDim2.new(0, 170, 0, 32)
     infHealthBtn.Position = UDim2.new(0, 10, 0, 52)
