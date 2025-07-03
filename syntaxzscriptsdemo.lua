@@ -1,4 +1,4 @@
--- Syntaxz Scripts V3.7
+-- Syntaxz Scripts V4.0
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -252,14 +252,6 @@ end
 -- Universal Tab
 -----------------------
 
--- (The entire script is your original, with the "Vibrate (Jitter) Character" button and logic added in the Universal tab.)
-
--- ... (everything before Universal tab unchanged) ...
-
------------------------
--- Universal Tab
------------------------
-
 -- Lightning Aura for skip time startup
 local function lightningAura(center, radius, duration)
     local char = player.Character
@@ -328,7 +320,7 @@ do
         local up = hrp.CFrame.UpVector
         local right = hrp.CFrame.RightVector
         local NUM_BOLTS = 20
-        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(180, 230, 255), Color3.fromRGB(40, 80, 255)) -- light blue
+        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(180, 230, 255), Color3.fromRGB(40, 80, 255))
         local LIGHTNING_DURATION = 0.2
 
         local function zap(startPos, endPos, color)
@@ -533,8 +525,9 @@ do
             local offset = math.sin(jitterVars.jitterTime) * JITTER_DISTANCE
             -- Remove last frame's jitter offset to get the real base position
             local basePos = hrp.Position - hrp.CFrame.RightVector * lastJitterOffset
-            -- Apply new offset
-            hrp.CFrame = CFrame.new(basePos + hrp.CFrame.RightVector * offset, basePos + hrp.CFrame.LookVector)
+            -- Apply new offset and keep facing forward
+            local newPos = basePos + hrp.CFrame.RightVector * offset
+            hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
             lastJitterOffset = offset
         end)
     end
@@ -549,7 +542,6 @@ do
         end
     end)
 
-    -- Stop jitter on respawn, but auto-enable if it was on
     player.CharacterAdded:Connect(function()
         stopJitter()
         if jitterVars.enabled then
@@ -557,6 +549,7 @@ do
             startJitter()
         end
     end)
+
     -- Fullbright
     local fbBtn = Instance.new("TextButton", tf)
     fbBtn.Size = UDim2.new(0, 170, 0, 32)
@@ -912,8 +905,7 @@ do
             startInfHealth()
         end
     end)
-end
-
+end 
 -----------------------
 -- Grow a Garden Tab
 -----------------------
