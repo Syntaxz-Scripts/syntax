@@ -1,4 +1,4 @@
--- Syntaxz Scripts v5 (with "Skip Time" 0.1s startup and lightning aura)
+-- Syntaxz Scripts V3.7
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -252,6 +252,14 @@ end
 -- Universal Tab
 -----------------------
 
+-- (The entire script is your original, with the "Vibrate (Jitter) Character" button and logic added in the Universal tab.)
+
+-- ... (everything before Universal tab unchanged) ...
+
+-----------------------
+-- Universal Tab
+-----------------------
+
 -- Lightning Aura for skip time startup
 local function lightningAura(center, radius, duration)
     local char = player.Character
@@ -302,6 +310,9 @@ local function lightningAura(center, radius, duration)
 end
 
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
+-- Jitter state
+local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime = 0}
+
 do
     local tf = tabFrames["Universal"]
 
@@ -463,6 +474,87 @@ do
         wait(1)
         if externalBtn and externalBtn.Parent then
             externalBtn.Visible = true
+        end
+    end)
+
+    -----------------------------------------------------------------------------
+    -- Vibrate/Jitter Character Button & Logic
+    -----------------------------------------------------------------------------
+    local jitterBtn = Instance.new("TextButton", tf)
+    jitterBtn.Size = UDim2.new(0, 220, 0, 32)
+    jitterBtn.Position = UDim2.new(0, 200, 0, 136)
+    jitterBtn.BackgroundColor3 = Color3.fromRGB(130, 120, 220)
+    jitterBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    jitterBtn.Font = Enum.Font.GothamBold
+    jitterBtn.TextSize = 16
+    jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
+
+    -- Jitter settings
+    local JITTER_DISTANCE = 0.45 -- studs, visible but not huge
+    local JITTER_SPEED = 32      -- higher = faster
+    local HUMANOID_PART = "HumanoidRootPart"
+
+    local function stopJitter()
+        jitterVars.enabled = false
+        jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
+        if jitterVars.connection then
+            jitterVars.connection:Disconnect()
+            jitterVars.connection = nil
+        end
+        -- restore position if possible
+        local char = player.Character
+        if char and char:FindFirstChild(HUMANOID_PART) and jitterVars.origPos then
+            char[HUMANOID_PART].CFrame = CFrame.new(jitterVars.origPos, char[HUMANOID_PART].CFrame.Position + char[HUMANOID_PART].CFrame.LookVector)
+        end
+        jitterVars.origPos = nil
+    end
+
+    local function startJitter()
+        if jitterVars.connection then
+            jitterVars.connection:Disconnect()
+        end
+        local char = player.Character
+        if not (char and char:FindFirstChild(HUMANOID_PART)) then
+            notify("Character not found!", Color3.fromRGB(200,50,50))
+            jitterVars.enabled = false
+            jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
+            return
+        end
+        local hrp = char[HUMANOID_PART]
+        jitterVars.origPos = hrp.Position
+        jitterVars.jitterTime = 0
+        jitterVars.enabled = true
+        jitterBtn.Text = "Vibrate (Jitter) Character: ON"
+        jitterVars.connection = RunService.RenderStepped:Connect(function(dt)
+            if not jitterVars.enabled then return end
+            if not (char and char:FindFirstChild(HUMANOID_PART)) then
+                stopJitter()
+                return
+            end
+            jitterVars.jitterTime = jitterVars.jitterTime + dt * JITTER_SPEED
+            local offset = math.sin(jitterVars.jitterTime) * JITTER_DISTANCE
+            -- Move left/right relative to facing
+            local right = hrp.CFrame.RightVector
+            hrp.CFrame = CFrame.new(jitterVars.origPos + right * offset, hrp.CFrame.Position + hrp.CFrame.LookVector)
+        end)
+    end
+
+    jitterBtn.MouseButton1Click:Connect(function()
+        if jitterVars.enabled then
+            stopJitter()
+            notify("Jitter effect disabled.")
+        else
+            startJitter()
+            notify("Jitter effect enabled! Everyone can see it.")
+        end
+    end)
+
+    -- Stop jitter on respawn, but auto-enable if it was on
+    player.CharacterAdded:Connect(function()
+        stopJitter()
+        if jitterVars.enabled then
+            wait(1)
+            startJitter()
         end
     end)
 
