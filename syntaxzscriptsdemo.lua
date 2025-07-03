@@ -478,7 +478,7 @@ do
     end)
 
     -----------------------------------------------------------------------------
-    -- Vibrate/Jitter Character Button & Logic
+    -- Vibrate/Jitter Character
     -----------------------------------------------------------------------------
     local jitterBtn = Instance.new("TextButton", tf)
     jitterBtn.Size = UDim2.new(0, 220, 0, 32)
@@ -490,9 +490,11 @@ do
     jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
 
     -- Jitter settings
-    local JITTER_DISTANCE = 0.25 -- studs
-    local JITTER_SPEED = 200      -- higher -> faster
+    local JITTER_DISTANCE = 0.45 -- studs
+    local JITTER_SPEED = 32 -- higher = faster
     local HUMANOID_PART = "HumanoidRootPart"
+
+    local lastJitterOffset = 0
 
     local function stopJitter()
         jitterVars.enabled = false
@@ -501,12 +503,7 @@ do
             jitterVars.connection:Disconnect()
             jitterVars.connection = nil
         end
-        -- restore position if possible
-        local char = player.Character
-        if char and char:FindFirstChild(HUMANOID_PART) and jitterVars.origPos then
-            char[HUMANOID_PART].CFrame = CFrame.new(jitterVars.origPos, char[HUMANOID_PART].CFrame.Position + char[HUMANOID_PART].CFrame.LookVector)
-        end
-        jitterVars.origPos = nil
+        lastJitterOffset = 0
     end
 
     local function startJitter()
@@ -521,21 +518,24 @@ do
             return
         end
         local hrp = char[HUMANOID_PART]
-        jitterVars.origPos = hrp.Position
         jitterVars.jitterTime = 0
         jitterVars.enabled = true
         jitterBtn.Text = "Vibrate (Jitter) Character: ON"
+        lastJitterOffset = 0
         jitterVars.connection = RunService.RenderStepped:Connect(function(dt)
             if not jitterVars.enabled then return end
-            if not (char and char:FindFirstChild(HUMANOID_PART)) then
+            if not (player.Character and player.Character:FindFirstChild(HUMANOID_PART)) then
                 stopJitter()
                 return
             end
+            local hrp = player.Character[HUMANOID_PART]
             jitterVars.jitterTime = jitterVars.jitterTime + dt * JITTER_SPEED
             local offset = math.sin(jitterVars.jitterTime) * JITTER_DISTANCE
-            -- Move left/right relative to facing
-            local right = hrp.CFrame.RightVector
-            hrp.CFrame = CFrame.new(jitterVars.origPos + right * offset, hrp.CFrame.Position + hrp.CFrame.LookVector)
+            -- Remove last frame's jitter offset to get the real base position
+            local basePos = hrp.Position - hrp.CFrame.RightVector * lastJitterOffset
+            -- Apply new offset
+            hrp.CFrame = CFrame.new(basePos + hrp.CFrame.RightVector * offset, basePos + hrp.CFrame.LookVector)
+            lastJitterOffset = offset
         end)
     end
 
@@ -545,7 +545,7 @@ do
             notify("Jitter effect disabled.")
         else
             startJitter()
-            notify("Jitter effect enabled! Everyone can see it.")
+            notify("Jitter effect enabled! Everyone can see it, and you can walk while jittering.")
         end
     end)
 
@@ -557,7 +557,6 @@ do
             startJitter()
         end
     end)
-
     -- Fullbright
     local fbBtn = Instance.new("TextButton", tf)
     fbBtn.Size = UDim2.new(0, 170, 0, 32)
