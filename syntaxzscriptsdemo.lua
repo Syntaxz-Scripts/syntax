@@ -1,4 +1,4 @@
--- Syntaxz Scripts V4.0
+-- Syntaxz Scripts V4.1
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1025,3 +1025,27 @@ local function ensureGuiOnSpawn()
     player.CharacterAdded:Connect(onCharacterAdded)
 end
 ensureGuiOnSpawn()
+
+-- Add a floating toggle button for the main UI
+local toggleBtnGui = Instance.new("ScreenGui")
+toggleBtnGui.Name = "SyntaxzToggleBtnGui"
+toggleBtnGui.ResetOnSpawn = false
+toggleBtnGui.Parent = player.PlayerGui
+
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Name = "UIToggleButton"
+toggleBtn.Size = UDim2.new(0, 54, 0, 54)
+toggleBtn.Position = UDim2.new(0, 12, 1, -66)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 80, 120)
+toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 24
+toggleBtn.Text = "☰"
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Active = true
+toggleBtn.Draggable = true
+toggleBtn.Parent = toggleBtnGui
+
+toggleBtn.MouseButton1Click:Connect(function()
+    gui.Enabled = not gui.Enabled
+end)
