@@ -483,7 +483,7 @@ do
 
     -- Jitter settings
     local JITTER_DISTANCE = 6 -- studs
-    local JITTER_SPEED = 999999999999999999999999999999999999-- higher = faster
+    local JITTER_SPEED = 1e6 -- higher = faster
     local HUMANOID_PART = "HumanoidRootPart"
 
     local lastJitterOffset = 0
