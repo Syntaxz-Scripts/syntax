@@ -482,7 +482,7 @@ do
     jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
 
     -- Jitter settings
-    local JITTER_DISTANCE = 0.25-- studs
+    local JITTER_DISTANCE = 0.35-- studs
     local JITTER_SPEED = 5e9 -- higher = faster
     local HUMANOID_PART = "HumanoidRootPart"
 
