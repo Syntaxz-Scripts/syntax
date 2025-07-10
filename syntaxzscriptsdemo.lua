@@ -1,4 +1,4 @@
--- Syntaxz Scripts ver.4
+-- Syntaxz Scripts v 4.5
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -91,132 +91,41 @@ frame.Position = UDim2.new(0.5, -UI_WIDTH//2, 0.5, -UI_HEIGHT//2)
 glassify(frame, Color3.fromRGB(38, 54, 88), 0.14)
 frame.BorderSizePixel = 0
 frame.Active = true
-frame.Draggable = not isMobile()
 
-local blur = Instance.new("BlurEffect")
-blur.Size = 14
-blur.Parent = Lighting
-game:GetService("RunService").RenderStepped:Connect(function()
-    blur.Enabled = gui.Enabled
-end)
-
-local title = Instance.new("TextLabel", frame)
-title.Text = "Syntaxz Scripts"
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(215, 235, 255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 29
-title.TextStrokeTransparency = 0.68
-title.TextStrokeColor3 = Color3.fromRGB(50, 70, 120)
-
-local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
-local tabButtons, tabFrames = {}, {}
-
-local function getTabBtnHeight()
-    return isMobile() and 44 or 38
+-- UNIVERSAL DRAG SCRIPT (desktop and mobile touch support)
+frame.Draggable = false
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(
+        frame.Position.X.Scale,
+        startPos.X.Offset + delta.X,
+        frame.Position.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
 end
-local function getTabBtnFontSize()
-    return isMobile() and 18 or 16
-end
-
-local tabBar = Instance.new("ScrollingFrame", frame)
-tabBar.Size = UDim2.new(0, TABBAR_WIDTH, 1, -90)
-tabBar.Position = UDim2.new(0, 8, 0, 80)
-tabBar.BackgroundTransparency = 0.08
-tabBar.BackgroundColor3 = Color3.fromRGB(38, 54, 88)
-tabBar.BorderSizePixel = 0
-tabBar.CanvasSize = UDim2.new(0, 0, 0, #tabNames * (getTabBtnHeight() + 6))
-tabBar.ScrollBarThickness = isMobile() and 12 or 6
-tabBar.AutomaticCanvasSize = Enum.AutomaticSize.Y
-tabBar.ClipsDescendants = true
-roundify(tabBar, 14)
-strokify(tabBar, 1, Color3.fromRGB(110,180,255), 0.15)
-
-local function createTabButton(name, idx)
-    local btn = Instance.new("TextButton", tabBar)
-    btn.Size = UDim2.new(1, -10, 0, getTabBtnHeight())
-    btn.Position = UDim2.new(0, 5, 0, (idx-1)*(getTabBtnHeight()+6))
-    btn.AutoButtonColor = true
-    btn.BackgroundColor3 = Color3.fromRGB(44, 56, 82)
-    btn.TextColor3 = Color3.fromRGB(220,220,255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = getTabBtnFontSize()
-    btn.Text = name
-    btn.TextStrokeTransparency = 0.78
-    btn.BackgroundTransparency = 0.17
-    roundify(btn, 8)
-    strokify(btn, 0.8, Color3.fromRGB(130,180,255), 0.39)
-    btn.ClipsDescendants = true
-    return btn
-end
-
-local function createTabFrame()
-    local tf = Instance.new("Frame", frame)
-    tf.Size = UDim2.new(1, -TABBAR_WIDTH-20, 1, -100)
-    tf.Position = UDim2.new(0, TABBAR_WIDTH+16, 0, 88)
-    tf.BackgroundTransparency = 0.45
-    tf.BackgroundColor3 = Color3.fromRGB(36, 48, 72)
-    roundify(tf, 15)
-    strokify(tf, 1.1, Color3.fromRGB(90,120,200), 0.4)
-    tf.Visible = false
-    tf.ClipsDescendants = true
-    return tf
-end
-
-local function showTab(tab)
-    for _, name in ipairs(tabNames) do
-        if name == tab then
-            tabButtons[name].BackgroundColor3 = Color3.fromRGB(52, 74, 120)
-            tabButtons[name].TextColor3 = Color3.fromRGB(255,255,255)
-            tabButtons[name].TextStrokeTransparency = 0.61
-            if not tabFrames[name].Visible then
-                tabFrames[name].Visible = true
-                tabFrames[name].Position = UDim2.new(0, TABBAR_WIDTH+28, 0, 88)
-                tabFrames[name].BackgroundTransparency = 1
-                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+16, 0, 88), BackgroundTransparency = 0.45}, 0.25)
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
             end
-        else
-            tabButtons[name].BackgroundColor3 = Color3.fromRGB(44, 56, 82)
-            tabButtons[name].TextColor3 = Color3.fromRGB(220,220,255)
-            tabButtons[name].TextStrokeTransparency = 0.77
-            if tabFrames[name].Visible then
-                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+28, 0, 88), BackgroundTransparency = 1}, 0.17).Completed:Connect(function()
-                    tabFrames[name].Visible = false
-                end)
-            end
-        end
+        end)
     end
-end
-
-for i, name in ipairs(tabNames) do
-    tabButtons[name] = createTabButton(name, i)
-    tabFrames[name] = createTabFrame()
-    tabButtons[name].MouseButton1Click:Connect(function() showTab(name) end)
-end
-showTab("Credits")
-
-local notif = Instance.new("TextLabel", frame)
-notif.BackgroundTransparency = 0.13
-notif.BackgroundColor3 = Color3.fromRGB(60, 120, 80)
-notif.Size = UDim2.new(1, -48, 0, 28)
-notif.Position = UDim2.new(0, 24, 1, -40)
-notif.Visible = false
-notif.TextColor3 = Color3.fromRGB(255, 255, 255)
-notif.Font = Enum.Font.GothamBold
-notif.TextSize = 16
-notif.TextStrokeTransparency = 0.65
-notif.TextStrokeColor3 = Color3.fromRGB(0,0,0)
-roundify(notif, 10)
-strokify(notif, 1, Color3.fromRGB(180,255,180), 0.19)
-
-local function notify(msg, col)
-    notif.Text = msg
-    notif.BackgroundColor3 = col or Color3.fromRGB(60, 120, 80)
-    notif.Visible = true
-    delay(2.1, function() notif.Visible = false end)
-end
+end)
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
 
 -----------------------
 -- Credits Tab
