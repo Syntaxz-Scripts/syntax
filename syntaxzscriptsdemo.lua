@@ -15,6 +15,7 @@ local function getOrCreateGui()
         gui = Instance.new("ScreenGui")
         gui.Name = guiName
         gui.ResetOnSpawn = false
+        gui.IgnoreGuiInset = true
         gui.Parent = player.PlayerGui
     end
     return gui
@@ -63,15 +64,35 @@ local function glassify(inst, glassColor, transparency)
     strokify(inst, 2, Color3.fromRGB(180, 220, 255), 0.29)
 end
 
+-- Mobile support
+local function isMobile()
+    return UIS.TouchEnabled and not UIS.KeyboardEnabled
+end
+
+local function getUISize()
+    if isMobile() then
+        return math.floor(workspace.CurrentCamera.ViewportSize.X * 0.97), math.floor(workspace.CurrentCamera.ViewportSize.Y * 0.93)
+    else
+        return 640, 460
+    end
+end
+
+local function getTabBarWidth()
+    return isMobile() and 60 or 76
+end
+
+-- Responsive UI
+local UI_WIDTH, UI_HEIGHT = getUISize()
+local TABBAR_WIDTH = getTabBarWidth()
+
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 460, 0, 400)
-frame.Position = UDim2.new(0.5, -230, 0.5, -200)
+frame.Size = UDim2.new(0, UI_WIDTH, 0, UI_HEIGHT)
+frame.Position = UDim2.new(0.5, -UI_WIDTH//2, 0.5, -UI_HEIGHT//2)
 glassify(frame, Color3.fromRGB(38, 54, 88), 0.14)
 frame.BorderSizePixel = 0
 frame.Active = true
-frame.Draggable = true
+frame.Draggable = not isMobile()
 
--- Soft blur behind UI
 local blur = Instance.new("BlurEffect")
 blur.Size = 14
 blur.Parent = Lighting
@@ -93,45 +114,54 @@ title.TextStrokeColor3 = Color3.fromRGB(50, 70, 120)
 local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
 local tabButtons, tabFrames = {}, {}
 
--- Tabs
+local function getTabBtnHeight()
+    return isMobile() and 44 or 38
+end
+local function getTabBtnFontSize()
+    return isMobile() and 18 or 16
+end
+
 local tabBar = Instance.new("ScrollingFrame", frame)
-tabBar.Size = UDim2.new(0, 120, 1, -90)
+tabBar.Size = UDim2.new(0, TABBAR_WIDTH, 1, -90)
 tabBar.Position = UDim2.new(0, 8, 0, 80)
 tabBar.BackgroundTransparency = 0.08
 tabBar.BackgroundColor3 = Color3.fromRGB(38, 54, 88)
 tabBar.BorderSizePixel = 0
-tabBar.CanvasSize = UDim2.new(0, 0, 0, #tabNames*54)
-tabBar.ScrollBarThickness = 7
+tabBar.CanvasSize = UDim2.new(0, 0, 0, #tabNames * (getTabBtnHeight() + 6))
+tabBar.ScrollBarThickness = isMobile() and 12 or 6
 tabBar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+tabBar.ClipsDescendants = true
 roundify(tabBar, 14)
 strokify(tabBar, 1, Color3.fromRGB(110,180,255), 0.15)
 
 local function createTabButton(name, idx)
     local btn = Instance.new("TextButton", tabBar)
-    btn.Size = UDim2.new(1, -12, 0, 44)
-    btn.Position = UDim2.new(0, 6, 0, (idx-1)*54)
+    btn.Size = UDim2.new(1, -10, 0, getTabBtnHeight())
+    btn.Position = UDim2.new(0, 5, 0, (idx-1)*(getTabBtnHeight()+6))
     btn.AutoButtonColor = true
     btn.BackgroundColor3 = Color3.fromRGB(44, 56, 82)
     btn.TextColor3 = Color3.fromRGB(220,220,255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 18
+    btn.TextSize = getTabBtnFontSize()
     btn.Text = name
     btn.TextStrokeTransparency = 0.78
     btn.BackgroundTransparency = 0.17
-    roundify(btn, 10)
-    strokify(btn, 0.9, Color3.fromRGB(130,180,255), 0.39)
+    roundify(btn, 8)
+    strokify(btn, 0.8, Color3.fromRGB(130,180,255), 0.39)
+    btn.ClipsDescendants = true
     return btn
 end
 
 local function createTabFrame()
     local tf = Instance.new("Frame", frame)
-    tf.Size = UDim2.new(1, -136, 1, -100)
-    tf.Position = UDim2.new(0, 128, 0, 88)
+    tf.Size = UDim2.new(1, -TABBAR_WIDTH-20, 1, -100)
+    tf.Position = UDim2.new(0, TABBAR_WIDTH+16, 0, 88)
     tf.BackgroundTransparency = 0.45
     tf.BackgroundColor3 = Color3.fromRGB(36, 48, 72)
     roundify(tf, 15)
     strokify(tf, 1.1, Color3.fromRGB(90,120,200), 0.4)
     tf.Visible = false
+    tf.ClipsDescendants = true
     return tf
 end
 
@@ -141,20 +171,18 @@ local function showTab(tab)
             tabButtons[name].BackgroundColor3 = Color3.fromRGB(52, 74, 120)
             tabButtons[name].TextColor3 = Color3.fromRGB(255,255,255)
             tabButtons[name].TextStrokeTransparency = 0.61
-            -- Animate tabFrame in
             if not tabFrames[name].Visible then
                 tabFrames[name].Visible = true
-                tabFrames[name].Position = UDim2.new(0, 148, 0, 88)
+                tabFrames[name].Position = UDim2.new(0, TABBAR_WIDTH+28, 0, 88)
                 tabFrames[name].BackgroundTransparency = 1
-                tween(tabFrames[name], {Position = UDim2.new(0, 128, 0, 88), BackgroundTransparency = 0.45}, 0.24)
+                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+16, 0, 88), BackgroundTransparency = 0.45}, 0.25)
             end
         else
             tabButtons[name].BackgroundColor3 = Color3.fromRGB(44, 56, 82)
             tabButtons[name].TextColor3 = Color3.fromRGB(220,220,255)
             tabButtons[name].TextStrokeTransparency = 0.77
             if tabFrames[name].Visible then
-                -- Animate tabFrame out
-                tween(tabFrames[name], {Position = UDim2.new(0, 148, 0, 88), BackgroundTransparency = 1}, 0.18).Completed:Connect(function()
+                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+28, 0, 88), BackgroundTransparency = 1}, 0.17).Completed:Connect(function()
                     tabFrames[name].Visible = false
                 end)
             end
@@ -232,10 +260,10 @@ do
         btn.BackgroundTransparency = 0.20
         roundify(btn, 11)
         strokify(btn, 1, Color3.fromRGB(100,180,120), 0.35)
+        btn.ClipsDescendants = true
         return btn
     end
 
-    -- ESP
     local espBtn = styledBtn(tf, 10, "Player ESP: OFF", Color3.fromRGB(50, 85, 90))
 
     -- ESP Logic
@@ -339,8 +367,10 @@ local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime
 do
     local tf = tabFrames["Universal"]
     local function styledBtn(parent, x, y, w, text, col)
+        local maxWidth = tf.AbsoluteSize.X - 32
+        local width = math.min(w or 190, maxWidth)
         local btn = Instance.new("TextButton", parent)
-        btn.Size = UDim2.new(0, w or 190, 0, 34)
+        btn.Size = UDim2.new(0, width, 0, 34)
         btn.Position = UDim2.new(0, x, 0, y)
         btn.BackgroundColor3 = col or Color3.fromRGB(46, 60, 120)
         btn.TextColor3 = Color3.fromRGB(255,255,255)
@@ -351,284 +381,26 @@ do
         btn.BackgroundTransparency = 0.18
         roundify(btn, 11)
         strokify(btn, 1.1, Color3.fromRGB(120,200,240), 0.34)
+        btn.ClipsDescendants = true
         return btn
     end
 
-    -- Lightning Aura for skip time startup
-    local function lightningAura(center, radius, duration)
-        local char = player.Character
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        local NUM_BOLTS = 10
-        local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
-        for i = 1, NUM_BOLTS do
-            local angle = math.rad((i / NUM_BOLTS) * 360)
-            local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
-            local startPos = hrp.Position
-            local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
-            local part0 = Instance.new("Part", workspace)
-            part0.Anchored = true
-            part0.CanCollide = false
-            part0.Transparency = 1
-            part0.Size = Vector3.new(0.2, 0.2, 0.2)
-            part0.Position = startPos
-
-            local part1 = Instance.new("Part", workspace)
-            part1.Anchored = true
-            part1.CanCollide = false
-            part1.Transparency = 1
-            part1.Size = Vector3.new(0.2, 0.2, 0.2)
-            part1.Position = endPos
-
-            local att0 = Instance.new("Attachment", part0)
-            local att1 = Instance.new("Attachment", part1)
-
-            local beam = Instance.new("Beam", part0)
-            beam.Attachment0 = att0
-            beam.Attachment1 = att1
-            beam.Width0 = 0.35 + math.random()*0.15
-            beam.Width1 = 0.25 + math.random()*0.15
-            beam.Color = COLOR
-            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-            beam.LightEmission = 5
-            beam.CurveSize0 = math.random(-4,4)
-            beam.CurveSize1 = math.random(-4,4)
-            beam.FaceCamera = true
-
-            task.delay(duration or 0.13, function()
-                part0:Destroy()
-                part1:Destroy()
-            end)
-        end
+    local contentParent = tf
+    local contentY = 10
+    if isMobile() then
+        local scroll = Instance.new("ScrollingFrame", tf)
+        scroll.Size = UDim2.new(1, -16, 1, -16)
+        scroll.Position = UDim2.new(0, 8, 0, 8)
+        scroll.CanvasSize = UDim2.new(0,0,0,800)
+        scroll.BackgroundTransparency = 1
+        scroll.ScrollBarThickness = 12
+        scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        contentParent = scroll
+        contentY = 0
     end
-
-    -----------------------------------------------------------------------------
-    -- Forward Lightning Burst for Skip Time effect
-    -----------------------------------------------------------------------------
-    local function summonForwardLightningBurst(skipDistance)
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        local center = hrp.Position
-        local forward = hrp.CFrame.LookVector
-        local up = hrp.CFrame.UpVector
-        local right = hrp.CFrame.RightVector
-        local NUM_BOLTS = 20
-        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
-        local LIGHTNING_DURATION = 0.2
-
-        local function zap(startPos, endPos, color)
-            local part0 = Instance.new("Part", workspace)
-            part0.Anchored = true
-            part0.CanCollide = false
-            part0.Transparency = 1
-            part0.Size = Vector3.new(0.2, 0.2, 0.2)
-            part0.Position = startPos
-
-            local part1 = Instance.new("Part", workspace)
-            part1.Anchored = true
-            part1.CanCollide = false
-            part1.Transparency = 1
-            part1.Size = Vector3.new(0.2, 0.2, 0.2)
-            part1.Position = endPos
-
-            local att0 = Instance.new("Attachment", part0)
-            local att1 = Instance.new("Attachment", part1)
-
-            local beam = Instance.new("Beam", part0)
-            beam.Attachment0 = att0
-            beam.Attachment1 = att1
-            beam.Width0 = 0.3 + math.random() * 0.2
-            beam.Width1 = 0.2 + math.random() * 0.2
-            beam.Color = color or LIGHTNING_COLOR
-            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-            beam.LightEmission = 5
-            beam.CurveSize0 = math.random(-8,8)
-            beam.CurveSize1 = math.random(-8,8)
-            beam.FaceCamera = true
-
-            task.delay(LIGHTNING_DURATION, function()
-                part0:Destroy()
-                part1:Destroy()
-            end)
-        end
-
-        for i = 1, NUM_BOLTS do
-            local offsetRight = right * math.random(-3,3)
-            local offsetUp = up * math.random(-1,1)
-            local startOffset = offsetRight + offsetUp
-            local startPos = center + startOffset
-            local endOffset = forward * skipDistance
-                + right * math.random(-2,2)
-                + up * math.random(-1,1)
-            local endPos = center + endOffset
-            zap(startPos, endPos, LIGHTNING_COLOR)
-        end
-    end
-
-    -----------------------------------------------------------------------------
-    -- Time skip button (TpWalk external GUI button)
-    -----------------------------------------------------------------------------
-    local externalBtn = nil
-    local SKIP_DISTANCE = 200 * 0.1
-    local SKIP_SPEED = 200
-    local SKIP_DURATION = 0.1
-
-    local function createExternalTpWalkBtn()
-        if externalBtn and externalBtn.Parent then
-            externalBtn.Visible = true
-            return
-        end
-        local extScreenGui = player.PlayerGui:FindFirstChild("SyntaxzExternalTpBtnGui")
-        if not extScreenGui then
-            extScreenGui = Instance.new("ScreenGui")
-            extScreenGui.Name = "SyntaxzExternalTpBtnGui"
-            extScreenGui.ResetOnSpawn = false
-            extScreenGui.Parent = player.PlayerGui
-        end
-        local btn = Instance.new("TextButton")
-        btn.Name = "TpWalkButton"
-        btn.Size = UDim2.new(0, 170, 0, 45)
-        btn.Position = UDim2.new(1, -180, 1, -60)
-        btn.AnchorPoint = Vector2.new(0,0)
-        btn.BackgroundColor3 = Color3.fromRGB(65, 140, 180)
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 20
-        btn.Text = "Skip Time"
-        btn.Parent = extScreenGui
-        btn.Active = true
-        btn.Draggable = true
-        roundify(btn, 15)
-        strokify(btn, 1.2, Color3.fromRGB(180,220,255), 0.18)
-
-        btn.MouseButton1Click:Connect(function()
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if not (char and hrp and hum) then
-                notify("Character not found!", Color3.fromRGB(200,50,50))
-                return
-            end
-            lightningAura(hrp.Position, 6, 0.13)
-            notify("Charging...", Color3.fromRGB(180,230,255))
-            task.delay(0.1, function()
-                local direction = hrp.CFrame.LookVector
-                local speed = SKIP_SPEED
-                local duration = SKIP_DURATION
-                local start = tick()
-                local connection
-                connection = RunService.RenderStepped:Connect(function(dt)
-                    if tick()-start > duration then
-                        connection:Disconnect()
-                        return
-                    end
-                    hrp.CFrame = hrp.CFrame + direction * speed * dt
-                end)
-                summonForwardLightningBurst(speed * duration)
-                notify("TpWalked for 0.2s!", Color3.fromRGB(180,230,255))
-            end)
-        end)
-
-        externalBtn = btn
-    end
-
-    local makeBtn = styledBtn(tf, 200, 94, 220, "Skip Time", Color3.fromRGB(65, 140, 180))
-    makeBtn.MouseButton1Click:Connect(function()
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            lightningAura(hrp.Position, 6, 0.13)
-        end
-        notify("Charging...", Color3.fromRGB(90,200,255))
-        task.delay(0.1, function()
-            createExternalTpWalkBtn()
-            summonForwardLightningBurst(SKIP_DISTANCE)
-            notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
-        end)
-    end)
-
-    player.CharacterAdded:Connect(function()
-        wait(1)
-        if externalBtn and externalBtn.Parent then
-            externalBtn.Visible = true
-        end
-    end)
-
-    -----------------------------------------------------------------------------
-    -- Vibrate/Jitter Character
-    -----------------------------------------------------------------------------
-    local jitterBtn = styledBtn(tf, 200, 136, 220, "Vibrate (Jitter) Character: OFF", Color3.fromRGB(130, 120, 220))
-
-    local JITTER_DISTANCE = 0.35
-    local JITTER_SPEED = 5e9
-    local HUMANOID_PART = "HumanoidRootPart"
-
-    local lastJitterOffset = 0
-
-    local function stopJitter()
-        jitterVars.enabled = false
-        jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
-        if jitterVars.connection then
-            jitterVars.connection:Disconnect()
-            jitterVars.connection = nil
-        end
-        lastJitterOffset = 0
-    end
-
-    local function startJitter()
-        if jitterVars.connection then
-            jitterVars.connection:Disconnect()
-        end
-        local char = player.Character
-        if not (char and char:FindFirstChild(HUMANOID_PART)) then
-            notify("Character not found!", Color3.fromRGB(200,50,50))
-            jitterVars.enabled = false
-            jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
-            return
-        end
-        local hrp = char[HUMANOID_PART]
-        jitterVars.jitterTime = 0
-        jitterVars.enabled = true
-        jitterBtn.Text = "Vibrate (Jitter) Character: ON"
-        lastJitterOffset = 0
-        jitterVars.connection = RunService.RenderStepped:Connect(function(dt)
-            if not jitterVars.enabled then return end
-            if not (player.Character and player.Character:FindFirstChild(HUMANOID_PART)) then
-                stopJitter()
-                return
-            end
-            local hrp = player.Character[HUMANOID_PART]
-            jitterVars.jitterTime = jitterVars.jitterTime + dt * JITTER_SPEED
-            local offset = math.sin(jitterVars.jitterTime) * JITTER_DISTANCE
-            local basePos = hrp.Position - hrp.CFrame.RightVector * lastJitterOffset
-            local newPos = basePos + hrp.CFrame.RightVector * offset
-            hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
-            lastJitterOffset = offset
-        end)
-    end
-
-    jitterBtn.MouseButton1Click:Connect(function()
-        if jitterVars.enabled then
-            stopJitter()
-            notify("Jitter effect disabled.")
-        else
-            startJitter()
-            notify("Jitter effect enabled! Everyone can see it, and you can walk while jittering.")
-        end
-    end)
-
-    player.CharacterAdded:Connect(function()
-        stopJitter()
-        if jitterVars.enabled then
-            wait(1)
-            startJitter()
-        end
-    end)
 
     -- Fullbright
-    local fbBtn = styledBtn(tf, 14, 10, 170, "Fullbright: OFF", Color3.fromRGB(80, 80, 110))
+    local fbBtn = styledBtn(contentParent, 14, contentY, 170, "Fullbright: OFF", Color3.fromRGB(80, 80, 110))
     local orig = {
         Ambient = Lighting.Ambient,
         Brightness = Lighting.Brightness,
@@ -655,12 +427,90 @@ do
     Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
         if universalVars.fullbright and Lighting.Ambient ~= Color3.new(1,1,1) then enableFullbright() end
     end)
+    contentY = contentY + 44
 
-    -- Anti-Cheat Detector/Bypass (Safe)
-    local acBtn = styledBtn(tf, 200, 10, 220, "Anti-Cheat Detector/Bypass: OFF", Color3.fromRGB(120, 60, 60))
+    -- Infinite Health
+    local infHealthBtn = styledBtn(contentParent, 14, contentY, 170, "Infinite Health: OFF", Color3.fromRGB(90, 60, 90))
+    local infHealthLoop = nil
+    local lastHealth = nil
+    local healthChangedConn = nil
+    local function startInfHealth()
+        local function getHumanoid()
+            local char = player.Character
+            if char then
+                for _, v in ipairs(char:GetChildren()) do
+                    if v:IsA("Humanoid") then
+                        return v
+                    end
+                end
+            end
+        end
+        infHealthLoop = coroutine.create(function()
+            while universalVars.infHealth do
+                local humanoid = getHumanoid()
+                if humanoid then
+                    if humanoid.MaxHealth < 1e9 then
+                        pcall(function() humanoid.MaxHealth = 1e9 end)
+                    end
+                    if humanoid.Health < humanoid.MaxHealth then
+                        pcall(function() humanoid.Health = humanoid.MaxHealth end)
+                    end
+                end
+                wait(0.08)
+            end
+        end)
+        coroutine.resume(infHealthLoop)
+        if healthChangedConn then pcall(function() healthChangedConn:Disconnect() end) end
+        local humanoid = getHumanoid()
+        if humanoid then
+            lastHealth = humanoid.Health
+            healthChangedConn = humanoid.HealthChanged:Connect(function(newHealth)
+                if universalVars.infHealth then
+                    if newHealth > lastHealth then
+                        for i = 1, 3 do
+                            pcall(function()
+                                humanoid.Health = math.min(humanoid.Health + (newHealth - lastHealth), humanoid.MaxHealth)
+                            end)
+                            wait(0.03)
+                        end
+                    end
+                    lastHealth = humanoid.Health
+                end
+            end)
+        end
+    end
+    local function stopInfHealth()
+        universalVars.infHealth = false
+        if infHealthLoop then
+            infHealthLoop = nil
+        end
+        if healthChangedConn then
+            pcall(function() healthChangedConn:Disconnect() end)
+            healthChangedConn = nil
+        end
+    end
+    infHealthBtn.MouseButton1Click:Connect(function()
+        universalVars.infHealth = not universalVars.infHealth
+        infHealthBtn.Text = "Infinite Health: " .. (universalVars.infHealth and "ON" or "OFF")
+        if universalVars.infHealth then
+            notify("Infinite Health enabled!")
+            startInfHealth()
+        else
+            notify("Infinite Health disabled.")
+            stopInfHealth()
+        end
+    end)
+    player.CharacterAdded:Connect(function()
+        if universalVars.infHealth then
+            wait(1)
+            startInfHealth()
+        end
+    end)
+    contentY = contentY + 44
 
+    -- Anti-Cheat Bypass
+    local acBtn = styledBtn(contentParent, 200, 10, 220, "Anti-Cheat Detector/Bypass: OFF", Color3.fromRGB(120, 60, 60))
     local acDetectorEnabled = false
-
     local function scanForAntiCheat()
         local keywords = {"AntiCheat", "AC", "Ban", "Kick", "Logger", "Admin", "Detector"}
         local found = {}
@@ -675,7 +525,6 @@ do
         end
         return found
     end
-
     local function scanForSuspiciousRemotes()
         local remotes = {}
         for _, obj in ipairs(game:GetDescendants()) do
@@ -687,7 +536,6 @@ do
         end
         return remotes
     end
-
     local function disableAntiCheatScripts()
         for _, obj in ipairs(game:GetDescendants()) do
             if obj:IsA("LocalScript") and obj.Name:lower():find("anticheat") then
@@ -695,7 +543,6 @@ do
             end
         end
     end
-
     local function blockKickFunction()
         if not player then return end
         if typeof(hookfunction) == "function" then
@@ -709,7 +556,6 @@ do
             player.Kick = function() return end
         end
     end
-
     local function enableACDetectorBypass()
         local scripts = scanForAntiCheat()
         local remotes = scanForSuspiciousRemotes()
@@ -722,12 +568,10 @@ do
         blockKickFunction()
         acDetectorEnabled = true
     end
-
     local function disableACDetectorBypass()
         acDetectorEnabled = false
         notify("Anti-cheat bypass disabled. (Some changes may persist)", Color3.fromRGB(120,60,60))
     end
-
     acBtn.MouseButton1Click:Connect(function()
         acDetectorEnabled = not acDetectorEnabled
         acBtn.Text = "Anti-Cheat Detector/Bypass: " .. (acDetectorEnabled and "ON" or "OFF")
@@ -740,9 +584,10 @@ do
             disableACDetectorBypass()
         end
     end)
+    contentY = contentY + 44
 
-    -- Fire all remote events
-    local probeBtn = styledBtn(tf, 200, 52, 220, "Fire all Remotes", Color3.fromRGB(60, 120, 120))
+    -- Fire all Remotes (probe)
+    local probeBtn = styledBtn(contentParent, 200, 54, 220, "Fire all Remotes", Color3.fromRGB(60, 120, 120))
     probeBtn.MouseButton1Click:Connect(function()
         local popup = Instance.new("ScreenGui")
         popup.Name = "FireResultsPopup"
@@ -872,89 +717,260 @@ do
         logLine("== Probe Complete ==", Color3.fromRGB(200,255,200))
         logLine("Only safe/test remotes were called. Anything marked [DANGEROUS] was NOT triggered.", Color3.fromRGB(255,255,150))
     end)
+    contentY = contentY + 44
 
-    -- Infinite Health Button & Logic
-    local infHealthBtn = styledBtn(tf, 14, 52, 170, "Infinite Health: OFF", Color3.fromRGB(90, 60, 90))
+    -- Skip Time (Tp Walk)
+    local function lightningAura(center, radius, duration)
+        local char = player.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local NUM_BOLTS = 10
+        local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+        for i = 1, NUM_BOLTS do
+            local angle = math.rad((i / NUM_BOLTS) * 360)
+            local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
+            local startPos = hrp.Position
+            local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
+            local part0 = Instance.new("Part", workspace)
+            part0.Anchored = true
+            part0.CanCollide = false
+            part0.Transparency = 1
+            part0.Size = Vector3.new(0.2, 0.2, 0.2)
+            part0.Position = startPos
 
-    local infHealthLoop = nil
-    local lastHealth = nil
-    local healthChangedConn = nil
+            local part1 = Instance.new("Part", workspace)
+            part1.Anchored = true
+            part1.CanCollide = false
+            part1.Transparency = 1
+            part1.Size = Vector3.new(0.2, 0.2, 0.2)
+            part1.Position = endPos
 
-    local function startInfHealth()
-        local function getHumanoid()
-            local char = player.Character
-            if char then
-                for _, v in ipairs(char:GetChildren()) do
-                    if v:IsA("Humanoid") then
-                        return v
-                    end
-                end
-            end
-        end
+            local att0 = Instance.new("Attachment", part0)
+            local att1 = Instance.new("Attachment", part1)
 
-        infHealthLoop = coroutine.create(function()
-            while universalVars.infHealth do
-                local humanoid = getHumanoid()
-                if humanoid then
-                    if humanoid.MaxHealth < 1e9 then
-                        pcall(function() humanoid.MaxHealth = 1e9 end)
-                    end
-                    if humanoid.Health < humanoid.MaxHealth then
-                        pcall(function() humanoid.Health = humanoid.MaxHealth end)
-                    end
-                end
-                wait(0.08)
-            end
-        end)
-        coroutine.resume(infHealthLoop)
+            local beam = Instance.new("Beam", part0)
+            beam.Attachment0 = att0
+            beam.Attachment1 = att1
+            beam.Width0 = 0.35 + math.random()*0.15
+            beam.Width1 = 0.25 + math.random()*0.15
+            beam.Color = COLOR
+            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
+            beam.LightEmission = 5
+            beam.CurveSize0 = math.random(-4,4)
+            beam.CurveSize1 = math.random(-4,4)
+            beam.FaceCamera = true
 
-        if healthChangedConn then pcall(function() healthChangedConn:Disconnect() end) end
-        local humanoid = getHumanoid()
-        if humanoid then
-            lastHealth = humanoid.Health
-            healthChangedConn = humanoid.HealthChanged:Connect(function(newHealth)
-                if universalVars.infHealth then
-                    if newHealth > lastHealth then
-                        for i = 1, 3 do
-                            pcall(function()
-                                humanoid.Health = math.min(humanoid.Health + (newHealth - lastHealth), humanoid.MaxHealth)
-                            end)
-                            wait(0.03)
-                        end
-                    end
-                    lastHealth = humanoid.Health
-                end
+            task.delay(duration or 0.13, function()
+                part0:Destroy()
+                part1:Destroy()
             end)
         end
     end
+    local function summonForwardLightningBurst(skipDistance)
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local center = hrp.Position
+        local forward = hrp.CFrame.LookVector
+        local up = hrp.CFrame.UpVector
+        local right = hrp.CFrame.RightVector
+        local NUM_BOLTS = 20
+        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+        local LIGHTNING_DURATION = 0.2
 
-    local function stopInfHealth()
-        universalVars.infHealth = false
-        if infHealthLoop then
-            infHealthLoop = nil
+        local function zap(startPos, endPos, color)
+            local part0 = Instance.new("Part", workspace)
+            part0.Anchored = true
+            part0.CanCollide = false
+            part0.Transparency = 1
+            part0.Size = Vector3.new(0.2, 0.2, 0.2)
+            part0.Position = startPos
+
+            local part1 = Instance.new("Part", workspace)
+            part1.Anchored = true
+            part1.CanCollide = false
+            part1.Transparency = 1
+            part1.Size = Vector3.new(0.2, 0.2, 0.2)
+            part1.Position = endPos
+
+            local att0 = Instance.new("Attachment", part0)
+            local att1 = Instance.new("Attachment", part1)
+
+            local beam = Instance.new("Beam", part0)
+            beam.Attachment0 = att0
+            beam.Attachment1 = att1
+            beam.Width0 = 0.3 + math.random() * 0.2
+            beam.Width1 = 0.2 + math.random() * 0.2
+            beam.Color = color or LIGHTNING_COLOR
+            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
+            beam.LightEmission = 5
+            beam.CurveSize0 = math.random(-8,8)
+            beam.CurveSize1 = math.random(-8,8)
+            beam.FaceCamera = true
+
+            task.delay(LIGHTNING_DURATION, function()
+                part0:Destroy()
+                part1:Destroy()
+            end)
         end
-        if healthChangedConn then
-            pcall(function() healthChangedConn:Disconnect() end)
-            healthChangedConn = nil
+
+        for i = 1, NUM_BOLTS do
+            local offsetRight = right * math.random(-3,3)
+            local offsetUp = up * math.random(-1,1)
+            local startOffset = offsetRight + offsetUp
+            local startPos = center + startOffset
+            local endOffset = forward * skipDistance
+                + right * math.random(-2,2)
+                + up * math.random(-1,1)
+            local endPos = center + endOffset
+            zap(startPos, endPos, LIGHTNING_COLOR)
         end
     end
+    local SKIP_DISTANCE = 200 * 0.1
+    local SKIP_SPEED = 200
+    local SKIP_DURATION = 0.1
+    local externalBtn = nil
+    local function createExternalTpWalkBtn()
+        if externalBtn and externalBtn.Parent then
+            externalBtn.Visible = true
+            return
+        end
+        local extScreenGui = player.PlayerGui:FindFirstChild("SyntaxzExternalTpBtnGui")
+        if not extScreenGui then
+            extScreenGui = Instance.new("ScreenGui")
+            extScreenGui.Name = "SyntaxzExternalTpBtnGui"
+            extScreenGui.ResetOnSpawn = false
+            extScreenGui.Parent = player.PlayerGui
+        end
+        local btn = Instance.new("TextButton")
+        btn.Name = "TpWalkButton"
+        btn.Size = UDim2.new(0, 170, 0, 45)
+        btn.Position = UDim2.new(1, -180, 1, -60)
+        btn.AnchorPoint = Vector2.new(0,0)
+        btn.BackgroundColor3 = Color3.fromRGB(65, 140, 180)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 20
+        btn.Text = "Skip Time"
+        btn.Parent = extScreenGui
+        btn.Active = true
+        btn.Draggable = not isMobile()
+        roundify(btn, 15)
+        strokify(btn, 1.2, Color3.fromRGB(180,220,255), 0.18)
 
-    infHealthBtn.MouseButton1Click:Connect(function()
-        universalVars.infHealth = not universalVars.infHealth
-        infHealthBtn.Text = "Infinite Health: " .. (universalVars.infHealth and "ON" or "OFF")
-        if universalVars.infHealth then
-            notify("Infinite Health enabled!")
-            startInfHealth()
-        else
-            notify("Infinite Health disabled.")
-            stopInfHealth()
+        btn.MouseButton1Click:Connect(function()
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if not (char and hrp and hum) then
+                notify("Character not found!", Color3.fromRGB(200,50,50))
+                return
+            end
+            lightningAura(hrp.Position, 6, 0.13)
+            notify("Charging...", Color3.fromRGB(180,230,255))
+            task.delay(0.1, function()
+                local direction = hrp.CFrame.LookVector
+                local speed = SKIP_SPEED
+                local duration = SKIP_DURATION
+                local start = tick()
+                local connection
+                connection = RunService.RenderStepped:Connect(function(dt)
+                    if tick()-start > duration then
+                        connection:Disconnect()
+                        return
+                    end
+                    hrp.CFrame = hrp.CFrame + direction * speed * dt
+                end)
+                summonForwardLightningBurst(speed * duration)
+                notify("TpWalked for 0.2s!", Color3.fromRGB(180,230,255))
+            end)
+        end)
+
+        externalBtn = btn
+    end
+    local makeBtn = styledBtn(contentParent, 200, 94, 220, "Skip Time", Color3.fromRGB(65, 140, 180))
+    makeBtn.MouseButton1Click:Connect(function()
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            lightningAura(hrp.Position, 6, 0.13)
+        end
+        notify("Charging...", Color3.fromRGB(90,200,255))
+        task.delay(0.1, function()
+            createExternalTpWalkBtn()
+            summonForwardLightningBurst(SKIP_DISTANCE)
+            notify("TpWalk button created at bottom right!", Color3.fromRGB(90,200,255))
+        end)
+    end)
+    player.CharacterAdded:Connect(function()
+        wait(1)
+        if externalBtn and externalBtn.Parent then
+            externalBtn.Visible = true
         end
     end)
+    contentY = contentY + 44
 
+    -- Vibrate/Jitter Character
+    local jitterBtn = styledBtn(contentParent, 200, 136, 220, "Vibrate (Jitter) Character: OFF", Color3.fromRGB(130, 120, 220))
+    local JITTER_DISTANCE = 0.35
+    local JITTER_SPEED = 5e9
+    local HUMANOID_PART = "HumanoidRootPart"
+    local lastJitterOffset = 0
+    local function stopJitter()
+        jitterVars.enabled = false
+        jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
+        if jitterVars.connection then
+            jitterVars.connection:Disconnect()
+            jitterVars.connection = nil
+        end
+        lastJitterOffset = 0
+    end
+    local function startJitter()
+        if jitterVars.connection then
+            jitterVars.connection:Disconnect()
+        end
+        local char = player.Character
+        if not (char and char:FindFirstChild(HUMANOID_PART)) then
+            notify("Character not found!", Color3.fromRGB(200,50,50))
+            jitterVars.enabled = false
+            jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
+            return
+        end
+        local hrp = char[HUMANOID_PART]
+        jitterVars.jitterTime = 0
+        jitterVars.enabled = true
+        jitterBtn.Text = "Vibrate (Jitter) Character: ON"
+        lastJitterOffset = 0
+        jitterVars.connection = RunService.RenderStepped:Connect(function(dt)
+            if not jitterVars.enabled then return end
+            if not (player.Character and player.Character:FindFirstChild(HUMANOID_PART)) then
+                stopJitter()
+                return
+            end
+            local hrp = player.Character[HUMANOID_PART]
+            jitterVars.jitterTime = jitterVars.jitterTime + dt * JITTER_SPEED
+            local offset = math.sin(jitterVars.jitterTime) * JITTER_DISTANCE
+            local basePos = hrp.Position - hrp.CFrame.RightVector * lastJitterOffset
+            local newPos = basePos + hrp.CFrame.RightVector * offset
+            hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
+            lastJitterOffset = offset
+        end)
+    end
+    jitterBtn.MouseButton1Click:Connect(function()
+        if jitterVars.enabled then
+            stopJitter()
+            notify("Jitter effect disabled.")
+        else
+            startJitter()
+            notify("Jitter effect enabled! Everyone can see it, and you can walk while jittering.")
+        end
+    end)
     player.CharacterAdded:Connect(function()
-        if universalVars.infHealth then
+        stopJitter()
+        if jitterVars.enabled then
             wait(1)
-            startInfHealth()
+            startJitter()
         end
     end)
 end
@@ -965,8 +981,10 @@ end
 do
     local tf = tabFrames["Garden"]
     local function styledBtn(parent, x, y, w, text, col)
+        local maxWidth = tf.AbsoluteSize.X - 40
+        local width = math.min(w or 160, maxWidth)
         local btn = Instance.new("TextButton", parent)
-        btn.Size = UDim2.new(0, w or 170, 0, 32)
+        btn.Size = UDim2.new(0, width, 0, 32)
         btn.Position = UDim2.new(0, x, 0, y)
         btn.BackgroundColor3 = col or Color3.fromRGB(70,100,70)
         btn.TextColor3 = Color3.fromRGB(255,255,255)
@@ -976,6 +994,7 @@ do
         btn.BackgroundTransparency = 0.2
         roundify(btn, 10)
         strokify(btn, 1, Color3.fromRGB(130,200,130), 0.39)
+        btn.ClipsDescendants = true
         return btn
     end
 
@@ -1042,12 +1061,13 @@ end
 local function animateOpen()
     gui.Enabled = true
     frame.Visible = true
-    frame.Position = UDim2.new(0.5, -230, 0.5, 80)
+    frame.Size = UDim2.new(0, getUISize())
+    frame.Position = UDim2.new(0.5, -frame.Size.X.Offset//2, 0.5, -frame.Size.Y.Offset//2)
     frame.BackgroundTransparency = 1
-    tween(frame, {Position = UDim2.new(0.5, -230, 0.5, -200), BackgroundTransparency = 0}, 0.33)
+    tween(frame, {BackgroundTransparency = 0}, 0.33)
 end
 local function animateClose()
-    tween(frame, {Position = UDim2.new(0.5, -230, 0.5, 80), BackgroundTransparency = 1}, 0.27).Completed:Connect(function()
+    tween(frame, {BackgroundTransparency = 1}, 0.27).Completed:Connect(function()
         frame.Visible = false
         gui.Enabled = false
     end)
@@ -1070,7 +1090,7 @@ closeBtn.MouseButton1Click:Connect(animateClose)
 -- Toggle keybind (RightShift)
 local toggling = false
 UIS.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed and not toggling then
+    if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed and not toggling and not isMobile() then
         toggling = true
         if not gui.Enabled or not frame.Visible then
             animateOpen()
@@ -1082,7 +1102,6 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Make GUI re-appear on respawn!
 local function ensureGuiOnSpawn()
     local function onCharacterAdded()
         wait(1)
@@ -1097,16 +1116,16 @@ local function ensureGuiOnSpawn()
 end
 ensureGuiOnSpawn()
 
--- Add a floating toggle button for the main UI (glass/rounded)
 local toggleBtnGui = Instance.new("ScreenGui")
 toggleBtnGui.Name = "SyntaxzToggleBtnGui"
 toggleBtnGui.ResetOnSpawn = false
+toggleBtnGui.IgnoreGuiInset = true
 toggleBtnGui.Parent = player.PlayerGui
 
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Name = "UIToggleButton"
-toggleBtn.Size = UDim2.new(0, 56, 0, 56)
-toggleBtn.Position = UDim2.new(0, 15, 1, -74)
+toggleBtn.Size = isMobile() and UDim2.new(0, 64, 0, 64) or UDim2.new(0, 56, 0, 56)
+toggleBtn.Position = isMobile() and UDim2.new(0, 16, 1, -88) or UDim2.new(0, 15, 1, -74)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 80, 120)
 toggleBtn.TextColor3 = Color3.fromRGB(240,255,255)
 toggleBtn.Font = Enum.Font.GothamBold
@@ -1114,7 +1133,7 @@ toggleBtn.TextSize = 27
 toggleBtn.Text = "☰"
 toggleBtn.BorderSizePixel = 0
 toggleBtn.Active = true
-toggleBtn.Draggable = true
+toggleBtn.Draggable = not isMobile()
 toggleBtn.BackgroundTransparency = 0.18
 roundify(toggleBtn, 28)
 strokify(toggleBtn, 1.2, Color3.fromRGB(180,220,255), 0.18)
