@@ -1,4 +1,4 @@
--- Syntaxz Scripts 4.7
+-- Syntaxz Scripts 4.7 (FIXED for nil value issues)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -70,7 +70,11 @@ end
 
 local function getUISize()
     if isMobile() then
-        return math.floor(workspace.CurrentCamera.ViewportSize.X * 0.75), math.floor(workspace.CurrentCamera.ViewportSize.Y * 0.73)
+        if workspace.CurrentCamera then
+            return math.floor(workspace.CurrentCamera.ViewportSize.X * 0.75), math.floor(workspace.CurrentCamera.ViewportSize.Y * 0.73)
+        else
+            return 490, 340
+        end
     else
         return 490, 340
     end
@@ -94,6 +98,7 @@ frame.Active = true
 frame.Draggable = false
 local dragging, dragInput, dragStart, startPos
 local function update(input)
+    if not dragStart or not startPos then return end
     local delta = input.Position - dragStart
     frame.Position = UDim2.new(
         frame.Position.X.Scale,
@@ -246,24 +251,26 @@ end
 
 local function showTab(tab)
     for _, name in ipairs(tabNames) do
-        if name == tab then
-            tabButtons[name].BackgroundColor3 = Color3.fromRGB(52, 74, 120)
-            tabButtons[name].TextColor3 = Color3.fromRGB(255,255,255)
-            tabButtons[name].TextStrokeTransparency = 0.61
-            if not tabFrames[name].Visible then
-                tabFrames[name].Visible = true
-                tabFrames[name].Position = UDim2.new(0, TABBAR_WIDTH+28, 0, titleBarHeight+8)
-                tabFrames[name].BackgroundTransparency = 1
-                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+16, 0, titleBarHeight+8), BackgroundTransparency = 0.45}, 0.25)
-            end
-        else
-            tabButtons[name].BackgroundColor3 = Color3.fromRGB(44, 56, 82)
-            tabButtons[name].TextColor3 = Color3.fromRGB(220,220,255)
-            tabButtons[name].TextStrokeTransparency = 0.77
-            if tabFrames[name].Visible then
-                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+28, 0, titleBarHeight+8), BackgroundTransparency = 1}, 0.17).Completed:Connect(function()
-                    tabFrames[name].Visible = false
-                end)
+        if tabButtons[name] and tabFrames[name] then
+            if name == tab then
+                tabButtons[name].BackgroundColor3 = Color3.fromRGB(52, 74, 120)
+                tabButtons[name].TextColor3 = Color3.fromRGB(255,255,255)
+                tabButtons[name].TextStrokeTransparency = 0.61
+                if not tabFrames[name].Visible then
+                    tabFrames[name].Visible = true
+                    tabFrames[name].Position = UDim2.new(0, TABBAR_WIDTH+28, 0, titleBarHeight+8)
+                    tabFrames[name].BackgroundTransparency = 1
+                    tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+16, 0, titleBarHeight+8), BackgroundTransparency = 0.45}, 0.25)
+                end
+            else
+                tabButtons[name].BackgroundColor3 = Color3.fromRGB(44, 56, 82)
+                tabButtons[name].TextColor3 = Color3.fromRGB(220,220,255)
+                tabButtons[name].TextStrokeTransparency = 0.77
+                if tabFrames[name].Visible then
+                    tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+28, 0, titleBarHeight+8), BackgroundTransparency = 1}, 0.17).Completed:Connect(function()
+                        tabFrames[name].Visible = false
+                    end)
+                end
             end
         end
     end
@@ -298,24 +305,28 @@ function notify(msg, col)
     delay(2.1, function() notif.Visible = false end)
 end
 
+-----------------------
 -- Credits Tab
+-----------------------
 do
     local tf = tabFrames["Credits"]
-    local function label(txt, ypos)
-        local l = Instance.new("TextLabel", tf)
-        l.Size = UDim2.new(1, -24, 0, 28)
-        l.Position = UDim2.new(0, 12, 0, ypos)
-        l.BackgroundTransparency = 1
-        l.TextColor3 = Color3.fromRGB(230, 230, 200)
-        l.Font = Enum.Font.Gotham
-        l.TextSize = 19
-        l.TextXAlignment = Enum.TextXAlignment.Left
-        l.TextStrokeTransparency = 0.85
-        l.Text = txt
-        return l
+    if tf then
+        local function label(txt, ypos)
+            local l = Instance.new("TextLabel", tf)
+            l.Size = UDim2.new(1, -24, 0, 28)
+            l.Position = UDim2.new(0, 12, 0, ypos)
+            l.BackgroundTransparency = 1
+            l.TextColor3 = Color3.fromRGB(230, 230, 200)
+            l.Font = Enum.Font.Gotham
+            l.TextSize = 19
+            l.TextXAlignment = Enum.TextXAlignment.Left
+            l.TextStrokeTransparency = 0.85
+            l.Text = txt
+            return l
+        end
+        label("ESP & UI: Syntaxz Scripts", 10)
+        label("Discord: no discord.. :(", 38)
     end
-    label("ESP & UI: Syntaxz Scripts", 10)
-    label("Discord: no discord.. :(, 38) 
 end
 
 -- UI Open/Close Animation
@@ -414,27 +425,6 @@ gui.AncestryChanged:Connect(function()
         blur:Destroy()
     end
 end)
------------------------
--- Credits Tab
------------------------
-do
-    local tf = tabFrames["Credits"]
-    local function label(txt, ypos)
-        local l = Instance.new("TextLabel", tf)
-        l.Size = UDim2.new(1, -24, 0, 28)
-        l.Position = UDim2.new(0, 12, 0, ypos)
-        l.BackgroundTransparency = 1
-        l.TextColor3 = Color3.fromRGB(230, 230, 200)
-        l.Font = Enum.Font.Gotham
-        l.TextSize = 19
-        l.TextXAlignment = Enum.TextXAlignment.Left
-        l.TextStrokeTransparency = 0.85
-        l.Text = txt
-        return l
-    end
-    label("ESP & UI: Syntaxz Scripts", 10)
-    label("Discord: no discord.. :(", 38)
-end
 
 -----------------------
 -- Forsaken Tab 
