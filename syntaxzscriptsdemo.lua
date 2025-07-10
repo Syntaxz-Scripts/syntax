@@ -434,7 +434,7 @@ do
         return l
     end
     label("ESP & UI: Syntaxz Scripts", 10)
-    label("Discord: no discord :(", 38)
+    label("Discord: no discord.. :(", 38)
 end
 
 -----------------------
