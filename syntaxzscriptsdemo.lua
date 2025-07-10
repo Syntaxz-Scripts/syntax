@@ -315,8 +315,7 @@ do
         return l
     end
     label("ESP & UI: Syntaxz Scripts", 10)
-    label("UI: Glassy and Rounded for v3", 38)
-    label("Discord: no discord too lazy to setup", 66)
+    label("Discord: no discord.. :(, 38) 
 end
 
 -- UI Open/Close Animation
