@@ -1,4 +1,4 @@
--- Syntaxz Scripts v 4.6 (title at top, draggable toggle button, smaller UI, ALL TAB LOGIC FULLY FILLED OUT)
+-- Syntaxz Scripts 4.7
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -434,8 +434,8 @@ do
         return l
     end
     label("ESP & UI: Syntaxz Scripts", 10)
-    label("UI: Glassy and Rounded for v3", 38)
-    label("Discord: no discord too lazy to setup", 66)
+    label("Discord: no discord :(", 38)
+    label("This script is still being worked on! :)", 66)
 end
 
 -----------------------
