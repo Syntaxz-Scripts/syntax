@@ -1,10 +1,11 @@
--- Syntaxz Scripts ver.3
+-- Syntaxz Scripts ver.4
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local guiName = "SyntaxzScriptsUI"
@@ -30,6 +31,13 @@ gui.Enabled = true
 
 for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
+end
+
+-- Animation helpers
+local function tween(obj, props, time, style, dir)
+    local t = TweenService:Create(obj, TweenInfo.new(time or 0.35, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props)
+    t:Play()
+    return t
 end
 
 -- Glassy look for ui
@@ -63,7 +71,7 @@ frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 
--- Soft blur behind UI (optional, disables on low graphics)
+-- Soft blur behind UI
 local blur = Instance.new("BlurEffect")
 blur.Size = 14
 blur.Parent = Lighting
@@ -85,32 +93,40 @@ title.TextStrokeColor3 = Color3.fromRGB(50, 70, 120)
 local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
 local tabButtons, tabFrames = {}, {}
 
-local tabBar = Instance.new("Frame", frame)
-tabBar.Size = UDim2.new(1, -24, 0, 38)
-tabBar.Position = UDim2.new(0, 12, 0, 44)
-tabBar.BackgroundTransparency = 1
+-- Tabs
+local tabBar = Instance.new("ScrollingFrame", frame)
+tabBar.Size = UDim2.new(0, 120, 1, -90)
+tabBar.Position = UDim2.new(0, 8, 0, 80)
+tabBar.BackgroundTransparency = 0.08
+tabBar.BackgroundColor3 = Color3.fromRGB(38, 54, 88)
+tabBar.BorderSizePixel = 0
+tabBar.CanvasSize = UDim2.new(0, 0, 0, #tabNames*54)
+tabBar.ScrollBarThickness = 7
+tabBar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+roundify(tabBar, 14)
+strokify(tabBar, 1, Color3.fromRGB(110,180,255), 0.15)
 
 local function createTabButton(name, idx)
     local btn = Instance.new("TextButton", tabBar)
-    btn.Size = UDim2.new(0, 102, 1, 0)
-    btn.Position = UDim2.new(0, (idx-1)*110, 0, 0)
+    btn.Size = UDim2.new(1, -12, 0, 44)
+    btn.Position = UDim2.new(0, 6, 0, (idx-1)*54)
     btn.AutoButtonColor = true
     btn.BackgroundColor3 = Color3.fromRGB(44, 56, 82)
     btn.TextColor3 = Color3.fromRGB(220,220,255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 17
+    btn.TextSize = 18
     btn.Text = name
-    btn.TextStrokeTransparency = 0.75
+    btn.TextStrokeTransparency = 0.78
     btn.BackgroundTransparency = 0.17
-    roundify(btn, 13)
-    strokify(btn, 1.2, Color3.fromRGB(130,180,255), 0.44)
+    roundify(btn, 10)
+    strokify(btn, 0.9, Color3.fromRGB(130,180,255), 0.39)
     return btn
 end
 
 local function createTabFrame()
     local tf = Instance.new("Frame", frame)
-    tf.Size = UDim2.new(1, -28, 1, -100)
-    tf.Position = UDim2.new(0, 14, 0, 88)
+    tf.Size = UDim2.new(1, -136, 1, -100)
+    tf.Position = UDim2.new(0, 128, 0, 88)
     tf.BackgroundTransparency = 0.45
     tf.BackgroundColor3 = Color3.fromRGB(36, 48, 72)
     roundify(tf, 15)
@@ -119,26 +135,36 @@ local function createTabFrame()
     return tf
 end
 
-for i, name in ipairs(tabNames) do
-    tabButtons[name] = createTabButton(name, i)
-    tabFrames[name] = createTabFrame()
-end
-
 local function showTab(tab)
     for _, name in ipairs(tabNames) do
-        tabFrames[name].Visible = (name == tab)
         if name == tab then
             tabButtons[name].BackgroundColor3 = Color3.fromRGB(52, 74, 120)
             tabButtons[name].TextColor3 = Color3.fromRGB(255,255,255)
             tabButtons[name].TextStrokeTransparency = 0.61
+            -- Animate tabFrame in
+            if not tabFrames[name].Visible then
+                tabFrames[name].Visible = true
+                tabFrames[name].Position = UDim2.new(0, 148, 0, 88)
+                tabFrames[name].BackgroundTransparency = 1
+                tween(tabFrames[name], {Position = UDim2.new(0, 128, 0, 88), BackgroundTransparency = 0.45}, 0.24)
+            end
         else
             tabButtons[name].BackgroundColor3 = Color3.fromRGB(44, 56, 82)
             tabButtons[name].TextColor3 = Color3.fromRGB(220,220,255)
             tabButtons[name].TextStrokeTransparency = 0.77
+            if tabFrames[name].Visible then
+                -- Animate tabFrame out
+                tween(tabFrames[name], {Position = UDim2.new(0, 148, 0, 88), BackgroundTransparency = 1}, 0.18).Completed:Connect(function()
+                    tabFrames[name].Visible = false
+                end)
+            end
         end
     end
 end
-for _, name in ipairs(tabNames) do
+
+for i, name in ipairs(tabNames) do
+    tabButtons[name] = createTabButton(name, i)
+    tabFrames[name] = createTabFrame()
     tabButtons[name].MouseButton1Click:Connect(function() showTab(name) end)
 end
 showTab("Credits")
@@ -1012,6 +1038,21 @@ do
     end)
 end
 
+-- UI Open/Close Animation
+local function animateOpen()
+    gui.Enabled = true
+    frame.Visible = true
+    frame.Position = UDim2.new(0.5, -230, 0.5, 80)
+    frame.BackgroundTransparency = 1
+    tween(frame, {Position = UDim2.new(0.5, -230, 0.5, -200), BackgroundTransparency = 0}, 0.33)
+end
+local function animateClose()
+    tween(frame, {Position = UDim2.new(0.5, -230, 0.5, 80), BackgroundTransparency = 1}, 0.27).Completed:Connect(function()
+        frame.Visible = false
+        gui.Enabled = false
+    end)
+end
+
 -- Close Button
 local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.new(0, 100, 0, 32)
@@ -1024,14 +1065,18 @@ closeBtn.Text = "Close"
 closeBtn.BackgroundTransparency = 0.20
 roundify(closeBtn, 10)
 strokify(closeBtn, 1, Color3.fromRGB(220,130,130), 0.29)
-closeBtn.MouseButton1Click:Connect(function() gui.Enabled = false end)
+closeBtn.MouseButton1Click:Connect(animateClose)
 
 -- Toggle keybind (RightShift)
 local toggling = false
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed and not toggling then
         toggling = true
-        gui.Enabled = not gui.Enabled
+        if not gui.Enabled or not frame.Visible then
+            animateOpen()
+        else
+            animateClose()
+        end
         wait(0.2)
         toggling = false
     end
@@ -1076,7 +1121,11 @@ strokify(toggleBtn, 1.2, Color3.fromRGB(180,220,255), 0.18)
 toggleBtn.Parent = toggleBtnGui
 
 toggleBtn.MouseButton1Click:Connect(function()
-    gui.Enabled = not gui.Enabled
+    if not gui.Enabled or not frame.Visible then
+        animateOpen()
+    else
+        animateClose()
+    end
 end)
 
 gui.AncestryChanged:Connect(function()
