@@ -32,7 +32,7 @@ for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
 end
 
--- Helper: Add UICorner and UIStroke for glassy/rounded look
+-- Glassy look for ui
 local function roundify(inst, radius)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, radius or 18)
@@ -183,12 +183,12 @@ do
         return l
     end
     label("ESP & UI: Syntaxz Scripts", 10)
-    label("UI: Modern Glass/Rounded", 38)
+    label("UI: Glassy and Rounded for v3", 38)
     label("Discord: no discord too lazy to setup", 66)
 end
 
 -----------------------
--- Forsaken Tab (rounded/transparent buttons)
+-- Forsaken Tab 
 -----------------------
 local forsakenVars = { esp = false, stamina = false }
 do
@@ -305,7 +305,7 @@ do
 end
 
 -----------------------
--- Universal Tab (all buttons glassy/rounded)
+-- Universal Tab 
 -----------------------
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
 local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime = 0}
