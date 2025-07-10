@@ -1,4 +1,4 @@
--- Syntaxz Scripts V4.1
+-- Syntaxz Scripts ver.3
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -32,43 +32,89 @@ for _, child in ipairs(gui:GetChildren()) do
     child:Destroy()
 end
 
+-- Helper: Add UICorner and UIStroke for glassy/rounded look
+local function roundify(inst, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 18)
+    corner.Parent = inst
+    return corner
+end
+local function strokify(inst, thickness, color, transparency)
+    local s = Instance.new("UIStroke")
+    s.Thickness = thickness or 2
+    s.Color = color or Color3.fromRGB(180, 220, 255)
+    s.Transparency = transparency or 0.4
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = inst
+    return s
+end
+local function glassify(inst, glassColor, transparency)
+    inst.BackgroundTransparency = transparency or 0.25
+    inst.BackgroundColor3 = glassColor or Color3.fromRGB(45, 60, 90)
+    roundify(inst, 20)
+    strokify(inst, 2, Color3.fromRGB(180, 220, 255), 0.29)
+end
+
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 440, 0, 380)
-frame.Position = UDim2.new(0.5, -220, 0.5, -190)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+frame.Size = UDim2.new(0, 460, 0, 400)
+frame.Position = UDim2.new(0.5, -230, 0.5, -200)
+glassify(frame, Color3.fromRGB(38, 54, 88), 0.14)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 
+-- Soft blur behind UI (optional, disables on low graphics)
+local blur = Instance.new("BlurEffect")
+blur.Size = 14
+blur.Parent = Lighting
+game:GetService("RunService").RenderStepped:Connect(function()
+    blur.Enabled = gui.Enabled
+end)
+
 local title = Instance.new("TextLabel", frame)
 title.Text = "Syntaxz Scripts"
-title.Size = UDim2.new(1, 0, 0, 36)
+title.Size = UDim2.new(1, 0, 0, 40)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(200, 240, 255)
+title.TextColor3 = Color3.fromRGB(215, 235, 255)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 28
+title.TextSize = 29
+title.TextStrokeTransparency = 0.68
+title.TextStrokeColor3 = Color3.fromRGB(50, 70, 120)
 
 local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
 local tabButtons, tabFrames = {}, {}
 
+local tabBar = Instance.new("Frame", frame)
+tabBar.Size = UDim2.new(1, -24, 0, 38)
+tabBar.Position = UDim2.new(0, 12, 0, 44)
+tabBar.BackgroundTransparency = 1
+
 local function createTabButton(name, idx)
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0, 100, 0, 28)
-    btn.Position = UDim2.new(0, 10 + (idx-1)*110, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    local btn = Instance.new("TextButton", tabBar)
+    btn.Size = UDim2.new(0, 102, 1, 0)
+    btn.Position = UDim2.new(0, (idx-1)*110, 0, 0)
+    btn.AutoButtonColor = true
+    btn.BackgroundColor3 = Color3.fromRGB(44, 56, 82)
+    btn.TextColor3 = Color3.fromRGB(220,220,255)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
+    btn.TextSize = 17
     btn.Text = name
+    btn.TextStrokeTransparency = 0.75
+    btn.BackgroundTransparency = 0.17
+    roundify(btn, 13)
+    strokify(btn, 1.2, Color3.fromRGB(130,180,255), 0.44)
     return btn
 end
 
 local function createTabFrame()
     local tf = Instance.new("Frame", frame)
-    tf.Size = UDim2.new(1, -20, 1, -82)
-    tf.Position = UDim2.new(0, 10, 0, 74)
-    tf.BackgroundTransparency = 1
+    tf.Size = UDim2.new(1, -28, 1, -100)
+    tf.Position = UDim2.new(0, 14, 0, 88)
+    tf.BackgroundTransparency = 0.45
+    tf.BackgroundColor3 = Color3.fromRGB(36, 48, 72)
+    roundify(tf, 15)
+    strokify(tf, 1.1, Color3.fromRGB(90,120,200), 0.4)
     tf.Visible = false
     return tf
 end
@@ -81,7 +127,15 @@ end
 local function showTab(tab)
     for _, name in ipairs(tabNames) do
         tabFrames[name].Visible = (name == tab)
-        tabButtons[name].BackgroundColor3 = name == tab and Color3.fromRGB(80, 110, 140) or Color3.fromRGB(60, 60, 80)
+        if name == tab then
+            tabButtons[name].BackgroundColor3 = Color3.fromRGB(52, 74, 120)
+            tabButtons[name].TextColor3 = Color3.fromRGB(255,255,255)
+            tabButtons[name].TextStrokeTransparency = 0.61
+        else
+            tabButtons[name].BackgroundColor3 = Color3.fromRGB(44, 56, 82)
+            tabButtons[name].TextColor3 = Color3.fromRGB(220,220,255)
+            tabButtons[name].TextStrokeTransparency = 0.77
+        end
     end
 end
 for _, name in ipairs(tabNames) do
@@ -90,20 +144,24 @@ end
 showTab("Credits")
 
 local notif = Instance.new("TextLabel", frame)
-notif.BackgroundTransparency = 0.3
-notif.BackgroundColor3 = Color3.fromRGB(45, 100, 60)
-notif.Size = UDim2.new(1, -40, 0, 26)
-notif.Position = UDim2.new(0, 20, 1, -34)
+notif.BackgroundTransparency = 0.13
+notif.BackgroundColor3 = Color3.fromRGB(60, 120, 80)
+notif.Size = UDim2.new(1, -48, 0, 28)
+notif.Position = UDim2.new(0, 24, 1, -40)
 notif.Visible = false
-notif.TextColor3 = Color3.fromRGB(250, 255, 250)
+notif.TextColor3 = Color3.fromRGB(255, 255, 255)
 notif.Font = Enum.Font.GothamBold
-notif.TextSize = 15
+notif.TextSize = 16
+notif.TextStrokeTransparency = 0.65
+notif.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+roundify(notif, 10)
+strokify(notif, 1, Color3.fromRGB(180,255,180), 0.19)
 
 local function notify(msg, col)
     notif.Text = msg
-    notif.BackgroundColor3 = col or Color3.fromRGB(45, 100, 60)
+    notif.BackgroundColor3 = col or Color3.fromRGB(60, 120, 80)
     notif.Visible = true
-    delay(2, function() notif.Visible = false end)
+    delay(2.1, function() notif.Visible = false end)
 end
 
 -----------------------
@@ -113,40 +171,46 @@ do
     local tf = tabFrames["Credits"]
     local function label(txt, ypos)
         local l = Instance.new("TextLabel", tf)
-        l.Size = UDim2.new(1, -20, 0, 28)
-        l.Position = UDim2.new(0, 10, 0, ypos)
+        l.Size = UDim2.new(1, -24, 0, 28)
+        l.Position = UDim2.new(0, 12, 0, ypos)
         l.BackgroundTransparency = 1
         l.TextColor3 = Color3.fromRGB(230, 230, 200)
         l.Font = Enum.Font.Gotham
-        l.TextSize = 18
+        l.TextSize = 19
         l.TextXAlignment = Enum.TextXAlignment.Left
+        l.TextStrokeTransparency = 0.85
         l.Text = txt
         return l
     end
     label("ESP & UI: Syntaxz Scripts", 10)
-    label("UI: Custom Roblox GUI", 38)
+    label("UI: Modern Glass/Rounded", 38)
     label("Discord: no discord too lazy to setup", 66)
 end
 
 -----------------------
--- Forsaken Tab
+-- Forsaken Tab (rounded/transparent buttons)
 -----------------------
-local forsakenVars = {
-    esp = false,
-    stamina = false
-}
+local forsakenVars = { esp = false, stamina = false }
 do
     local tf = tabFrames["Forsaken"]
+    local function styledBtn(parent, y, text, col)
+        local btn = Instance.new("TextButton", parent)
+        btn.Size = UDim2.new(0, 180, 0, 34)
+        btn.Position = UDim2.new(0, 14, 0, y)
+        btn.BackgroundColor3 = col or Color3.fromRGB(55, 68, 95)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 17
+        btn.Text = text
+        btn.AutoButtonColor = true
+        btn.BackgroundTransparency = 0.20
+        roundify(btn, 11)
+        strokify(btn, 1, Color3.fromRGB(100,180,120), 0.35)
+        return btn
+    end
 
     -- ESP
-    local espBtn = Instance.new("TextButton", tf)
-    espBtn.Size = UDim2.new(0, 170, 0, 32)
-    espBtn.Position = UDim2.new(0, 10, 0, 10)
-    espBtn.BackgroundColor3 = Color3.fromRGB(60, 90, 90)
-    espBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    espBtn.Font = Enum.Font.Gotham
-    espBtn.TextSize = 16
-    espBtn.Text = "Player ESP: OFF"
+    local espBtn = styledBtn(tf, 10, "Player ESP: OFF", Color3.fromRGB(50, 85, 90))
 
     -- ESP Logic
     local highlighted, espConnection = {}, nil
@@ -220,15 +284,7 @@ do
     end)
 
     -- Infinite Stamina
-    local staminaBtn = Instance.new("TextButton", tf)
-    staminaBtn.Size = UDim2.new(0, 170, 0, 32)
-    staminaBtn.Position = UDim2.new(0, 10, 0, 52)
-    staminaBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 60)
-    staminaBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    staminaBtn.Font = Enum.Font.Gotham
-    staminaBtn.TextSize = 16
-    staminaBtn.Text = "Infinite Stamina: OFF"
-
+    local staminaBtn = styledBtn(tf, 54, "Infinite Stamina: OFF", Color3.fromRGB(85, 85, 60))
     staminaBtn.MouseButton1Click:Connect(function()
         forsakenVars.stamina = not forsakenVars.stamina
         staminaBtn.Text = "Infinite Stamina: " .. (forsakenVars.stamina and "ON" or "OFF")
@@ -249,64 +305,77 @@ do
 end
 
 -----------------------
--- Universal Tab
+-- Universal Tab (all buttons glassy/rounded)
 -----------------------
-
--- Lightning Aura for skip time startup
-local function lightningAura(center, radius, duration)
-    local char = player.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local NUM_BOLTS = 10
-    local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
-    for i = 1, NUM_BOLTS do
-        local angle = math.rad((i / NUM_BOLTS) * 360)
-        local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
-        local startPos = hrp.Position
-        local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
-        local part0 = Instance.new("Part", workspace)
-        part0.Anchored = true
-        part0.CanCollide = false
-        part0.Transparency = 1
-        part0.Size = Vector3.new(0.2, 0.2, 0.2)
-        part0.Position = startPos
-
-        local part1 = Instance.new("Part", workspace)
-        part1.Anchored = true
-        part1.CanCollide = false
-        part1.Transparency = 1
-        part1.Size = Vector3.new(0.2, 0.2, 0.2)
-        part1.Position = endPos
-
-        local att0 = Instance.new("Attachment", part0)
-        local att1 = Instance.new("Attachment", part1)
-
-        local beam = Instance.new("Beam", part0)
-        beam.Attachment0 = att0
-        beam.Attachment1 = att1
-        beam.Width0 = 0.35 + math.random()*0.15
-        beam.Width1 = 0.25 + math.random()*0.15
-        beam.Color = COLOR
-        beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-        beam.LightEmission = 5
-        beam.CurveSize0 = math.random(-4,4)
-        beam.CurveSize1 = math.random(-4,4)
-        beam.FaceCamera = true
-
-        task.delay(duration or 0.13, function()
-            part0:Destroy()
-            part1:Destroy()
-        end)
-    end
-end
-
 local universalVars = {fullbright = false, acBypass = false, infHealth = false}
--- Jitter state
 local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime = 0}
 
 do
     local tf = tabFrames["Universal"]
+    local function styledBtn(parent, x, y, w, text, col)
+        local btn = Instance.new("TextButton", parent)
+        btn.Size = UDim2.new(0, w or 190, 0, 34)
+        btn.Position = UDim2.new(0, x, 0, y)
+        btn.BackgroundColor3 = col or Color3.fromRGB(46, 60, 120)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 16
+        btn.Text = text
+        btn.AutoButtonColor = true
+        btn.BackgroundTransparency = 0.18
+        roundify(btn, 11)
+        strokify(btn, 1.1, Color3.fromRGB(120,200,240), 0.34)
+        return btn
+    end
+
+    -- Lightning Aura for skip time startup
+    local function lightningAura(center, radius, duration)
+        local char = player.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        local NUM_BOLTS = 10
+        local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+        for i = 1, NUM_BOLTS do
+            local angle = math.rad((i / NUM_BOLTS) * 360)
+            local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
+            local startPos = hrp.Position
+            local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
+            local part0 = Instance.new("Part", workspace)
+            part0.Anchored = true
+            part0.CanCollide = false
+            part0.Transparency = 1
+            part0.Size = Vector3.new(0.2, 0.2, 0.2)
+            part0.Position = startPos
+
+            local part1 = Instance.new("Part", workspace)
+            part1.Anchored = true
+            part1.CanCollide = false
+            part1.Transparency = 1
+            part1.Size = Vector3.new(0.2, 0.2, 0.2)
+            part1.Position = endPos
+
+            local att0 = Instance.new("Attachment", part0)
+            local att1 = Instance.new("Attachment", part1)
+
+            local beam = Instance.new("Beam", part0)
+            beam.Attachment0 = att0
+            beam.Attachment1 = att1
+            beam.Width0 = 0.35 + math.random()*0.15
+            beam.Width1 = 0.25 + math.random()*0.15
+            beam.Color = COLOR
+            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
+            beam.LightEmission = 5
+            beam.CurveSize0 = math.random(-4,4)
+            beam.CurveSize1 = math.random(-4,4)
+            beam.FaceCamera = true
+
+            task.delay(duration or 0.13, function()
+                part0:Destroy()
+                part1:Destroy()
+            end)
+        end
+    end
 
     -----------------------------------------------------------------------------
     -- Forward Lightning Burst for Skip Time effect
@@ -405,6 +474,8 @@ do
         btn.Parent = extScreenGui
         btn.Active = true
         btn.Draggable = true
+        roundify(btn, 15)
+        strokify(btn, 1.2, Color3.fromRGB(180,220,255), 0.18)
 
         btn.MouseButton1Click:Connect(function()
             local char = player.Character
@@ -414,11 +485,9 @@ do
                 notify("Character not found!", Color3.fromRGB(200,50,50))
                 return
             end
-            -- Startup VFX
             lightningAura(hrp.Position, 6, 0.13)
             notify("Charging...", Color3.fromRGB(180,230,255))
             task.delay(0.1, function()
-                -- Move forward for skip duration
                 local direction = hrp.CFrame.LookVector
                 local speed = SKIP_SPEED
                 local duration = SKIP_DURATION
@@ -439,15 +508,7 @@ do
         externalBtn = btn
     end
 
-    local makeBtn = Instance.new("TextButton", tf)
-    makeBtn.Size = UDim2.new(0, 220, 0, 32)
-    makeBtn.Position = UDim2.new(0, 200, 0, 94)
-    makeBtn.BackgroundColor3 = Color3.fromRGB(65, 140, 180)
-    makeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    makeBtn.Font = Enum.Font.GothamBold
-    makeBtn.TextSize = 16
-    makeBtn.Text = "Skip Time"
-
+    local makeBtn = styledBtn(tf, 200, 94, 220, "Skip Time", Color3.fromRGB(65, 140, 180))
     makeBtn.MouseButton1Click:Connect(function()
         local char = player.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -472,18 +533,10 @@ do
     -----------------------------------------------------------------------------
     -- Vibrate/Jitter Character
     -----------------------------------------------------------------------------
-    local jitterBtn = Instance.new("TextButton", tf)
-    jitterBtn.Size = UDim2.new(0, 220, 0, 32)
-    jitterBtn.Position = UDim2.new(0, 200, 0, 136)
-    jitterBtn.BackgroundColor3 = Color3.fromRGB(130, 120, 220)
-    jitterBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    jitterBtn.Font = Enum.Font.GothamBold
-    jitterBtn.TextSize = 16
-    jitterBtn.Text = "Vibrate (Jitter) Character: OFF"
+    local jitterBtn = styledBtn(tf, 200, 136, 220, "Vibrate (Jitter) Character: OFF", Color3.fromRGB(130, 120, 220))
 
-    -- Jitter settings
-    local JITTER_DISTANCE = 0.35-- studs
-    local JITTER_SPEED = 5e9 -- higher = faster
+    local JITTER_DISTANCE = 0.35
+    local JITTER_SPEED = 5e9
     local HUMANOID_PART = "HumanoidRootPart"
 
     local lastJitterOffset = 0
@@ -523,9 +576,7 @@ do
             local hrp = player.Character[HUMANOID_PART]
             jitterVars.jitterTime = jitterVars.jitterTime + dt * JITTER_SPEED
             local offset = math.sin(jitterVars.jitterTime) * JITTER_DISTANCE
-            -- Remove last frame's jitter offset to get the real base position
             local basePos = hrp.Position - hrp.CFrame.RightVector * lastJitterOffset
-            -- Apply new offset and keep facing forward
             local newPos = basePos + hrp.CFrame.RightVector * offset
             hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
             lastJitterOffset = offset
@@ -551,14 +602,7 @@ do
     end)
 
     -- Fullbright
-    local fbBtn = Instance.new("TextButton", tf)
-    fbBtn.Size = UDim2.new(0, 170, 0, 32)
-    fbBtn.Position = UDim2.new(0, 10, 0, 10)
-    fbBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 110)
-    fbBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    fbBtn.Font = Enum.Font.Gotham
-    fbBtn.TextSize = 16
-    fbBtn.Text = "Fullbright: OFF"
+    local fbBtn = styledBtn(tf, 14, 10, 170, "Fullbright: OFF", Color3.fromRGB(80, 80, 110))
     local orig = {
         Ambient = Lighting.Ambient,
         Brightness = Lighting.Brightness,
@@ -587,14 +631,7 @@ do
     end)
 
     -- Anti-Cheat Detector/Bypass (Safe)
-    local acBtn = Instance.new("TextButton", tf)
-    acBtn.Size = UDim2.new(0, 220, 0, 32)
-    acBtn.Position = UDim2.new(0, 200, 0, 10)
-    acBtn.BackgroundColor3 = Color3.fromRGB(120, 60, 60)
-    acBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    acBtn.Font = Enum.Font.Gotham
-    acBtn.TextSize = 16
-    acBtn.Text = "Anti-Cheat Detector/Bypass: OFF"
+    local acBtn = styledBtn(tf, 200, 10, 220, "Anti-Cheat Detector/Bypass: OFF", Color3.fromRGB(120, 60, 60))
 
     local acDetectorEnabled = false
 
@@ -625,7 +662,6 @@ do
         return remotes
     end
 
-    -- SAFER: Just disables LocalScripts named "anticheat"
     local function disableAntiCheatScripts()
         for _, obj in ipairs(game:GetDescendants()) do
             if obj:IsA("LocalScript") and obj.Name:lower():find("anticheat") then
@@ -680,14 +716,7 @@ do
     end)
 
     -- Fire all remote events
-    local probeBtn = Instance.new("TextButton", tf)
-    probeBtn.Size = UDim2.new(0, 220, 0, 32)
-    probeBtn.Position = UDim2.new(0, 200, 0, 52)
-    probeBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 120)
-    probeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    probeBtn.Font = Enum.Font.Gotham
-    probeBtn.TextSize = 16
-    probeBtn.Text = "Fire all Remotes"
+    local probeBtn = styledBtn(tf, 200, 52, 220, "Fire all Remotes", Color3.fromRGB(60, 120, 120))
     probeBtn.MouseButton1Click:Connect(function()
         local popup = Instance.new("ScreenGui")
         popup.Name = "FireResultsPopup"
@@ -699,6 +728,8 @@ do
         frame.BorderSizePixel = 0
         frame.Active = true
         frame.Draggable = true
+        roundify(frame, 13)
+        strokify(frame, 2, Color3.fromRGB(90,190,245), 0.26)
 
         local closeBtn = Instance.new("TextButton", frame)
         closeBtn.Size = UDim2.new(0, 80, 0, 34)
@@ -709,6 +740,7 @@ do
         closeBtn.Font = Enum.Font.Gotham
         closeBtn.TextSize = 18
         closeBtn.MouseButton1Click:Connect(function() popup:Destroy() end)
+        roundify(closeBtn, 10)
 
         local title = Instance.new("TextLabel", frame)
         title.Size = UDim2.new(1, -20, 0, 34)
@@ -737,6 +769,7 @@ do
         scroll.BorderSizePixel = 0
         scroll.CanvasSize = UDim2.new(0,0,0,2000)
         scroll.ScrollBarThickness = 8
+        roundify(scroll, 8)
 
         local y = 0
         local function logLine(txt, col)
@@ -815,14 +848,7 @@ do
     end)
 
     -- Infinite Health Button & Logic
-    local infHealthBtn = Instance.new("TextButton", tf)
-    infHealthBtn.Size = UDim2.new(0, 170, 0, 32)
-    infHealthBtn.Position = UDim2.new(0, 10, 0, 52)
-    infHealthBtn.BackgroundColor3 = Color3.fromRGB(90, 60, 90)
-    infHealthBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    infHealthBtn.Font = Enum.Font.Gotham
-    infHealthBtn.TextSize = 16
-    infHealthBtn.Text = "Infinite Health: OFF"
+    local infHealthBtn = styledBtn(tf, 14, 52, 170, "Infinite Health: OFF", Color3.fromRGB(90, 60, 90))
 
     local infHealthLoop = nil
     local lastHealth = nil
@@ -905,22 +931,29 @@ do
             startInfHealth()
         end
     end)
-end 
+end
+
 -----------------------
--- Grow a Garden Tab
+-- Garden Tab (rounded/transparent style)
 -----------------------
 do
     local tf = tabFrames["Garden"]
-    -- Duplicate Tools
-    local dupBtn = Instance.new("TextButton", tf)
-    dupBtn.Size = UDim2.new(0, 170, 0, 32)
-    dupBtn.Position = UDim2.new(0, 10, 0, 10)
-    dupBtn.BackgroundColor3 = Color3.fromRGB(70,100,70)
-    dupBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    dupBtn.Font = Enum.Font.Gotham
-    dupBtn.TextSize = 16
-    dupBtn.Text = "Duplicate Tools"
+    local function styledBtn(parent, x, y, w, text, col)
+        local btn = Instance.new("TextButton", parent)
+        btn.Size = UDim2.new(0, w or 170, 0, 32)
+        btn.Position = UDim2.new(0, x, 0, y)
+        btn.BackgroundColor3 = col or Color3.fromRGB(70,100,70)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 16
+        btn.Text = text
+        btn.BackgroundTransparency = 0.2
+        roundify(btn, 10)
+        strokify(btn, 1, Color3.fromRGB(130,200,130), 0.39)
+        return btn
+    end
 
+    local dupBtn = styledBtn(tf, 14, 10, 170, "Duplicate Tools")
     dupBtn.MouseButton1Click:Connect(function()
         local backpack = player.Backpack
         for _, tool in ipairs(backpack:GetChildren()) do
@@ -932,26 +965,20 @@ do
         notify("Duplicated all tools in your backpack!")
     end)
 
-    -- Copy Tools from user
     local box = Instance.new("TextBox", tf)
     box.Size = UDim2.new(0, 150, 0, 32)
-    box.Position = UDim2.new(0, 10, 0, 52)
+    box.Position = UDim2.new(0, 14, 0, 52)
     box.BackgroundColor3 = Color3.fromRGB(60,80,110)
     box.TextColor3 = Color3.fromRGB(255,255,255)
     box.Font = Enum.Font.Gotham
     box.TextSize = 16
     box.PlaceholderText = "Username"
     box.Text = ""
+    box.BackgroundTransparency = 0.24
+    roundify(box, 10)
+    strokify(box, 1, Color3.fromRGB(140,200,255), 0.33)
 
-    local copyBtn = Instance.new("TextButton", tf)
-    copyBtn.Size = UDim2.new(0, 120, 0, 32)
-    copyBtn.Position = UDim2.new(0, 170, 0, 52)
-    copyBtn.BackgroundColor3 = Color3.fromRGB(60,100,100)
-    copyBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    copyBtn.Font = Enum.Font.Gotham
-    copyBtn.TextSize = 16
-    copyBtn.Text = "Copy Tools"
-
+    local copyBtn = styledBtn(tf, 170, 52, 120, "Copy Tools", Color3.fromRGB(60,100,100))
     copyBtn.MouseButton1Click:Connect(function()
         local username = box.Text
         local targetPlayer = nil
@@ -987,18 +1014,19 @@ end
 
 -- Close Button
 local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0, 100, 0, 28)
-closeBtn.Position = UDim2.new(1, -110, 1, -38)
+closeBtn.Size = UDim2.new(0, 100, 0, 32)
+closeBtn.Position = UDim2.new(1, -112, 1, -46)
 closeBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 18
 closeBtn.Text = "Close"
+closeBtn.BackgroundTransparency = 0.20
+roundify(closeBtn, 10)
+strokify(closeBtn, 1, Color3.fromRGB(220,130,130), 0.29)
 closeBtn.MouseButton1Click:Connect(function() gui.Enabled = false end)
 
--- ==========================
--- TOGGLE KEYBIND (RightShift)
--- ==========================
+-- Toggle keybind (RightShift)
 local toggling = false
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.RightShift and not gameProcessed and not toggling then
@@ -1009,9 +1037,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- ==========================
 -- Make GUI re-appear on respawn!
--- ==========================
 local function ensureGuiOnSpawn()
     local function onCharacterAdded()
         wait(1)
@@ -1026,7 +1052,7 @@ local function ensureGuiOnSpawn()
 end
 ensureGuiOnSpawn()
 
--- Add a floating toggle button for the main UI
+-- Add a floating toggle button for the main UI (glass/rounded)
 local toggleBtnGui = Instance.new("ScreenGui")
 toggleBtnGui.Name = "SyntaxzToggleBtnGui"
 toggleBtnGui.ResetOnSpawn = false
@@ -1034,18 +1060,27 @@ toggleBtnGui.Parent = player.PlayerGui
 
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Name = "UIToggleButton"
-toggleBtn.Size = UDim2.new(0, 54, 0, 54)
-toggleBtn.Position = UDim2.new(0, 12, 1, -66)
+toggleBtn.Size = UDim2.new(0, 56, 0, 56)
+toggleBtn.Position = UDim2.new(0, 15, 1, -74)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 80, 120)
-toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+toggleBtn.TextColor3 = Color3.fromRGB(240,255,255)
 toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 24
+toggleBtn.TextSize = 27
 toggleBtn.Text = "☰"
 toggleBtn.BorderSizePixel = 0
 toggleBtn.Active = true
 toggleBtn.Draggable = true
+toggleBtn.BackgroundTransparency = 0.18
+roundify(toggleBtn, 28)
+strokify(toggleBtn, 1.2, Color3.fromRGB(180,220,255), 0.18)
 toggleBtn.Parent = toggleBtnGui
 
 toggleBtn.MouseButton1Click:Connect(function()
     gui.Enabled = not gui.Enabled
+end)
+
+gui.AncestryChanged:Connect(function()
+    if not gui:IsDescendantOf(game) then
+        blur:Destroy()
+    end
 end)
