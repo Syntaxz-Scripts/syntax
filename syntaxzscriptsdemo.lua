@@ -1,4 +1,4 @@
--- Syntaxz Scripts 4.7 (FIXED for nil value issues)
+-- Syntaxz Scripts 4.7 
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
