@@ -1,4 +1,4 @@
--- Syntaxz Scripts v 4.5 
+-- Syntaxz Scripts v 4.6 (title at top, draggable toggle button, smaller UI, ALL TAB LOGIC INCLUDED)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -71,9 +71,9 @@ end
 
 local function getUISize()
     if isMobile() then
-        return math.floor(workspace.CurrentCamera.ViewportSize.X * 0.97), math.floor(workspace.CurrentCamera.ViewportSize.Y * 0.93)
+        return math.floor(workspace.CurrentCamera.ViewportSize.X * 0.75), math.floor(workspace.CurrentCamera.ViewportSize.Y * 0.73)
     else
-        return 640, 460
+        return 490, 340
     end
 end
 
@@ -135,6 +135,62 @@ RunService.RenderStepped:Connect(function()
     blur.Enabled = gui.Enabled
 end)
 
+-- Top Title Bar
+local titleBarHeight = 46
+local titleBar = Instance.new("Frame")
+titleBar.Parent = frame
+titleBar.Size = UDim2.new(1, 0, 0, titleBarHeight)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(25, 37, 61)
+titleBar.BackgroundTransparency = 0.08
+titleBar.BorderSizePixel = 0
+roundify(titleBar, 16)
+strokify(titleBar, 1, Color3.fromRGB(110,180,255), 0.18)
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Parent = titleBar
+titleLabel.Size = UDim2.new(1, 0, 1, 0)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Syntaxz Scripts"
+titleLabel.TextColor3 = Color3.fromRGB(220, 240, 255)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 28
+titleLabel.TextStrokeTransparency = 0.75
+
+-- Make the title bar draggable too
+titleBar.Active = true
+titleBar.Draggable = false
+local barDragging, barDragInput, barDragStart, barStartPos
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        barDragging = true
+        barDragStart = input.Position
+        barStartPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                barDragging = false
+            end
+        end)
+    end
+end)
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        barDragInput = input
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if input == barDragInput and barDragging then
+        local delta = input.Position - barDragStart
+        frame.Position = UDim2.new(
+            frame.Position.X.Scale,
+            barStartPos.X.Offset + delta.X,
+            frame.Position.Y.Scale,
+            barStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
 -- Tabs
 local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
 local tabButtons, tabFrames = {}, {}
@@ -147,8 +203,8 @@ local function getTabBtnFontSize()
 end
 
 local tabBar = Instance.new("ScrollingFrame", frame)
-tabBar.Size = UDim2.new(0, TABBAR_WIDTH, 1, -90)
-tabBar.Position = UDim2.new(0, 8, 0, 80)
+tabBar.Size = UDim2.new(0, TABBAR_WIDTH, 1, -(titleBarHeight+44))
+tabBar.Position = UDim2.new(0, 8, 0, titleBarHeight+2)
 tabBar.BackgroundTransparency = 0.08
 tabBar.BackgroundColor3 = Color3.fromRGB(38, 54, 88)
 tabBar.BorderSizePixel = 0
@@ -179,8 +235,8 @@ end
 
 local function createTabFrame()
     local tf = Instance.new("Frame", frame)
-    tf.Size = UDim2.new(1, -TABBAR_WIDTH-20, 1, -100)
-    tf.Position = UDim2.new(0, TABBAR_WIDTH+16, 0, 88)
+    tf.Size = UDim2.new(1, -TABBAR_WIDTH-20, 1, -(titleBarHeight+56))
+    tf.Position = UDim2.new(0, TABBAR_WIDTH+16, 0, titleBarHeight+8)
     tf.BackgroundTransparency = 0.45
     tf.BackgroundColor3 = Color3.fromRGB(36, 48, 72)
     roundify(tf, 15)
@@ -198,16 +254,16 @@ local function showTab(tab)
             tabButtons[name].TextStrokeTransparency = 0.61
             if not tabFrames[name].Visible then
                 tabFrames[name].Visible = true
-                tabFrames[name].Position = UDim2.new(0, TABBAR_WIDTH+28, 0, 88)
+                tabFrames[name].Position = UDim2.new(0, TABBAR_WIDTH+28, 0, titleBarHeight+8)
                 tabFrames[name].BackgroundTransparency = 1
-                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+16, 0, 88), BackgroundTransparency = 0.45}, 0.25)
+                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+16, 0, titleBarHeight+8), BackgroundTransparency = 0.45}, 0.25)
             end
         else
             tabButtons[name].BackgroundColor3 = Color3.fromRGB(44, 56, 82)
             tabButtons[name].TextColor3 = Color3.fromRGB(220,220,255)
             tabButtons[name].TextStrokeTransparency = 0.77
             if tabFrames[name].Visible then
-                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+28, 0, 88), BackgroundTransparency = 1}, 0.17).Completed:Connect(function()
+                tween(tabFrames[name], {Position = UDim2.new(0, TABBAR_WIDTH+28, 0, titleBarHeight+8), BackgroundTransparency = 1}, 0.17).Completed:Connect(function()
                     tabFrames[name].Visible = false
                 end)
             end
@@ -222,7 +278,7 @@ for i, name in ipairs(tabNames) do
 end
 showTab("Credits")
 
--- Notify system 
+-- Notify system (MUST be after frame is made)
 local notif = Instance.new("TextLabel", frame)
 notif.BackgroundTransparency = 0.13
 notif.BackgroundColor3 = Color3.fromRGB(60, 120, 80)
