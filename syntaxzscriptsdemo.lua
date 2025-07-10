@@ -435,7 +435,7 @@ do
     end
     label("ESP & UI: Syntaxz Scripts", 10)
     label("Discord: no discord :(", 38)
-    label("This script is still being worked on! :)", 66)
+    label("This script is in beta! ", 66)
 end
 
 -----------------------
