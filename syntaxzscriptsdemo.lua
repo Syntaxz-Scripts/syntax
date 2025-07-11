@@ -546,11 +546,11 @@ end
 -----------------------
 -- Universal Tab 
 -----------------------
-local universalVars = {fullbright = false, acBypass = false, infHealth = false}
-local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime = 0}
-
 do
     local tf = tabFrames["Universal"]
+    local universalVars = {fullbright = false, acBypass = false, infHealth = false}
+    local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime = 0}
+
     local function styledBtn(parent, x, y, w, text, col)
         local maxWidth = tf.AbsoluteSize.X - 32
         local width = math.min(w or 190, maxWidth)
@@ -1158,103 +1158,100 @@ do
             startJitter()
         end
     end)
-end
 
--- Auto Dodge (Auto TpWalk)
+-- Auto Dodge (Automatically makes you dodge when near a player) 
 
-local autoTpWalkVars = {
-    enabled = false,
-    direction = "Left",
-    connection = nil,
-    lastTp = 0,
-    cooldown = 1.2,
-}
-local directions = {"Left", "Right", "Backward"}
-local directionVectors = {
-    Left = function(hrp) return -hrp.CFrame.RightVector end,
-    Right = function(hrp) return hrp.CFrame.RightVector end,
-    Backward = function(hrp) return -hrp.CFrame.LookVector end,
-}
+    local autoTpWalkVars = {
+        enabled = false,
+        direction = "Left",
+        connection = nil,
+        lastTp = 0,
+        cooldown = 1.2,
+    }
+    local directions = {"Left", "Right", "Backward"}
+    local directionVectors = {
+        Left = function(hrp) return -hrp.CFrame.RightVector end,
+        Right = function(hrp) return hrp.CFrame.RightVector end,
+        Backward = function(hrp) return -hrp.CFrame.LookVector end,
+    }
 
-local function autoTpWalk(direction)
-    local char = player and player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    local function autoTpWalk(direction)
+        local char = player and player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
 
-    -- Lightning effect
-    local function lightningAura(center, radius, duration)
-        local NUM_BOLTS = 8
-        local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
-        for i = 1, NUM_BOLTS do
-            local angle = math.rad((i / NUM_BOLTS) * 360)
-            local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
-            local startPos = hrp.Position
-            local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
-            local part0 = Instance.new("Part", workspace)
-            part0.Anchored = true
-            part0.CanCollide = false
-            part0.Transparency = 1
-            part0.Size = Vector3.new(0.2, 0.2, 0.2)
-            part0.Position = startPos
+        -- Lightning effect
+        local function lightningAura(center, radius, duration)
+            local NUM_BOLTS = 8
+            local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+            for i = 1, NUM_BOLTS do
+                local angle = math.rad((i / NUM_BOLTS) * 360)
+                local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
+                local startPos = hrp.Position
+                local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
+                local part0 = Instance.new("Part", workspace)
+                part0.Anchored = true
+                part0.CanCollide = false
+                part0.Transparency = 1
+                part0.Size = Vector3.new(0.2, 0.2, 0.2)
+                part0.Position = startPos
 
-            local part1 = Instance.new("Part", workspace)
-            part1.Anchored = true
-            part1.CanCollide = false
-            part1.Transparency = 1
-            part1.Size = Vector3.new(0.2, 0.2, 0.2)
-            part1.Position = endPos
+                local part1 = Instance.new("Part", workspace)
+                part1.Anchored = true
+                part1.CanCollide = false
+                part1.Transparency = 1
+                part1.Size = Vector3.new(0.2, 0.2, 0.2)
+                part1.Position = endPos
 
-            local att0 = Instance.new("Attachment", part0)
-            local att1 = Instance.new("Attachment", part1)
+                local att0 = Instance.new("Attachment", part0)
+                local att1 = Instance.new("Attachment", part1)
 
-            local beam = Instance.new("Beam", part0)
-            beam.Attachment0 = att0
-            beam.Attachment1 = att1
-            beam.Width0 = 0.35 + math.random()*0.15
-            beam.Width1 = 0.25 + math.random()*0.15
-            beam.Color = COLOR
-            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-            beam.LightEmission = 5
-            beam.CurveSize0 = math.random(-4,4)
-            beam.CurveSize1 = math.random(-4,4)
-            beam.FaceCamera = true
+                local beam = Instance.new("Beam", part0)
+                beam.Attachment0 = att0
+                beam.Attachment1 = att1
+                beam.Width0 = 0.35 + math.random()*0.15
+                beam.Width1 = 0.25 + math.random()*0.15
+                beam.Color = COLOR
+                beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
+                beam.LightEmission = 5
+                beam.CurveSize0 = math.random(-4,4)
+                beam.CurveSize1 = math.random(-4,4)
+                beam.FaceCamera = true
 
-            task.delay(duration or 0.13, function()
-                part0:Destroy()
-                part1:Destroy()
-            end)
-        end
-    end
-
-    local SKIP_DISTANCE = 18 -- about 7-8 studs
-    local SKIP_SPEED = 150
-    local SKIP_DURATION = 0.13
-
-    lightningAura(hrp.Position, 6, 0.13)
-    if notify then
-        notify("Auto TpWalk: "..direction.."!", Color3.fromRGB(90,200,255))
-    end
-    task.delay(0.1, function()
-        local dirFunc = directionVectors[direction]
-        if not dirFunc then return end
-        local dirVec = dirFunc(hrp)
-        local speed = SKIP_SPEED
-        local duration = SKIP_DURATION
-        local start = tick()
-        local connection
-        connection = RunService.RenderStepped:Connect(function(dt)
-            if tick()-start > duration then
-                connection:Disconnect()
-                return
+                task.delay(duration or 0.13, function()
+                    part0:Destroy()
+                    part1:Destroy()
+                end)
             end
-            hrp.CFrame = hrp.CFrame + dirVec * speed * dt
-        end)
-    end)
-end
+        end
 
--- Adds a button to Universal tab
-if tabFrames and tabFrames["Universal"] then
-    local tf = tabFrames["Universal"]
+        local SKIP_DISTANCE = 18 -- about 7-8 studs
+        local SKIP_SPEED = 150
+        local SKIP_DURATION = 0.13
+
+        lightningAura(hrp.Position, 6, 0.13)
+        if notify then
+            notify("Auto TpWalk: "..direction.."!", Color3.fromRGB(90,200,255))
+        end
+        task.delay(0.1, function()
+            local dirFunc = directionVectors[direction]
+            if not dirFunc then return end
+            local dirVec = dirFunc(hrp)
+            local speed = SKIP_SPEED
+            local duration = SKIP_DURATION
+            local start = tick()
+            local connection
+            connection = RunService.RenderStepped:Connect(function(dt)
+                if tick()-start > duration then
+                    connection:Disconnect()
+                    return
+                end
+                hrp.CFrame = hrp.CFrame + dirVec * speed * dt
+            end)
+        end)
+    end
+
+    -- Adds a button to Universal tab
     local x, y = 14, 200
     local autoBtn = Instance.new("TextButton", tf)
     autoBtn.Size = UDim2.new(0, 270, 0, 34)
@@ -1344,6 +1341,11 @@ if tabFrames and tabFrames["Universal"] then
         -- reset cooldown on respawn
         autoTpWalkVars.lastTp = 0
     end)
+
+    -- ==============================
+    -- End Auto TpWalk
+    -- ==============================
+
 end
 
 -----------------------
