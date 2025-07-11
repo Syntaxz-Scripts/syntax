@@ -1,4 +1,4 @@
--- Syntaxz Scripts 4.7 
+-- Syntaxz Scripts 4.8
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1157,6 +1157,182 @@ do
             wait(1)
             startJitter()
         end
+    end)
+----------------------------
+-- Auto Dodge
+----------------------------
+local autoTpWalkVars = {
+    enabled = false,
+    direction = "Left",
+    connection = nil,
+    lastTp = 0,
+    cooldown = 1.2,
+}
+local directions = {"Left", "Right", "Backward"}
+local directionVectors = {
+    Left = function(hrp) return -hrp.CFrame.RightVector end,
+    Right = function(hrp) return hrp.CFrame.RightVector end,
+    Backward = function(hrp) return -hrp.CFrame.LookVector end,
+}
+
+local function autoTpWalk(direction)
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    -- Lightning effect
+    local function lightningAura(center, radius, duration)
+        local NUM_BOLTS = 8
+        local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+        for i = 1, NUM_BOLTS do
+            local angle = math.rad((i / NUM_BOLTS) * 360)
+            local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
+            local startPos = hrp.Position
+            local endPos = hrp.Position + offset + Vector3.new(0, math.random()*3, 0)
+            local part0 = Instance.new("Part", workspace)
+            part0.Anchored = true
+            part0.CanCollide = false
+            part0.Transparency = 1
+            part0.Size = Vector3.new(0.2, 0.2, 0.2)
+            part0.Position = startPos
+
+            local part1 = Instance.new("Part", workspace)
+            part1.Anchored = true
+            part1.CanCollide = false
+            part1.Transparency = 1
+            part1.Size = Vector3.new(0.2, 0.2, 0.2)
+            part1.Position = endPos
+
+            local att0 = Instance.new("Attachment", part0)
+            local att1 = Instance.new("Attachment", part1)
+
+            local beam = Instance.new("Beam", part0)
+            beam.Attachment0 = att0
+            beam.Attachment1 = att1
+            beam.Width0 = 0.35 + math.random()*0.15
+            beam.Width1 = 0.25 + math.random()*0.15
+            beam.Color = COLOR
+            beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
+            beam.LightEmission = 5
+            beam.CurveSize0 = math.random(-4,4)
+            beam.CurveSize1 = math.random(-4,4)
+            beam.FaceCamera = true
+
+            task.delay(duration or 0.13, function()
+                part0:Destroy()
+                part1:Destroy()
+            end)
+        end
+    end
+
+    local SKIP_DISTANCE = 18 -- about 7-8 studs
+    local SKIP_SPEED = 150
+    local SKIP_DURATION = 0.13
+
+    lightningAura(hrp.Position, 6, 0.13)
+    notify("Auto TpWalk: "..direction.."!", Color3.fromRGB(90,200,255))
+    task.delay(0.1, function()
+        local dirVec = directionVectors[direction](hrp)
+        local speed = SKIP_SPEED
+        local duration = SKIP_DURATION
+        local start = tick()
+        local connection
+        connection = RunService.RenderStepped:Connect(function(dt)
+            if tick()-start > duration then
+                connection:Disconnect()
+                return
+            end
+            hrp.CFrame = hrp.CFrame + dirVec * speed * dt
+        end)
+    end)
+end
+
+-- Adds a button to Universal tab
+if tabFrames and tabFrames["Universal"] then
+    local tf = tabFrames["Universal"]
+    local x, y = 14, 200
+    local autoBtn = Instance.new("TextButton", tf)
+    autoBtn.Size = UDim2.new(0, 270, 0, 34)
+    autoBtn.Position = UDim2.new(0, x, 0, y)
+    autoBtn.BackgroundColor3 = Color3.fromRGB(80,140,80)
+    autoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    autoBtn.Font = Enum.Font.GothamBold
+    autoBtn.TextSize = 16
+    autoBtn.Text = "Auto TpWalk on Proximity: OFF"
+    autoBtn.AutoButtonColor = true
+    autoBtn.BackgroundTransparency = 0.18
+    roundify(autoBtn, 12)
+    strokify(autoBtn, 1.1, Color3.fromRGB(100,200,120), 0.3)
+
+    -- dropdown for direction
+    local dirDropdown = Instance.new("TextButton", tf)
+    dirDropdown.Size = UDim2.new(0, 120, 0, 28)
+    dirDropdown.Position = UDim2.new(0, x+280, 0, y+3)
+    dirDropdown.BackgroundColor3 = Color3.fromRGB(60,90,60)
+    dirDropdown.TextColor3 = Color3.fromRGB(255,255,200)
+    dirDropdown.Font = Enum.Font.Gotham
+    dirDropdown.TextSize = 15
+    dirDropdown.Text = "Direction: Left"
+    dirDropdown.AutoButtonColor = true
+    dirDropdown.BackgroundTransparency = 0.22
+    roundify(dirDropdown, 8)
+    strokify(dirDropdown, 1, Color3.fromRGB(120,220,130), 0.26)
+
+    local function updateDirDropdown()
+        dirDropdown.Text = "Direction: " .. autoTpWalkVars.direction
+    end
+    dirDropdown.MouseButton1Click:Connect(function()
+        local idx = table.find(directions, autoTpWalkVars.direction) or 1
+        idx = idx + 1
+        if idx > #directions then idx = 1 end
+        autoTpWalkVars.direction = directions[idx]
+        updateDirDropdown()
+    end)
+
+    -- Main loop for auto tp walk
+    local function enableAutoTpWalk()
+        if autoTpWalkVars.connection then autoTpWalkVars.connection:Disconnect() end
+        autoTpWalkVars.enabled = true
+        autoBtn.Text = "Auto TpWalk on Proximity: ON"
+        autoTpWalkVars.connection = RunService.Heartbeat:Connect(function()
+            if not autoTpWalkVars.enabled then return end
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+            local myPos = hrp.Position
+            for _,other in ipairs(Players:GetPlayers()) do
+                if other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") then
+                    local oh = other.Character.HumanoidRootPart
+                    if (oh.Position-myPos).Magnitude < 7 then
+                        if tick()-autoTpWalkVars.lastTp > autoTpWalkVars.cooldown then
+                            autoTpWalk(autoTpWalkVars.direction)
+                            autoTpWalkVars.lastTp = tick()
+                        end
+                        break
+                    end
+                end
+            end
+        end)
+        notify("Auto TpWalk enabled! Will move "..autoTpWalkVars.direction.." if a player is near.")
+    end
+    local function disableAutoTpWalk()
+        autoTpWalkVars.enabled = false
+        autoBtn.Text = "Auto TpWalk on Proximity: OFF"
+        if autoTpWalkVars.connection then
+            autoTpWalkVars.connection:Disconnect()
+            autoTpWalkVars.connection = nil
+        end
+        notify("Auto Tpwalk disabled.")
+    end
+    autoBtn.MouseButton1Click:Connect(function()
+        if autoTpWalkVars.enabled then
+            disableAutoTpWalk()
+        else
+            enableAutoTpWalk()
+        end
+    end)
+    player.CharacterAdded:Connect(function()
+        -- reset cooldown on respawn
+        autoTpWalkVars.lastTp = 0
     end)
 end
 
