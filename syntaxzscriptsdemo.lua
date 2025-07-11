@@ -1182,7 +1182,7 @@ do
 
         -- Lightning effect
         local function lightningAura(center, radius, duration)
-            local NUM_BOLTS = 8
+            local NUM_BOLTS = 40
             local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
             for i = 1, NUM_BOLTS do
                 local angle = math.rad((i / NUM_BOLTS) * 360)
@@ -1213,7 +1213,7 @@ do
                 beam.Width1 = 0.25 + math.random()*0.15
                 beam.Color = COLOR
                 beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.08), NumberSequenceKeypoint.new(1, 0.5)})
-                beam.LightEmission = 5
+                beam.LightEmission = 7
                 beam.CurveSize0 = math.random(-4,4)
                 beam.CurveSize1 = math.random(-4,4)
                 beam.FaceCamera = true
@@ -1225,9 +1225,9 @@ do
             end
         end
 
-        local SKIP_DISTANCE = 18 -- about 7-8 studs
+        local SKIP_DISTANCE = 18 
         local SKIP_SPEED = 150
-        local SKIP_DURATION = 0.13
+        local SKIP_DURATION = 0.1
 
         lightningAura(hrp.Position, 6, 0.13)
         if notify then
