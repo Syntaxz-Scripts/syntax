@@ -1251,46 +1251,47 @@ do
         end)
     end
 
-    -- Adds a button to Universal tab
-    local x, y = 14, 200
-    local autoBtn = Instance.new("TextButton", tf)
-    autoBtn.Size = UDim2.new(0, 270, 0, 34)
-    autoBtn.Position = UDim2.new(0, x, 0, y)
-    autoBtn.BackgroundColor3 = Color3.fromRGB(80,140,80)
-    autoBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    autoBtn.Font = Enum.Font.GothamBold
-    autoBtn.TextSize = 16
-    autoBtn.Text = "Auto TpWalk on Proximity: OFF"
-    autoBtn.AutoButtonColor = true
-    autoBtn.BackgroundTransparency = 0.18
-    roundify(autoBtn, 12)
-    strokify(autoBtn, 1.1, Color3.fromRGB(100,200,120), 0.3)
+    -- Adds a button to Universal tab (layout fix)
+local x = 14
+local autoBtn = Instance.new("TextButton", contentParent)
+autoBtn.Size = UDim2.new(0, 270, 0, 34)
+autoBtn.Position = UDim2.new(0, x, 0, contentY)
+autoBtn.BackgroundColor3 = Color3.fromRGB(80,140,80)
+autoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+autoBtn.Font = Enum.Font.GothamBold
+autoBtn.TextSize = 16
+autoBtn.Text = "Auto TpWalk on Proximity: OFF"
+autoBtn.AutoButtonColor = true
+autoBtn.BackgroundTransparency = 0.18
+roundify(autoBtn, 12)
+strokify(autoBtn, 1.1, Color3.fromRGB(100,200,120), 0.3)
 
-    -- Dropdown for direction
-    local dirDropdown = Instance.new("TextButton", tf)
-    dirDropdown.Size = UDim2.new(0, 120, 0, 28)
-    dirDropdown.Position = UDim2.new(0, x+280, 0, y+3)
-    dirDropdown.BackgroundColor3 = Color3.fromRGB(60,90,60)
-    dirDropdown.TextColor3 = Color3.fromRGB(255,255,200)
-    dirDropdown.Font = Enum.Font.Gotham
-    dirDropdown.TextSize = 15
-    dirDropdown.Text = "Direction: Left"
-    dirDropdown.AutoButtonColor = true
-    dirDropdown.BackgroundTransparency = 0.22
-    roundify(dirDropdown, 8)
-    strokify(dirDropdown, 1, Color3.fromRGB(120,220,130), 0.26)
+-- Dropdown for direction
+local dirDropdown = Instance.new("TextButton", contentParent)
+dirDropdown.Size = UDim2.new(0, 120, 0, 28)
+dirDropdown.Position = UDim2.new(0, x+280, 0, contentY+3)
+dirDropdown.BackgroundColor3 = Color3.fromRGB(60,90,60)
+dirDropdown.TextColor3 = Color3.fromRGB(255,255,200)
+dirDropdown.Font = Enum.Font.Gotham
+dirDropdown.TextSize = 15
+dirDropdown.Text = "Direction: Left"
+dirDropdown.AutoButtonColor = true
+dirDropdown.BackgroundTransparency = 0.22
+roundify(dirDropdown, 8)
+strokify(dirDropdown, 1, Color3.fromRGB(120,220,130), 0.26)
 
-    local function updateDirDropdown()
-        dirDropdown.Text = "Direction: " .. autoTpWalkVars.direction
-    end
-    dirDropdown.MouseButton1Click:Connect(function()
-        local idx = table.find(directions, autoTpWalkVars.direction) or 1
-        idx = idx + 1
-        if idx > #directions then idx = 1 end
-        autoTpWalkVars.direction = directions[idx]
-        updateDirDropdown()
-    end)
+local function updateDirDropdown()
+    dirDropdown.Text = "Direction: " .. autoTpWalkVars.direction
+end
+dirDropdown.MouseButton1Click:Connect(function()
+    local idx = table.find(directions, autoTpWalkVars.direction) or 1
+    idx = idx + 1
+    if idx > #directions then idx = 1 end
+    autoTpWalkVars.direction = directions[idx]
+    updateDirDropdown()
+end)
 
+contentY = contentY + 44
     -- Main loop for auto tp walk
     local function enableAutoTpWalk()
         if autoTpWalkVars.connection then autoTpWalkVars.connection:Disconnect() end
