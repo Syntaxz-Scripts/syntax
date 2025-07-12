@@ -911,7 +911,7 @@ do
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local NUM_BOLTS = 10
-        local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+        local COLOR = ColorSequence.new(Color3.fromRGB(180, 230, 255), Color3.fromRGB(180, 230, 255))
         for i = 1, NUM_BOLTS do
             local angle = math.rad((i / NUM_BOLTS) * 360)
             local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
@@ -961,7 +961,7 @@ do
         local up = hrp.CFrame.UpVector
         local right = hrp.CFrame.RightVector
         local NUM_BOLTS = 20
-        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(180, 230, 255), Color3.fromRGB(173, 216, 230))
         local LIGHTNING_DURATION = 0.2
 
         local function zap(startPos, endPos, color)
@@ -1183,7 +1183,7 @@ do
         -- Lightning effect
         local function lightningAura(center, radius, duration)
             local NUM_BOLTS = 40
-            local COLOR = ColorSequence.new(Color3.fromRGB(180, 80, 0), Color3.fromRGB(180, 80, 0))
+            local COLOR = ColorSequence.new(Color3.fromRGB(180, 230, 255), Color3.fromRGB(180, 230, 255))
             for i = 1, NUM_BOLTS do
                 local angle = math.rad((i / NUM_BOLTS) * 360)
                 local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
