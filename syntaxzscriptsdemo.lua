@@ -1394,7 +1394,7 @@ mapGenBtn.MouseButton1Click:Connect(function()
             if isWater(x, z) then
                 local water = Instance.new("Part")
                 water.Size = Vector3.new(TILE_SIZE, 1, TILE_SIZE)
-                water.Position = posXZ + Vector3.new(0, 0.5, 0)
+                water.Position = posXZ + Vector3.new(0, 30, 0)
                 water.Anchored = true
                 water.Material = Enum.Material.SmoothPlastic
                 water.Color = Color3.fromRGB(60, 120, 200)
