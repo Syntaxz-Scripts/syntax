@@ -1,4 +1,4 @@
--- Syntaxz Scripts 5.0
+-- Syntaxz Scripts 4.8
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1344,148 +1344,127 @@ contentY = contentY + 44
     end)
 
     -- End Auto TpWalk
--- Make a map
+
+-- Sky island
     
-local mapGenBtn = styledBtn(contentParent, 14, contentY, 220, "Use Pocket Dimension", Color3.fromRGB(100,130,180))
-mapGenBtn.MouseButton1Click:Connect(function()
-    local mapFolder = Instance.new("Folder")
-    mapFolder.Name = "PocketDimension"
-    mapFolder.Parent = workspace
+local OFFSET = Vector3.new(10000, 0, 0)
 
-    local OFFSET = Vector3.new(10000, 0, 0)
-    local MAP_SIZE = 500
-    local TILE_SIZE = 10
+local enterBtn = styledBtn(contentParent, 14, contentY, 220, "Enter Pocket Dimension", Color3.fromRGB(140,190,220))
+enterBtn.MouseButton1Click:Connect(function()
+    local player = game.Players.LocalPlayer
+    local char = player and player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-    local function getHeight(x, z)
-        local distFromCenter = ((x - MAP_SIZE/2)^2 + (z - MAP_SIZE/2)^2)^0.5
-        return math.max(2, math.floor(8 * math.cos(distFromCenter / 80)))
-    end
+    -- 🌀 Create portal in front of player
+    local portal = Instance.new("Part")
+    portal.Size = Vector3.new(8,8,8)
+    portal.Shape = Enum.PartType.Ball
+    portal.Position = hrp.Position + hrp.CFrame.LookVector * 6 + Vector3.new(0, 4, 0)
+    portal.Anchored = true
+    portal.CanCollide = false
+    portal.Material = Enum.Material.Neon
+    portal.Color = Color3.fromRGB(100, 200, 255)
+    portal.Name = "TeleportPortal"
+    portal.Parent = workspace
 
-    local function isWater(x, z)
-        local dx = x - MAP_SIZE/2
-        local dz = z - MAP_SIZE/2
-        return dx*dx + dz*dz < (80^2)
-    end
+    local swirl = Instance.new("ParticleEmitter", portal)
+    swirl.Texture = "rbxassetid://296874871"
+    swirl.Rate = 60
+    swirl.Lifetime = NumberRange.new(0.6, 1)
+    swirl.Speed = NumberRange.new(0.5, 1.2)
+    swirl.Size = NumberSequence.new(1)
+    swirl.Rotation = NumberRange.new(0, 360)
+    swirl.Color = ColorSequence.new(Color3.fromRGB(90,180,255), Color3.fromRGB(255,255,255))
+    swirl.LightEmission = 0.9
 
-    local function createGrass(pos, parent)
-        local blade = Instance.new("Part")
-        blade.Size = Vector3.new(0.4, 1.6, 0.4)
-        blade.Position = pos + Vector3.new(0, 0.8, 0)
-        blade.Anchored = true
-        blade.Material = Enum.Material.Grass
-        blade.Color = Color3.fromRGB(60, 180, 80)
-        blade.Name = "GrassBlade"
-        blade.Parent = parent
+    -- 🌄 Build client-sided floating Sky Islands
+    local function buildSkyIsland()
+        local folder = Instance.new("Folder")
+        folder.Name = "ClientSkyIsland"
+        folder.Parent = workspace
 
-        local emitter = Instance.new("ParticleEmitter", blade)
-        emitter.Texture = "rbxassetid://247982705"
-        emitter.Rate = 30
-        emitter.Lifetime = NumberRange.new(0.4)
-        emitter.Speed = NumberRange.new(0.2, 0.5)
-        emitter.Size = NumberSequence.new(0.2)
-        emitter.Transparency = NumberSequence.new(0.3)
-        emitter.Color = ColorSequence.new(Color3.fromRGB(60, 180, 80))
-        emitter.LightEmission = 0.7
-    end
-
-    for x = 0, MAP_SIZE - TILE_SIZE, TILE_SIZE do
-        for z = 0, MAP_SIZE - TILE_SIZE, TILE_SIZE do
-            local posXZ = OFFSET + Vector3.new(x, 0, z)
-            if isWater(x, z) then
-                local water = Instance.new("Part")
-                water.Size = Vector3.new(TILE_SIZE, 1, TILE_SIZE)
-                water.Position = posXZ + Vector3.new(0, 30, 0)
-                water.Anchored = true
-                water.Material = Enum.Material.SmoothPlastic
-                water.Color = Color3.fromRGB(60, 120, 200)
-                water.Transparency = 0.4
-                water.Name = "WaterTile"
-                water.Parent = mapFolder
-            else
-                local height = getHeight(x, z)
-                for y = 1, height do
-                    local part = Instance.new("Part")
-                    part.Size = Vector3.new(TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                    part.Position = OFFSET + Vector3.new(x, y * TILE_SIZE, z)
-                    part.Anchored = true
-                    part.Material = Enum.Material.Grass
-                    part.Color = Color3.fromRGB(60 + math.random(0, 20), 180, 80 + math.random(0, 10))
-                    part.Name = "HillBlock"
-                    part.Parent = mapFolder
-                end
-                createGrass(OFFSET + Vector3.new(x, height * TILE_SIZE, z), mapFolder)
-            end
+        for i = 1, 3 do
+            local island = Instance.new("Part")
+            island.Size = Vector3.new(math.random(80,120), 10, math.random(80,120))
+            island.Position = OFFSET + Vector3.new((i - 1) * 150, 100, 0)
+            island.Anchored = true
+            island.Material = Enum.Material.Slate
+            island.Color = Color3.fromRGB(100, 200, 140)
+            island.TopSurface = Enum.SurfaceType.Smooth
+            island.Name = "FloatingIsland"
+            island.Parent = folder
         end
+
+        local cloudAnchor = Instance.new("Part")
+        cloudAnchor.Size = Vector3.new(4, 1, 4)
+        cloudAnchor.Position = OFFSET + Vector3.new(100, 140, 0)
+        cloudAnchor.Anchored = true
+        cloudAnchor.Transparency = 1
+        cloudAnchor.Name = "CloudEmitter"
+        cloudAnchor.Parent = folder
+
+        local cloudEmitter = Instance.new("ParticleEmitter", cloudAnchor)
+        cloudEmitter.Texture = "rbxassetid://258128463"
+        cloudEmitter.Rate = 15
+        cloudEmitter.Lifetime = NumberRange.new(5)
+        cloudEmitter.Speed = NumberRange.new(1)
+        cloudEmitter.Size = NumberSequence.new{ NumberSequenceKeypoint.new(0,4), NumberSequenceKeypoint.new(1,0) }
+        cloudEmitter.Transparency = NumberSequence.new{ NumberSequenceKeypoint.new(0,0.4), NumberSequenceKeypoint.new(1,1) }
+        cloudEmitter.LightEmission = 0.6
+        cloudEmitter.Color = ColorSequence.new(Color3.fromRGB(220, 230, 255))
     end
 
-    local skyBall = Instance.new("Part")
-    skyBall.Size = Vector3.new(900, 900, 900)
-    skyBall.Position = OFFSET + Vector3.new(MAP_SIZE/2, 300, MAP_SIZE/2)
-    skyBall.Anchored = true
-    skyBall.Shape = Enum.PartType.Ball
-    skyBall.Material = Enum.Material.ForceField
-    skyBall.Transparency = 0.5
-    skyBall.Color = Color3.fromRGB(200, 220, 255)
-    skyBall.Name = "SkyDome"
-    skyBall.CanCollide = false
-    skyBall.Parent = mapFolder
+    -- 🔁 Portal behavior
+    portal.Touched:Connect(function(hit)
+        local hum = hit.Parent:FindFirstChildOfClass("Humanoid")
+        local root = hit.Parent:FindFirstChild("HumanoidRootPart")
+        if hum and root then
+            buildSkyIsland()
+            root.CFrame = CFrame.new(OFFSET + Vector3.new(0, 104, -100))
 
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        local portal = Instance.new("Part")
-        portal.Size = Vector3.new(8, 8, 8)
-        portal.Shape = Enum.PartType.Ball
-        portal.Position = hrp.Position + hrp.CFrame.LookVector * 6 + Vector3.new(0, 4, 0)
-        portal.Anchored = true
-        portal.CanCollide = false
-        portal.Material = Enum.Material.Neon
-        portal.Color = Color3.fromRGB(100, 200, 255)
-        portal.Name = "TeleportPortal"
-        portal.Parent = workspace
+            -- 🎵 Play music
+            local theme = Instance.new("Sound")
+            theme.SoundId = "rbxassetid://16322984843"
+            theme.Volume = 1
+            theme.Looped = true
+            theme.Name = "SkyIslandTheme"
+            theme.Parent = workspace
+            theme:Play()
 
-        local particle = Instance.new("ParticleEmitter", portal)
-        particle.Texture = "rbxassetid://296874871"
-        particle.Rate = 60
-        particle.Lifetime = NumberRange.new(0.6, 1)
-        particle.Speed = NumberRange.new(0.5, 1.2)
-        particle.Size = NumberSequence.new(1)
-        particle.Rotation = NumberRange.new(0, 360)
-        particle.Color = ColorSequence.new(Color3.fromRGB(90,180,255), Color3.fromRGB(255,255,255))
-        particle.LightEmission = 0.9
+            notify("🎶 Sky Island Theme playing!")
 
-        portal.Touched:Connect(function(hit)
-            local char = hit.Parent
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-            if hum and root then
-                root.CFrame = CFrame.new(OFFSET + Vector3.new(MAP_SIZE/2, 100, MAP_SIZE/2))
-                notify("You entered the pocket dimension")
-            end
-        end)
+            -- 🎚️ Fade out when leaving
+            task.spawn(function()
+                local RunService = game:GetService("RunService")
+                local islandCenter = OFFSET + Vector3.new(0, 100, 0)
+                local isFading = false
+                RunService.RenderStepped:Connect(function()
+                    if root and (root.Position - islandCenter).Magnitude > 200 and not isFading then
+                        isFading = true
+                        local tween = game:GetService("TweenService"):Create(
+                            theme,
+                            TweenInfo.new(2, Enum.EasingStyle.Quad),
+                            { Volume = 0 }
+                        )
+                        tween:Play()
+                        tween.Completed:Connect(function()
+                            theme:Stop()
+                            theme:Destroy()
+                        end)
+                    end
+                end)
+            end)
 
-        notify("🌬️ Portal spawned—step into the dream.")
-    end
-
-    -- 🌗 Day-Night Cycle
-    local Lighting = game:GetService("Lighting")
-    spawn(function()
-        local time = 0
-        while true do
-            time = (time + 1) % 240
-            local dayPercent = math.sin(math.rad(time))
-            Lighting.Ambient = Color3.new(0.4 + dayPercent*0.4, 0.4 + dayPercent*0.4, 0.5 + dayPercent*0.5)
-            Lighting.OutdoorAmbient = Color3.new(0.5 + dayPercent*0.5, 0.5 + dayPercent*0.5, 0.6 + dayPercent*0.4)
-            Lighting.Brightness = 2 + dayPercent * 4
-            Lighting.FogColor = Color3.fromRGB(190 - dayPercent*40, 200 - dayPercent*40, 255)
-            Lighting.FogEnd = 300 + dayPercent * 500
-            wait(0.2)
+            notify("✨ Welcome to the Sky Islands, dreamer.")
         end
     end)
+
+    notify("🌀 Portal summoned—touch to enter the clouds.")
 end)
 
 contentY = contentY + 44
-
-    
+  
 end
 
 -----------------------
