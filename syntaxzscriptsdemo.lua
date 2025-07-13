@@ -1,4 +1,4 @@
--- Syntaxz Scripts 4.8
+-- Syntaxz Scripts 5.0
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1346,7 +1346,7 @@ contentY = contentY + 44
     -- End Auto TpWalk
 -- Make a map
     
-local mapGenBtn = styledBtn(contentParent, 14, contentY, 220, "Spawn Scenic Realm", Color3.fromRGB(100,130,180))
+local mapGenBtn = styledBtn(contentParent, 14, contentY, 220, "Use Pocket Dimension", Color3.fromRGB(100,130,180))
 mapGenBtn.MouseButton1Click:Connect(function()
     local mapFolder = Instance.new("Folder")
     mapFolder.Name = "ScenicRealm"
