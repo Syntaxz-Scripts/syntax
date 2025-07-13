@@ -1349,7 +1349,7 @@ contentY = contentY + 44
 local mapGenBtn = styledBtn(contentParent, 14, contentY, 220, "Use Pocket Dimension", Color3.fromRGB(100,130,180))
 mapGenBtn.MouseButton1Click:Connect(function()
     local mapFolder = Instance.new("Folder")
-    mapFolder.Name = "ScenicRealm"
+    mapFolder.Name = "PocketDimension"
     mapFolder.Parent = workspace
 
     local OFFSET = Vector3.new(10000, 0, 0)
@@ -1459,7 +1459,7 @@ mapGenBtn.MouseButton1Click:Connect(function()
             local root = char and char:FindFirstChild("HumanoidRootPart")
             if hum and root then
                 root.CFrame = CFrame.new(OFFSET + Vector3.new(MAP_SIZE/2, 100, MAP_SIZE/2))
-                notify("✨ You entered the scenic realm.")
+                notify("You entered the pocket dimension")
             end
         end)
 
