@@ -1,4 +1,4 @@
--- Syntaxz Scripts 4.8
+-- Syntaxz Scripts 5.0
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1524,7 +1524,7 @@ enterBtn.MouseButton1Click:Connect(function()
             theme.Looped = true
             theme.Name = "SkyIslandTheme"
             theme.Parent = workspace
-            theme:   
+            theme:Play() 
     
 end
 
