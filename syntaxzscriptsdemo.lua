@@ -1342,12 +1342,12 @@ contentY = contentY + 44
         -- reset cooldown on respawn
         autoTpWalkVars.lastTp = 0
     end)
-
     -- End Auto TpWalk
 
--- Sky island
-    
+-- Pocket Dimension
 local OFFSET = Vector3.new(10000, 0, 0)
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local enterBtn = styledBtn(contentParent, 14, contentY, 220, "Enter Pocket Dimension", Color3.fromRGB(140,190,220))
 enterBtn.MouseButton1Click:Connect(function()
@@ -1356,7 +1356,7 @@ enterBtn.MouseButton1Click:Connect(function()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- 🌀 Create portal in front of player
+    -- 🌀 Spawn portal near player
     local portal = Instance.new("Part")
     portal.Size = Vector3.new(8,8,8)
     portal.Shape = Enum.PartType.Ball
@@ -1378,93 +1378,154 @@ enterBtn.MouseButton1Click:Connect(function()
     swirl.Color = ColorSequence.new(Color3.fromRGB(90,180,255), Color3.fromRGB(255,255,255))
     swirl.LightEmission = 0.9
 
-    -- 🌄 Build client-sided floating Sky Islands
+    -- 🌄 Function to build floating island
     local function buildSkyIsland()
         local folder = Instance.new("Folder")
         folder.Name = "ClientSkyIsland"
         folder.Parent = workspace
 
-        for i = 1, 3 do
-            local island = Instance.new("Part")
-            island.Size = Vector3.new(math.random(80,120), 10, math.random(80,120))
-            island.Position = OFFSET + Vector3.new((i - 1) * 150, 100, 0)
-            island.Anchored = true
-            island.Material = Enum.Material.Slate
-            island.Color = Color3.fromRGB(100, 200, 140)
-            island.TopSurface = Enum.SurfaceType.Smooth
-            island.Name = "FloatingIsland"
-            island.Parent = folder
+        -- Main platform
+        local top = Instance.new("Part")
+        top.Size = Vector3.new(300, 8, 300)
+        top.Position = OFFSET + Vector3.new(0, 120, 0)
+        top.Anchored = true
+        top.Material = Enum.Material.Grass
+        top.Color = Color3.fromRGB(80, 200, 120)
+        top.TopSurface = Enum.SurfaceType.Smooth
+        top.Name = "SkyIslandTop"
+        top.Parent = folder
+
+        -- Sloped edges
+        for i = -1, 1 do
+            for j = -1, 1 do
+                local slope = Instance.new("WedgePart")
+                slope.Size = Vector3.new(100, 20, 100)
+                slope.Position = OFFSET + Vector3.new(i * 100, 110, j * 100)
+                slope.Anchored = true
+                slope.Material = Enum.Material.Ground
+                slope.Color = Color3.fromRGB(101, 67, 33)
+                slope.Name = "IslandSlope"
+                slope.Orientation = Vector3.new(0, (i + j) * 45, 180)
+                slope.Parent = folder
+            end
         end
 
+        -- Rounded corners
+        for x = -140, 140, 280 do
+            for z = -140, 140, 280 do
+                local corner = Instance.new("Part")
+                corner.Shape = Enum.PartType.Cylinder
+                corner.Size = Vector3.new(20, 20, 20)
+                corner.Position = OFFSET + Vector3.new(x, 110, z)
+                corner.Anchored = true
+                corner.Material = Enum.Material.Ground
+                corner.Color = Color3.fromRGB(101, 67, 33)
+                corner.Orientation = Vector3.new(0, 0, 90)
+                corner.Parent = folder
+            end
+        end
+
+        -- Tree
+        local tree = Instance.new("Model", folder)
+        tree.Name = "FantasyTree"
+
+        local trunk = Instance.new("Part", tree)
+        trunk.Size = Vector3.new(4, 25, 4)
+        trunk.Position = OFFSET + Vector3.new(0, 132, 0)
+        trunk.Anchored = true
+        trunk.Material = Enum.Material.Wood
+        trunk.Color = Color3.fromRGB(139, 69, 19)
+
+        local leaves = Instance.new("Part", tree)
+        leaves.Size = Vector3.new(20, 10, 20)
+        leaves.Position = trunk.Position + Vector3.new(0, 15, 0)
+        leaves.Anchored = true
+        leaves.Material = Enum.Material.SmoothPlastic
+        leaves.Color = Color3.fromRGB(60, 180, 75)
+        leaves.Shape = Enum.PartType.Ball
+
+        -- Cloud effect
         local cloudAnchor = Instance.new("Part")
         cloudAnchor.Size = Vector3.new(4, 1, 4)
-        cloudAnchor.Position = OFFSET + Vector3.new(100, 140, 0)
+        cloudAnchor.Position = OFFSET + Vector3.new(0, 150, 0)
         cloudAnchor.Anchored = true
         cloudAnchor.Transparency = 1
-        cloudAnchor.Name = "CloudEmitter"
         cloudAnchor.Parent = folder
 
         local cloudEmitter = Instance.new("ParticleEmitter", cloudAnchor)
         cloudEmitter.Texture = "rbxassetid://258128463"
-        cloudEmitter.Rate = 15
-        cloudEmitter.Lifetime = NumberRange.new(5)
-        cloudEmitter.Speed = NumberRange.new(1)
-        cloudEmitter.Size = NumberSequence.new{ NumberSequenceKeypoint.new(0,4), NumberSequenceKeypoint.new(1,0) }
-        cloudEmitter.Transparency = NumberSequence.new{ NumberSequenceKeypoint.new(0,0.4), NumberSequenceKeypoint.new(1,1) }
+        cloudEmitter.Rate = 20
+        cloudEmitter.Lifetime = NumberRange.new(6)
+        cloudEmitter.Speed = NumberRange.new(1.2)
+        cloudEmitter.Size = NumberSequence.new{ NumberSequenceKeypoint.new(0, 4), NumberSequenceKeypoint.new(1, 0) }
+        cloudEmitter.Transparency = NumberSequence.new{ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) }
         cloudEmitter.LightEmission = 0.6
         cloudEmitter.Color = ColorSequence.new(Color3.fromRGB(220, 230, 255))
+
+        -- 🔮 Floating return rune
+        local rune = Instance.new("Part")
+        rune.Size = Vector3.new(4, 1, 4)
+        rune.Position = OFFSET + Vector3.new(0, 126, 0)
+        rune.Anchored = true
+        rune.Material = Enum.Material.Neon
+        rune.Color = Color3.fromRGB(130, 0, 255)
+        rune.Shape = Enum.PartType.Cylinder
+        rune.Name = "ReturnRune"
+        rune.Orientation = Vector3.new(90, 0, 0)
+        rune.Parent = folder
+
+        local glow = Instance.new("ParticleEmitter", rune)
+        glow.Texture = "rbxassetid://296874871"
+        glow.Rate = 30
+        glow.Lifetime = NumberRange.new(1.5)
+        glow.Speed = NumberRange.new(0.2, 0.6)
+        glow.Size = NumberSequence.new{ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) }
+        glow.Color = ColorSequence.new(Color3.fromRGB(130,0,255), Color3.fromRGB(255,255,255))
+        glow.LightEmission = 1
+
+        -- Float animation
+        local pulseTween = TweenService:Create(
+            rune,
+            TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            { Position = rune.Position + Vector3.new(0, 2, 0) }
+        )
+        pulseTween:Play()
+
+        -- Teleport back to portal
+        rune.Touched:Connect(function(hit)
+            local char = hit.Parent
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if hum and root then
+                local portalSpawn = workspace:FindFirstChild("TeleportPortal")
+                if portalSpawn then
+                    root.CFrame = portalSpawn.CFrame + Vector3.new(0, 4, 0)
+                    notify("🔄 Returned to the portal gateway.")
+                else
+                    notify("⚠️ No portal found. You remain above the clouds.")
+                end
+            end
+        end)
     end
 
-    -- 🔁 Portal behavior
+    -- 🌀 Portal behavior
     portal.Touched:Connect(function(hit)
-        local hum = hit.Parent:FindFirstChildOfClass("Humanoid")
-        local root = hit.Parent:FindFirstChild("HumanoidRootPart")
+        local char = hit.Parent
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
         if hum and root then
             buildSkyIsland()
-            root.CFrame = CFrame.new(OFFSET + Vector3.new(0, 104, -100))
+            root.CFrame = CFrame.new(OFFSET + Vector3.new(0, 124, -100))
 
-            -- 🎵 Play music
+            -- 🔊 Music playback
             local theme = Instance.new("Sound")
             theme.SoundId = "rbxassetid://16322984843"
             theme.Volume = 1
             theme.Looped = true
             theme.Name = "SkyIslandTheme"
             theme.Parent = workspace
-            theme:Play()
-
-            notify("🎶 Sky Island Theme playing!")
-
-            -- 🎚️ Fade out when leaving
-            task.spawn(function()
-                local RunService = game:GetService("RunService")
-                local islandCenter = OFFSET + Vector3.new(0, 100, 0)
-                local isFading = false
-                RunService.RenderStepped:Connect(function()
-                    if root and (root.Position - islandCenter).Magnitude > 200 and not isFading then
-                        isFading = true
-                        local tween = game:GetService("TweenService"):Create(
-                            theme,
-                            TweenInfo.new(2, Enum.EasingStyle.Quad),
-                            { Volume = 0 }
-                        )
-                        tween:Play()
-                        tween.Completed:Connect(function()
-                            theme:Stop()
-                            theme:Destroy()
-                        end)
-                    end
-                end)
-            end)
-
-            notify("✨ Welcome to the Sky Islands, dreamer.")
-        end
-    end)
-
-    notify("🌀 Portal summoned—touch to enter the clouds.")
-end)
-
-contentY = contentY + 44
-  
+            theme:   
+    
 end
 
 -----------------------
