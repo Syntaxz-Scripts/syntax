@@ -1343,97 +1343,82 @@ contentY = contentY + 44
         autoTpWalkVars.lastTp = 0
     end)
 
-    -- ==============================
-    -- End Auto TpWalk
-    -- ==============================
--- MAP GENERATOR
-local mapGenBtn = styledBtn(contentParent, 14, contentY, 200, "Spawn Random Map (Far)", Color3.fromRGB(100,130,180))
+    -- TOMA PIPOCADA 💀💀💀💀💀🗿🗿
+
+-- Map Generator
+    
+local mapGenBtn = styledBtn(contentParent, 14, contentY, 220, "Spawn Massive Hills Map", Color3.fromRGB(100,130,180))
 mapGenBtn.MouseButton1Click:Connect(function()
     local mapFolder = Instance.new("Folder")
-    mapFolder.Name = "FarMap"
+    mapFolder.Name = "MassiveHillMap"
     mapFolder.Parent = workspace
 
     local OFFSET = Vector3.new(10000, 0, 0)
-    local MAP_SIZE = 120
+    local MAP_SIZE = 500
     local TILE_SIZE = 10
-    local HEIGHT_RANGE = {1, 4}
-    local TREE_CHANCE = 0.2
-    local WATER_CHANCE = 0.15
     local colors = {
-        Color3.fromRGB(80,180,80),   -- Grass
-        Color3.fromRGB(150,150,100), -- Sand
-        Color3.fromRGB(90,90,130)    -- Rock
+        Color3.fromRGB(80,180,80),
+        Color3.fromRGB(100,160,100),
+        Color3.fromRGB(90,200,110)
     }
 
-    local function createTree(basePos, parent)
-        local trunk = Instance.new("Part")
-        trunk.Size = Vector3.new(2, 6, 2)
-        trunk.Position = basePos + Vector3.new(0, 3, 0)
-        trunk.Anchored = true
-        trunk.Material = Enum.Material.Wood
-        trunk.Color = Color3.fromRGB(120, 90, 50)
-        trunk.Parent = parent
-
-        local leaves = Instance.new("Part")
-        leaves.Size = Vector3.new(6, 6, 6)
-        leaves.Position = trunk.Position + Vector3.new(0, 5, 0)
-        leaves.Anchored = true
-        leaves.Material = Enum.Material.Grass
-        leaves.Color = Color3.fromRGB(50, 200, 80)
-        leaves.Shape = Enum.PartType.Ball
-        leaves.Parent = parent
+    local function getHeight(x, z)
+        local sx = math.sin(x / 60)
+        local sz = math.cos(z / 45)
+        return math.floor(3 + 2 * (sx + sz))
     end
 
-    local function createWater(pos, parent)
-        local water = Instance.new("Part")
-        water.Size = Vector3.new(TILE_SIZE, 1, TILE_SIZE)
-        water.Position = pos + Vector3.new(0, 0.5, 0)
-        water.Anchored = true
-        water.Material = Enum.Material.SmoothPlastic
-        water.Color = Color3.fromRGB(60, 120, 200)
-        water.Transparency = 0.4
-        water.Name = "WaterTile"
-        water.Parent = parent
+    local function createGrass(pos, parent)
+        local blade = Instance.new("Part")
+        blade.Size = Vector3.new(0.3, 1.5, 0.3)
+        blade.Position = pos + Vector3.new(0, 0.75, 0)
+        blade.Anchored = true
+        blade.Material = Enum.Material.Grass
+        blade.Color = Color3.fromRGB(50, 180, 50)
+        blade.Parent = parent
+
+        local sway = Instance.new("ParticleEmitter", blade)
+        sway.Texture = "rbxassetid://247982705" -- Grass shimmer
+        sway.Rate = 15
+        sway.Lifetime = NumberRange.new(0.5)
+        sway.Speed = NumberRange.new(0.1, 0.3)
+        sway.Rotation = NumberRange.new(-10,10)
+        sway.Size = NumberSequence.new(0.1)
+        sway.Color = ColorSequence.new(Color3.fromRGB(50,180,50))
+        sway.Transparency = NumberSequence.new(0.3)
     end
 
     for x = 0, MAP_SIZE - TILE_SIZE, TILE_SIZE do
         for z = 0, MAP_SIZE - TILE_SIZE, TILE_SIZE do
-            if math.random() < WATER_CHANCE then
-                createWater(OFFSET + Vector3.new(x, 0, z), mapFolder)
-            else
-                local height = math.random(HEIGHT_RANGE[1], HEIGHT_RANGE[2])
-                for y = 1, height do
-                    local part = Instance.new("Part")
-                    part.Size = Vector3.new(TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                    part.Position = OFFSET + Vector3.new(x, y * TILE_SIZE, z)
-                    part.Anchored = true
-                    part.Material = Enum.Material.SmoothPlastic
-                    part.Color = colors[math.random(1, #colors)]
-                    part.Parent = mapFolder
+            local height = getHeight(x, z)
+            for y = 1, height do
+                local part = Instance.new("Part")
+                part.Size = Vector3.new(TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                part.Position = OFFSET + Vector3.new(x, y * TILE_SIZE, z)
+                part.Anchored = true
+                part.Material = Enum.Material.Grass
+                part.Color = colors[math.random(1, #colors)]
+                part.Parent = mapFolder
 
-                    if y == height and math.random() < TREE_CHANCE then
-                        createTree(part.Position + Vector3.new(0, TILE_SIZE, 0), mapFolder)
-                    end
+                if y == height then
+                    createGrass(part.Position + Vector3.new(0, TILE_SIZE, 0), mapFolder)
                 end
             end
         end
     end
 
-    -- 🌐 Sky Ball Dome
-    local SKY_RADIUS = MAP_SIZE * 1.5
+    local SKY_RADIUS = MAP_SIZE * 1.2
     local skyBall = Instance.new("Part")
     skyBall.Size = Vector3.new(SKY_RADIUS, SKY_RADIUS, SKY_RADIUS)
     skyBall.Position = OFFSET + Vector3.new(MAP_SIZE/2, SKY_RADIUS/2 + 20, MAP_SIZE/2)
     skyBall.Anchored = true
     skyBall.Shape = Enum.PartType.Ball
-    skyBall.Transparency = 0.5
     skyBall.Material = Enum.Material.ForceField
+    skyBall.Transparency = 0.5
     skyBall.Color = Color3.fromRGB(190, 220, 255)
-    skyBall.CanCollide = false
     skyBall.Name = "SkyBall"
     skyBall.Parent = mapFolder
 
-    -- 🌀 Teleport Portal Near Player
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
         local portal = Instance.new("Part")
@@ -1459,17 +1444,20 @@ mapGenBtn.MouseButton1Click:Connect(function()
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             local root = char and char:FindFirstChild("HumanoidRootPart")
             if hum and root then
-                root.CFrame = CFrame.new(OFFSET + Vector3.new(MAP_SIZE/2, 5, MAP_SIZE/2))
-                notify("✨ Teleported to mystical map realm!")
+                local centerX = MAP_SIZE / 2
+                local centerZ = MAP_SIZE / 2
+                local h = getHeight(centerX, centerZ)
+                root.CFrame = CFrame.new(OFFSET + Vector3.new(centerX, h * TILE_SIZE + 5, centerZ))
+                notify("✨ Teleported to grassy hillside realm!")
             end
         end)
 
-        notify("Portal spawned ahead—walk into it to enter the generated world!")
+        notify("Portal spawned ahead—step into the wind.")
     end
 end)
 
 contentY = contentY + 44
-   
+
 end
 
 -----------------------
