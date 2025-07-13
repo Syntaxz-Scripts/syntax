@@ -1,4 +1,4 @@
--- Syntaxz Scripts 4.8
+-- Syntaxz Scripts 5.0 (took 2 days) 
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1348,17 +1348,15 @@ contentY = contentY + 44
     -- ==============================
 
 local OFFSET = Vector3.new(10000, 0, 0)
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local player = game.Players.LocalPlayer
-
 local enterBtn = styledBtn(contentParent, 14, contentY, 220, "Enter Pocket Dimension", Color3.fromRGB(140,190,220))
+
 enterBtn.MouseButton1Click:Connect(function()
+    local player = game.Players.LocalPlayer
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- 🌀 Create portal
+    -- 🌀 Portal near player
     local portal = Instance.new("Part")
     portal.Size = Vector3.new(8, 8, 8)
     portal.Shape = Enum.PartType.Ball
@@ -1380,13 +1378,12 @@ enterBtn.MouseButton1Click:Connect(function()
     swirl.Color = ColorSequence.new(Color3.fromRGB(90,180,255), Color3.fromRGB(255,255,255))
     swirl.LightEmission = 0.9
 
-    -- 🌄 Island builder
+    -- 🌄 Build Floating Island
     local function buildSkyIsland()
         local folder = Instance.new("Folder")
         folder.Name = "ClientSkyIsland"
         folder.Parent = workspace
 
-        -- Main platform
         local top = Instance.new("Part")
         top.Size = Vector3.new(300, 8, 300)
         top.Position = OFFSET + Vector3.new(0, 120, 0)
@@ -1397,7 +1394,6 @@ enterBtn.MouseButton1Click:Connect(function()
         top.Name = "SkyIslandTop"
         top.Parent = folder
 
-        -- Sloped edges
         for i = -1, 1 do
             for j = -1, 1 do
                 local slope = Instance.new("WedgePart")
@@ -1411,7 +1407,6 @@ enterBtn.MouseButton1Click:Connect(function()
             end
         end
 
-        -- Rounded corners
         for x = -140, 140, 280 do
             for z = -140, 140, 280 do
                 local corner = Instance.new("Part")
@@ -1426,7 +1421,7 @@ enterBtn.MouseButton1Click:Connect(function()
             end
         end
 
-        -- Fantasy Tree
+        -- 🌳 Tree
         local tree = Instance.new("Model", folder)
         tree.Name = "FantasyTree"
 
@@ -1445,7 +1440,7 @@ enterBtn.MouseButton1Click:Connect(function()
         leaves.Color = Color3.fromRGB(60, 180, 75)
         leaves.Shape = Enum.PartType.Ball
 
-        -- Cloud emitter
+        -- ☁️ Clouds
         local cloudAnchor = Instance.new("Part")
         cloudAnchor.Size = Vector3.new(4, 1, 4)
         cloudAnchor.Position = OFFSET + Vector3.new(0, 150, 0)
@@ -1463,7 +1458,7 @@ enterBtn.MouseButton1Click:Connect(function()
         cloudEmitter.LightEmission = 0.6
         cloudEmitter.Color = ColorSequence.new(Color3.fromRGB(220, 230, 255))
 
-        -- Floating Rune
+        -- 🔮 Return Rune
         local rune = Instance.new("Part")
         rune.Size = Vector3.new(4, 1, 4)
         rune.Position = OFFSET + Vector3.new(0, 126, 0)
@@ -1498,19 +1493,15 @@ enterBtn.MouseButton1Click:Connect(function()
                 local portalSpawn = workspace:FindFirstChild("TeleportPortal")
                 if portalSpawn then
                     root.CFrame = portalSpawn.CFrame + Vector3.new(0, 4, 0)
-                    notify("🔄 Returned to the portal gateway.")
-                else
-                    notify("⚠️ No portal found.")
                 end
             end
         end)
     end
 
-    -- Portal activated
+    -- 🌌 Portal activated
     portal.Touched:Connect(function(hit)
-        local char = hit.Parent
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = hit.Parent and hit.Parent:FindFirstChildOfClass("Humanoid")
+        local root = hit.Parent and hit.Parent:FindFirstChild("HumanoidRootPart")
         if hum and root then
             buildSkyIsland()
             root.CFrame = CFrame.new(OFFSET + Vector3.new(0, 124, -100))
@@ -1523,7 +1514,7 @@ enterBtn.MouseButton1Click:Connect(function()
             theme.Parent = workspace
             theme:Play()
 
-            -- Music fade-out logic
+            -- 🎚️ Fade out when leaving
             task.spawn(function()
                 local isFading = false
                 RunService.RenderStepped:Connect(function()
@@ -1533,7 +1524,20 @@ enterBtn.MouseButton1Click:Connect(function()
                             theme,
                             TweenInfo.new(2, Enum.EasingStyle.Quad),
                             { Volume = 0 }
-
+                        )
+                        tween:Play()
+                        tween.Completed:Connect(function()
+                            theme:Stop()
+                            theme:Destroy()
+                        end)
+                    end
+                end)
+            end)
+        end
+    end)
+end)
+contentY = contentY + 44
+    
 end
 
 -----------------------
