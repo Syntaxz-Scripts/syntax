@@ -1421,25 +1421,6 @@ enterBtn.MouseButton1Click:Connect(function()
             end
         end
 
-        -- 🌳 Tree
-        local tree = Instance.new("Model", folder)
-        tree.Name = "FantasyTree"
-
-        local trunk = Instance.new("Part", tree)
-        trunk.Size = Vector3.new(4, 25, 4)
-        trunk.Position = OFFSET + Vector3.new(0, 132, 0)
-        trunk.Anchored = true
-        trunk.Material = Enum.Material.Wood
-        trunk.Color = Color3.fromRGB(139, 69, 19)
-
-        local leaves = Instance.new("Part", tree)
-        leaves.Size = Vector3.new(20, 10, 20)
-        leaves.Position = trunk.Position + Vector3.new(0, 15, 0)
-        leaves.Anchored = true
-        leaves.Material = Enum.Material.SmoothPlastic
-        leaves.Color = Color3.fromRGB(60, 180, 75)
-        leaves.Shape = Enum.PartType.Ball
-
         -- ☁️ Clouds
         local cloudAnchor = Instance.new("Part")
         cloudAnchor.Size = Vector3.new(4, 1, 4)
