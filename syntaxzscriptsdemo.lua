@@ -1524,7 +1524,32 @@ enterBtn.MouseButton1Click:Connect(function()
             theme.Looped = true
             theme.Name = "SkyIslandTheme"
             theme.Parent = workspace
-            theme:Play() 
+            theme:Play()
+
+-- 🎚️ Fade out when leaving
+task.spawn(function()
+    local hrp = root
+    local islandCenter = OFFSET + Vector3.new(0, 100, 0)
+    local isFading = false
+
+    RunService.RenderStepped:Connect(function()
+        if hrp and (hrp.Position - islandCenter).Magnitude > 200 and not isFading then
+            isFading = true
+            local tween = TweenService:Create(
+                theme,
+                TweenInfo.new(2, Enum.EasingStyle.Quad),
+                { Volume = 0 }
+            )
+            tween:Play()
+            tween.Completed:Connect(function()
+                theme:Stop()
+                theme:Destroy()
+            end)
+        end
+    end)
+end)
+
+notify("WHAT THE DIDDYBLUD IS TS 🗿💀") 
     
 end
 
