@@ -1420,7 +1420,7 @@ mapGenBtn.MouseButton1Click:Connect(function()
 
     local skyBall = Instance.new("Part")
     skyBall.Size = Vector3.new(900, 900, 900)
-    skyBall.Position = OFFSET + Vector3.new(MAP_SIZE/2, 450, MAP_SIZE/2)
+    skyBall.Position = OFFSET + Vector3.new(MAP_SIZE/2, 300, MAP_SIZE/2)
     skyBall.Anchored = true
     skyBall.Shape = Enum.PartType.Ball
     skyBall.Material = Enum.Material.ForceField
