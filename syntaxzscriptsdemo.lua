@@ -1343,87 +1343,99 @@ contentY = contentY + 44
         autoTpWalkVars.lastTp = 0
     end)
 
-    -- TOMA PIPOCADA 💀💀💀💀💀🗿🗿
-
--- Map Generator
+    -- End Auto TpWalk
+-- Make a map
     
-local mapGenBtn = styledBtn(contentParent, 14, contentY, 220, "Spawn Massive Hills Map", Color3.fromRGB(100,130,180))
+local mapGenBtn = styledBtn(contentParent, 14, contentY, 220, "Spawn Scenic Realm", Color3.fromRGB(100,130,180))
 mapGenBtn.MouseButton1Click:Connect(function()
     local mapFolder = Instance.new("Folder")
-    mapFolder.Name = "MassiveHillMap"
+    mapFolder.Name = "ScenicRealm"
     mapFolder.Parent = workspace
 
     local OFFSET = Vector3.new(10000, 0, 0)
     local MAP_SIZE = 500
     local TILE_SIZE = 10
-    local colors = {
-        Color3.fromRGB(80,180,80),
-        Color3.fromRGB(100,160,100),
-        Color3.fromRGB(90,200,110)
-    }
 
     local function getHeight(x, z)
-        local sx = math.sin(x / 60)
-        local sz = math.cos(z / 45)
-        return math.floor(3 + 2 * (sx + sz))
+        local distFromCenter = ((x - MAP_SIZE/2)^2 + (z - MAP_SIZE/2)^2)^0.5
+        return math.max(2, math.floor(8 * math.cos(distFromCenter / 80)))
+    end
+
+    local function isWater(x, z)
+        local dx = x - MAP_SIZE/2
+        local dz = z - MAP_SIZE/2
+        return dx*dx + dz*dz < (80^2)
     end
 
     local function createGrass(pos, parent)
         local blade = Instance.new("Part")
-        blade.Size = Vector3.new(0.3, 1.5, 0.3)
-        blade.Position = pos + Vector3.new(0, 0.75, 0)
+        blade.Size = Vector3.new(0.4, 1.6, 0.4)
+        blade.Position = pos + Vector3.new(0, 0.8, 0)
         blade.Anchored = true
         blade.Material = Enum.Material.Grass
-        blade.Color = Color3.fromRGB(50, 180, 50)
+        blade.Color = Color3.fromRGB(60, 180, 80)
+        blade.Name = "GrassBlade"
         blade.Parent = parent
 
-        local sway = Instance.new("ParticleEmitter", blade)
-        sway.Texture = "rbxassetid://247982705" -- Grass shimmer
-        sway.Rate = 15
-        sway.Lifetime = NumberRange.new(0.5)
-        sway.Speed = NumberRange.new(0.1, 0.3)
-        sway.Rotation = NumberRange.new(-10,10)
-        sway.Size = NumberSequence.new(0.1)
-        sway.Color = ColorSequence.new(Color3.fromRGB(50,180,50))
-        sway.Transparency = NumberSequence.new(0.3)
+        local emitter = Instance.new("ParticleEmitter", blade)
+        emitter.Texture = "rbxassetid://247982705"
+        emitter.Rate = 30
+        emitter.Lifetime = NumberRange.new(0.4)
+        emitter.Speed = NumberRange.new(0.2, 0.5)
+        emitter.Size = NumberSequence.new(0.2)
+        emitter.Transparency = NumberSequence.new(0.3)
+        emitter.Color = ColorSequence.new(Color3.fromRGB(60, 180, 80))
+        emitter.LightEmission = 0.7
     end
 
     for x = 0, MAP_SIZE - TILE_SIZE, TILE_SIZE do
         for z = 0, MAP_SIZE - TILE_SIZE, TILE_SIZE do
-            local height = getHeight(x, z)
-            for y = 1, height do
-                local part = Instance.new("Part")
-                part.Size = Vector3.new(TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                part.Position = OFFSET + Vector3.new(x, y * TILE_SIZE, z)
-                part.Anchored = true
-                part.Material = Enum.Material.Grass
-                part.Color = colors[math.random(1, #colors)]
-                part.Parent = mapFolder
-
-                if y == height then
-                    createGrass(part.Position + Vector3.new(0, TILE_SIZE, 0), mapFolder)
+            local posXZ = OFFSET + Vector3.new(x, 0, z)
+            if isWater(x, z) then
+                local water = Instance.new("Part")
+                water.Size = Vector3.new(TILE_SIZE, 1, TILE_SIZE)
+                water.Position = posXZ + Vector3.new(0, 0.5, 0)
+                water.Anchored = true
+                water.Material = Enum.Material.SmoothPlastic
+                water.Color = Color3.fromRGB(60, 120, 200)
+                water.Transparency = 0.4
+                water.Name = "WaterTile"
+                water.Parent = mapFolder
+            else
+                local height = getHeight(x, z)
+                for y = 1, height do
+                    local part = Instance.new("Part")
+                    part.Size = Vector3.new(TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                    part.Position = OFFSET + Vector3.new(x, y * TILE_SIZE, z)
+                    part.Anchored = true
+                    part.Material = Enum.Material.Grass
+                    part.Color = Color3.fromRGB(60 + math.random(0, 20), 180, 80 + math.random(0, 10))
+                    part.Name = "HillBlock"
+                    part.Parent = mapFolder
                 end
+                createGrass(OFFSET + Vector3.new(x, height * TILE_SIZE, z), mapFolder)
             end
         end
     end
 
-    local SKY_RADIUS = MAP_SIZE * 1.2
     local skyBall = Instance.new("Part")
-    skyBall.Size = Vector3.new(SKY_RADIUS, SKY_RADIUS, SKY_RADIUS)
-    skyBall.Position = OFFSET + Vector3.new(MAP_SIZE/2, SKY_RADIUS/2 + 20, MAP_SIZE/2)
+    skyBall.Size = Vector3.new(900, 900, 900)
+    skyBall.Position = OFFSET + Vector3.new(MAP_SIZE/2, 450, MAP_SIZE/2)
     skyBall.Anchored = true
     skyBall.Shape = Enum.PartType.Ball
     skyBall.Material = Enum.Material.ForceField
     skyBall.Transparency = 0.5
-    skyBall.Color = Color3.fromRGB(190, 220, 255)
-    skyBall.Name = "SkyBall"
+    skyBall.Color = Color3.fromRGB(200, 220, 255)
+    skyBall.Name = "SkyDome"
+    skyBall.CanCollide = false
     skyBall.Parent = mapFolder
 
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
         local portal = Instance.new("Part")
-        portal.Size = Vector3.new(6, 10, 1)
-        portal.Position = hrp.Position + hrp.CFrame.LookVector * 6 + Vector3.new(0, 3, 0)
+        portal.Size = Vector3.new(8, 8, 8)
+        portal.Shape = Enum.PartType.Ball
+        portal.Position = hrp.Position + hrp.CFrame.LookVector * 6 + Vector3.new(0, 4, 0)
         portal.Anchored = true
         portal.CanCollide = false
         portal.Material = Enum.Material.Neon
@@ -1433,31 +1445,47 @@ mapGenBtn.MouseButton1Click:Connect(function()
 
         local particle = Instance.new("ParticleEmitter", portal)
         particle.Texture = "rbxassetid://296874871"
-        particle.Rate = 40
+        particle.Rate = 60
         particle.Lifetime = NumberRange.new(0.6, 1)
-        particle.Speed = NumberRange.new(0.5, 1.5)
+        particle.Speed = NumberRange.new(0.5, 1.2)
         particle.Size = NumberSequence.new(1)
+        particle.Rotation = NumberRange.new(0, 360)
         particle.Color = ColorSequence.new(Color3.fromRGB(90,180,255), Color3.fromRGB(255,255,255))
+        particle.LightEmission = 0.9
 
         portal.Touched:Connect(function(hit)
             local char = hit.Parent
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             local root = char and char:FindFirstChild("HumanoidRootPart")
             if hum and root then
-                local centerX = MAP_SIZE / 2
-                local centerZ = MAP_SIZE / 2
-                local h = getHeight(centerX, centerZ)
-                root.CFrame = CFrame.new(OFFSET + Vector3.new(centerX, h * TILE_SIZE + 5, centerZ))
-                notify("✨ Teleported to grassy hillside realm!")
+                root.CFrame = CFrame.new(OFFSET + Vector3.new(MAP_SIZE/2, 100, MAP_SIZE/2))
+                notify("✨ You entered the scenic realm.")
             end
         end)
 
-        notify("Portal spawned ahead—step into the wind.")
+        notify("🌬️ Portal spawned—step into the dream.")
     end
+
+    -- 🌗 Day-Night Cycle
+    local Lighting = game:GetService("Lighting")
+    spawn(function()
+        local time = 0
+        while true do
+            time = (time + 1) % 240
+            local dayPercent = math.sin(math.rad(time))
+            Lighting.Ambient = Color3.new(0.4 + dayPercent*0.4, 0.4 + dayPercent*0.4, 0.5 + dayPercent*0.5)
+            Lighting.OutdoorAmbient = Color3.new(0.5 + dayPercent*0.5, 0.5 + dayPercent*0.5, 0.6 + dayPercent*0.4)
+            Lighting.Brightness = 2 + dayPercent * 4
+            Lighting.FogColor = Color3.fromRGB(190 - dayPercent*40, 200 - dayPercent*40, 255)
+            Lighting.FogEnd = 300 + dayPercent * 500
+            wait(0.2)
+        end
+    end)
 end)
 
 contentY = contentY + 44
 
+    
 end
 
 -----------------------
