@@ -542,9 +542,7 @@ do
         end
     end)
 
--- Forsaken Tp Slash & Tp Punch (Orbit Killers)
-
-local UIS = game:GetService("UserInputService")
+-- Tp Slash & Tp Punch (Orbit Killers)
 local slashActive = false
 local punchActive = false
 local cooldownQ = false
@@ -597,22 +595,19 @@ local function orbitAttack(key, cooldownFlag, cooldownTime)
 end
 
 -- Tp Slash Button
-local QBtn = styledBtn(ForsakenTab, 14, forsakenY, 220, "Tp Slash: OFF", Color3.fromRGB(200, 130, 250))
-QBtn.MouseButton1Click:Connect(function()
+local tpSlashBtn = styledBtn(tf, 98, "Tp Slash: OFF", Color3.fromRGB(200, 130, 250))
+tpSlashBtn.MouseButton1Click:Connect(function()
     slashActive = not slashActive
-    QBtn.Text = slashActive and "Tp Slash: ON" or "Tp Slash: OFF"
+    tpSlashBtn.Text = slashActive and "Tp Slash: ON" or "Tp Slash: OFF"
 end)
-forsakenY = forsakenY + 44
 
 -- Tp Punch Button
-local RBtn = styledBtn(ForsakenTab, 14, forsakenY, 220, "Tp Punch: OFF", Color3.fromRGB(250, 80, 120))
-RBtn.MouseButton1Click:Connect(function()
+local tpPunchBtn = styledBtn(tf, 142, "Tp Punch: OFF", Color3.fromRGB(250, 80, 120))
+tpPunchBtn.MouseButton1Click:Connect(function()
     punchActive = not punchActive
-    RBtn.Text = punchActive and "Tp Punch: ON" or "Tp Punch: OFF"
+    tpPunchBtn.Text = punchActive and "Tp Punch: ON" or "Tp Punch: OFF"
 end)
-forsakenY = forsakenY + 44
 
--- Keybind Triggers
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.Q and slashActive then orbitAttack("Q", cooldownQ, 40) end
