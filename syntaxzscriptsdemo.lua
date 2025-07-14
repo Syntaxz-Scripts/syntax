@@ -541,6 +541,84 @@ do
             end
         end
     end)
+
+-- Forsaken Tp Slash & Tp Punch (Orbit Killers)
+
+local UIS = game:GetService("UserInputService")
+local slashActive = false
+local punchActive = false
+local cooldownQ = false
+local cooldownR = false
+
+local function getKiller()
+    local killersFolder = workspace:FindFirstChild("Players") and workspace.Players:FindFirstChild("Killers")
+    if not killersFolder then return nil end
+    for _, obj in ipairs(killersFolder:GetChildren()) do
+        if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
+            return obj
+        end
+    end
+    return nil
+end
+
+local function orbitAttack(key, cooldownFlag, cooldownTime)
+    if key == "Q" and cooldownQ then return end
+    if key == "R" and cooldownR then return end
+
+    local killer = getKiller()
+    if not killer then return end
+
+    local character = game.Players.LocalPlayer.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    local kRoot = killer:FindFirstChild("HumanoidRootPart")
+    if not root or not kRoot then return end
+
+    local orbitRadius = 3
+    local prediction = 0.3
+    local interval = 0.03
+    local duration = 2
+    local original = root.CFrame
+    local start = tick()
+
+    if key == "Q" then cooldownQ = true else cooldownR = true end
+
+    while tick() - start < duration do
+        local angle = (tick() - start) * math.pi * 4
+        local predicted = kRoot.Position + kRoot.Velocity * prediction
+        local offset = Vector3.new(math.cos(angle) * orbitRadius, 0, math.sin(angle) * orbitRadius)
+        root.CFrame = CFrame.new(predicted + offset, predicted)
+        task.wait(interval)
+    end
+    root.CFrame = original
+
+    task.delay(cooldownTime, function()
+        if key == "Q" then cooldownQ = false else cooldownR = false end
+    end)
+end
+
+-- Tp Slash Button
+local QBtn = styledBtn(ForsakenTab, 14, forsakenY, 220, "Tp Slash: OFF", Color3.fromRGB(200, 130, 250))
+QBtn.MouseButton1Click:Connect(function()
+    slashActive = not slashActive
+    QBtn.Text = slashActive and "Tp Slash: ON" or "Tp Slash: OFF"
+end)
+forsakenY = forsakenY + 44
+
+-- Tp Punch Button
+local RBtn = styledBtn(ForsakenTab, 14, forsakenY, 220, "Tp Punch: OFF", Color3.fromRGB(250, 80, 120))
+RBtn.MouseButton1Click:Connect(function()
+    punchActive = not punchActive
+    RBtn.Text = punchActive and "Tp Punch: ON" or "Tp Punch: OFF"
+end)
+forsakenY = forsakenY + 44
+
+-- Keybind Triggers
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.Q and slashActive then orbitAttack("Q", cooldownQ, 40) end
+    if input.KeyCode == Enum.KeyCode.R and punchActive then orbitAttack("R", cooldownR, 24) end
+end)
+
 end
 
 -----------------------
