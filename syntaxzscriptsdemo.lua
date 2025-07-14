@@ -592,6 +592,72 @@ local function orbitAttack(key, cooldownFlag, cooldownTime)
     task.delay(cooldownTime, function()
         if key == "Q" then cooldownQ = false else cooldownR = false end
     end)
+-- just in case if it doesn't work  
+local externalButtons = {}
+
+local function createExternalBtn(name, color, action)
+    if externalButtons[name] then
+        externalButtons[name]:Destroy()
+        externalButtons[name] = nil
+    end
+    local btnGui = Instance.new("ScreenGui")
+    btnGui.Name = "Tp"..name.."BtnGui"
+    btnGui.ResetOnSpawn = false
+    btnGui.IgnoreGuiInset = true
+    btnGui.Parent = player.PlayerGui
+
+    local btn = Instance.new("TextButton", btnGui)
+    btn.Size = isMobile() and UDim2.new(0, 72, 0, 72) or UDim2.new(0, 60, 0, 60)
+    btn.Position = isMobile() and UDim2.new(1, -90, 1, -90) or UDim2.new(1, -78, 1, -78)
+    btn.AnchorPoint = Vector2.new(0, 0)
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 18
+    btn.Text = name
+    btn.Draggable = not isMobile()
+    btn.BackgroundTransparency = 0.18
+    roundify(btn, 18)
+    strokify(btn, 1.1, color:Lerp(Color3.fromRGB(255,255,255),0.2), 0.22)
+
+    btn.MouseButton1Click:Connect(action)
+
+    externalButtons[name] = btnGui
+end
+
+local function destroyExternalBtn(name)
+    if externalButtons[name] then
+        externalButtons[name]:Destroy()
+        externalButtons[name] = nil
+    end
+end
+
+-- Modified Tp Slash Toggle
+tpSlashBtn.MouseButton1Click:Connect(function()
+    slashActive = not slashActive
+    tpSlashBtn.Text = slashActive and "Tp Slash: ON" or "Tp Slash: OFF"
+    if slashActive then
+        createExternalBtn("Slash", Color3.fromRGB(200, 130, 250), function()
+            orbitAttack("Q", cooldownQ, 40)
+        end)
+    else
+        destroyExternalBtn("Slash")
+    end
+end)
+
+-- Modified Tp Punch Toggle
+tpPunchBtn.MouseButton1Click:Connect(function()
+    punchActive = not punchActive
+    tpPunchBtn.Text = punchActive and "Tp Punch: ON" or "Tp Punch: OFF"
+    if punchActive then
+        createExternalBtn("Punch", Color3.fromRGB(250, 80, 120), function()
+            orbitAttack("R", cooldownR, 24)
+        end)
+    else
+        destroyExternalBtn("Punch")
+    end
+end)
+
 end
 
 -- Tp Slash Button
