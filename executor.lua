@@ -1,108 +1,101 @@
--- Mini Script Executor with Red Outlines, Black Background, Drag Anywhere Except Execute Area
-
+-- Custom executor
 local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
--- Main Executor UI
-local ExecutorUI = Instance.new("ScreenGui")
+-- GUI Setup
+local ExecutorUI = Instance.new("ScreenGui", playerGui)
 ExecutorUI.Name = "RedOutlineExecutorUI"
-ExecutorUI.Parent = playerGui
 ExecutorUI.ResetOnSpawn = false
 ExecutorUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-local Frame = Instance.new("Frame")
-Frame.Parent = ExecutorUI
-Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black background
-Frame.BorderColor3 = Color3.fromRGB(255, 0, 0)   -- Red outline
-Frame.BorderSizePixel = 4
-Frame.Position = UDim2.new(0.5, -160, 0.2, 0)
-Frame.Size = UDim2.new(0, 320, 0, 220)
+local Frame = Instance.new("Frame", ExecutorUI)
 Frame.Name = "MainFrame"
+Frame.Position = UDim2.new(0.5, -240, 0.2, 0)
+Frame.Size = UDim2.new(0, 480, 0, 360)
+Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+Frame.BorderSizePixel = 4
 
-local FrameCorner = Instance.new("UICorner", Frame)
-FrameCorner.CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 
--- Label
-local Label = Instance.new("TextLabel")
-Label.Parent = Frame
-Label.BackgroundTransparency = 1
-Label.Position = UDim2.new(0, 0, 0, 8)
+-- Title
+local Label = Instance.new("TextLabel", Frame)
 Label.Size = UDim2.new(1, 0, 0, 32)
+Label.Position = UDim2.new(0, 0, 0, 8)
 Label.Font = Enum.Font.Highway
-Label.Text = "Red Outline Executor"
+Label.Text = " colagui 😝"
 Label.TextColor3 = Color3.fromRGB(255, 0, 0)
 Label.TextSize = 20
-Label.TextWrapped = true
+Label.BackgroundTransparency = 1
 
 -- Close Button
-local Close = Instance.new("TextButton")
-Close.Parent = Frame
-Close.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-Close.BorderSizePixel = 0
+local Close = Instance.new("TextButton", Frame)
 Close.Position = UDim2.new(1, -36, 0, 8)
 Close.Size = UDim2.new(0, 28, 0, 28)
 Close.Text = "X"
-Close.TextColor3 = Color3.fromRGB(0, 0, 0)
 Close.Font = Enum.Font.Highway
+Close.TextColor3 = Color3.fromRGB(0, 0, 0)
+Close.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 Close.TextScaled = true
-local CloseCorner = Instance.new("UICorner", Close)
-CloseCorner.CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 8)
 
--- Script Box
-local TextBox = Instance.new("TextBox")
-TextBox.Parent = Frame
+-- Code Input
+local TextBox = Instance.new("TextBox", Frame)
+TextBox.Size = UDim2.new(1, -24, 0, 160)
+TextBox.Position = UDim2.new(0, 12, 0, 48)
+TextBox.Text = "print('Hello World!')"
+TextBox.TextSize = 18
+TextBox.Font = Enum.Font.Code
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TextBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
 TextBox.BorderSizePixel = 2
-TextBox.Position = UDim2.new(0, 12, 0, 48)
-TextBox.Size = UDim2.new(1, -24, 0, 100)
-TextBox.Font = Enum.Font.Code
-TextBox.Text = "print('Hello World!')"
-TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextBox.TextSize = 16
 TextBox.TextXAlignment = Enum.TextXAlignment.Left
 TextBox.TextYAlignment = Enum.TextYAlignment.Top
 TextBox.ClearTextOnFocus = false
-local TextBoxCorner = Instance.new("UICorner", TextBox)
-TextBoxCorner.CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 6)
 
--- Execute Button
-local ExecuteButton = Instance.new("TextButton")
-ExecuteButton.Parent = Frame
-ExecuteButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-ExecuteButton.BorderSizePixel = 0
+-- Logger Box
+local LoggerBox = Instance.new("TextBox", Frame)
+LoggerBox.Size = UDim2.new(1, -24, 0, 64)
+LoggerBox.Position = UDim2.new(0, 12, 0, 220)
+LoggerBox.Text = "[Logger Initialized]\n"
+LoggerBox.TextSize = 14
+LoggerBox.Font = Enum.Font.Code
+LoggerBox.TextColor3 = Color3.fromRGB(255, 0, 0)
+LoggerBox.BackgroundTransparency = 1
+LoggerBox.TextXAlignment = Enum.TextXAlignment.Left
+LoggerBox.TextYAlignment = Enum.TextYAlignment.Top
+LoggerBox.TextWrapped = true
+LoggerBox.ClearTextOnFocus = false
+
+-- Buttons
+local ExecuteButton = Instance.new("TextButton", Frame)
 ExecuteButton.Position = UDim2.new(0.05, 0, 1, -56)
 ExecuteButton.Size = UDim2.new(0.4, -6, 0, 36)
-ExecuteButton.Font = Enum.Font.Highway
 ExecuteButton.Text = "Execute"
+ExecuteButton.Font = Enum.Font.Highway
 ExecuteButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+ExecuteButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 ExecuteButton.TextScaled = true
-local ExecCorner = Instance.new("UICorner", ExecuteButton)
-ExecCorner.CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", ExecuteButton).CornerRadius = UDim.new(0, 8)
 
--- Clear Button
-local ClearButton = Instance.new("TextButton")
-ClearButton.Parent = Frame
-ClearButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-ClearButton.BorderSizePixel = 0
+local ClearButton = Instance.new("TextButton", Frame)
 ClearButton.Position = UDim2.new(0.55, 6, 1, -56)
 ClearButton.Size = UDim2.new(0.4, -6, 0, 36)
-ClearButton.Font = Enum.Font.Highway
 ClearButton.Text = "Clear"
+ClearButton.Font = Enum.Font.Highway
 ClearButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+ClearButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 ClearButton.TextScaled = true
-local ClearCorner = Instance.new("UICorner", ClearButton)
-ClearCorner.CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", ClearButton).CornerRadius = UDim.new(0, 8)
 
--- Drag logic (everywhere except Execute and Clear area)
+-- Drag Logic
 local userInput = game:GetService("UserInputService")
 local dragging, dragStart, startPos
-
-local dragArea = Instance.new("Frame")
-dragArea.Parent = Frame
-dragArea.BackgroundTransparency = 1
+local dragArea = Instance.new("Frame", Frame)
 dragArea.Size = UDim2.new(1, 0, 1, -56)
 dragArea.Position = UDim2.new(0, 0, 0, 0)
-dragArea.ZIndex = 2
+dragArea.BackgroundTransparency = 1
 
 dragArea.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -110,38 +103,50 @@ dragArea.InputBegan:Connect(function(input)
         dragStart = input.Position
         startPos = Frame.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
+
 dragArea.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
         local delta = input.Position - dragStart
-        Frame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
--- Notifications
+-- Notification Utility
 local function notify(title, text, duration)
     pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {Title = title, Text = text, Duration = duration or 2})
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration or 2
+        })
     end)
 end
 
--- Button functions
+-- Hooked Functions
+local oldHttpGet = game.HttpGet
+game.HttpGet = function(self, url, ...)
+    LoggerBox.Text = LoggerBox.Text .. "\n[HttpGet] " .. url
+    return oldHttpGet(self, url, ...)
+end
+
+local oldLoadstring = loadstring
+loadstring = function(code, ...)
+    LoggerBox.Text = LoggerBox.Text .. "\n[loadstring] " .. code:sub(1, 120) .. "..."
+    return oldLoadstring(code, ...)
+end
+
+-- Button Logic
 Close.MouseButton1Click:Connect(function()
     ExecutorUI.Enabled = false
 end)
 
 ClearButton.MouseButton1Click:Connect(function()
     TextBox.Text = ""
+    LoggerBox.Text = "[Logger Cleared]\n"
     notify("Executor", "Cleared!", 2)
 end)
 
