@@ -1658,11 +1658,10 @@ enterBtn.MouseButton1Click:Connect(function()
 end)
 contentY = contentY + 44
 
--- Key Selector Section (Universal Tab)
-local selectedKey = getgenv().SelectedKey or "Q"
-getgenv().SelectedKey = selectedKey
+-- ✅ GLOBAL KEY SELECTION
+getgenv().SelectedKey = getgenv().SelectedKey or "Q"
 
--- GUI: Key Label
+-- 🔤 KEY SELECTOR LABEL
 local keyLabel = Instance.new("TextLabel", contentParent)
 keyLabel.Size = UDim2.new(0, 160, 0, 24)
 keyLabel.Position = UDim2.new(0, 14, 0, contentY)
@@ -1672,12 +1671,12 @@ keyLabel.TextSize = 16
 keyLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
 keyLabel.BackgroundTransparency = 1
 
--- GUI: Key Box
+-- 🔤 KEY SELECTOR BOX
 local keyBox = Instance.new("TextBox", contentParent)
 keyBox.Size = UDim2.new(0, 80, 0, 24)
 keyBox.Position = UDim2.new(0, 180, 0, contentY)
 keyBox.PlaceholderText = "Q"
-keyBox.Text = selectedKey
+keyBox.Text = getgenv().SelectedKey
 keyBox.Font = Enum.Font.Code
 keyBox.TextSize = 16
 keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1687,146 +1686,86 @@ keyBox.BorderSizePixel = 2
 
 contentY = contentY + 32
 
--- Floating External Button
-local ExternalBtn = Instance.new("TextButton", game.CoreGui)
-ExternalBtn.Size = UDim2.new(0, 110, 0, 36)
-ExternalBtn.Position = UDim2.new(0, 12, 0.85, 0)
-ExternalBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-ExternalBtn.Text = "▶ [" .. selectedKey .. "]"
-ExternalBtn.Font = Enum.Font.Highway
-ExternalBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
-ExternalBtn.TextScaled = true
-local corner = Instance.new("UICorner", ExternalBtn)
-corner.CornerRadius = UDim.new(0, 8)
+-- 🖱️ CREATE KEY BUTTON
+local createKeyBtn = Instance.new("TextButton", contentParent)
+createKeyBtn.Size = UDim2.new(0, 180, 0, 30)
+createKeyBtn.Position = UDim2.new(0, 14, 0, contentY)
+createKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 180)
+createKeyBtn.TextColor3 = Color3.new(1,1,1)
+createKeyBtn.Font = Enum.Font.GothamBold
+createKeyBtn.TextSize = 16
+createKeyBtn.Text = "Create Key Button"
+createKeyBtn.BackgroundTransparency = 0.18
+roundify(createKeyBtn, 8)
+strokify(createKeyBtn, 1.1, Color3.fromRGB(130,190,255), 0.3)
 
--- Validate on Focus Lost
+contentY = contentY + 40
+
+-- 🧠 VALIDATE KEY INPUT
 keyBox.FocusLost:Connect(function()
     local inputKey = keyBox.Text:upper()
     if #inputKey == 1 and inputKey:match("[%a%d]") then
         getgenv().SelectedKey = inputKey
-        ExternalBtn.Text = "▶ [" .. inputKey .. "]"
     else
         keyBox.Text = getgenv().SelectedKey
     end
 end)
 
--- Simulated Key Mapping
-ExternalBtn.MouseButton1Click:Connect(function()
+-- ⚙️ CREATE DRAGGABLE BUTTON WITH ACTION
+createKeyBtn.MouseButton1Click:Connect(function()
     local key = getgenv().SelectedKey
     local player = game.Players.LocalPlayer
-    local notify = function(title, msg, dur)
-        pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = title,
-                Text = msg,
-                Duration = dur or 2
-            })
-        end)
-    end
 
-    if key == "Q" then
-        local remote = game.ReplicatedStorage:FindFirstChild("ActivateAbility")
-        if remote then
-            remote:FireServer("Q")
-            notify("Key Triggered", "Activated Ability Q", 2)
+    local triggerBtn = Instance.new("TextButton", game.CoreGui)
+    triggerBtn.Size = UDim2.new(0, 120, 0, 40)
+    triggerBtn.Position = UDim2.new(0, 16, 0.8, 0)
+    triggerBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    triggerBtn.TextColor3 = Color3.new(0,0,0)
+    triggerBtn.Font = Enum.Font.GothamBold
+    triggerBtn.TextSize = 18
+    triggerBtn.Text = "▶ [" .. key .. "]"
+    triggerBtn.Draggable = true
+    triggerBtn.Active = true
+    roundify(triggerBtn, 8)
+
+    triggerBtn.MouseButton1Click:Connect(function()
+        local function notify(title, msg)
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = title, Text = msg, Duration = 2
+                })
+            end)
         end
 
-    elseif key == "E" then
-        local gui = player.PlayerGui:FindFirstChild("EquipmentUI")
-        if gui then gui.Enabled = true end
-        notify("Key Triggered", "Opened Equipment Menu", 2)
+        if key == "Q" then
+            local remote = game.ReplicatedStorage:FindFirstChild("ActivateAbility")
+            if remote then remote:FireServer("Q") end
+            notify("Activated", "Ability Q")
 
-    elseif key == "F" then
-        local action = game.ReplicatedStorage:FindFirstChild("InteractEvent")
-        if action then action:FireServer() end
-        notify("Key Triggered", "Fired Interaction", 2)
+        elseif key == "E" then
+            local gui = player.PlayerGui:FindFirstChild("EquipmentUI")
+            if gui then gui.Enabled = true end
+            notify("Opened", "Equipment Menu")
 
-    elseif key == "R" then
-        if player.Character then player.Character:BreakJoints() end
-        notify("Key Triggered", "Character Reset", 2)
+        elseif key == "F" then
+            local remote = game.ReplicatedStorage:FindFirstChild("InteractEvent")
+            if remote then remote:FireServer() end
+            notify("Interacted", "Fired Interaction")
 
-    elseif key == "T" then
-        game.ReplicatedStorage:WaitForChild("DefaultChatSystemChatEvents")
-            :WaitForChild("SayMessageRequest"):FireServer("I am Syntaxz 👑", "All")
-        notify("Key Triggered", "Sent Taunt Message", 2)
+        elseif key == "R" then
+            if player.Character then player.Character:BreakJoints() end
+            notify("Reset", "Character Broken")
 
-    else
-        notify("Key Triggered", "No action mapped for [" .. key .. "]", 2)
-    end
+        elseif key == "T" then
+            game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("I am Syntaxz 👑", "All")
+            notify("Taunted", "Message Sent")
+
+        else
+            notify("No Action", "[" .. key .. "] not mapped.")
+        end
+    end)
 end)
 
--- Global Key Tracking
-getgenv().SelectedKey = getgenv().SelectedKey or "Q"
-
--- External Button Setup
-local triggerGui = Instance.new("ScreenGui", game.CoreGui)
-triggerGui.Name = "KeyTriggerGui"
-triggerGui.ResetOnSpawn = false
-
-local triggerBtn = Instance.new("TextButton", triggerGui)
-triggerBtn.Size = UDim2.new(0, 110, 0, 38)
-triggerBtn.Position = UDim2.new(0, 14, 0.85, 0)
-triggerBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-triggerBtn.TextColor3 = Color3.new(0,0,0)
-triggerBtn.Font = Enum.Font.GothamBold
-triggerBtn.TextSize = 20
-triggerBtn.Text = "▶ [" .. getgenv().SelectedKey .. "]"
-triggerBtn.Active = true
-triggerBtn.Draggable = true
-local corner = Instance.new("UICorner", triggerBtn)
-corner.CornerRadius = UDim.new(0, 8)
-
--- Key Selector TextBox (already inside Universal tab)
-keyBox.FocusLost:Connect(function()
-    local inputKey = keyBox.Text:upper()
-    if #inputKey == 1 and inputKey:match("[%a%d]") then
-        getgenv().SelectedKey = inputKey
-        triggerBtn.Text = "▶ [" .. inputKey .. "]"
-    else
-        keyBox.Text = getgenv().SelectedKey
-    end
-end)
-
--- Button Action
-triggerBtn.MouseButton1Click:Connect(function()
-    local key = getgenv().SelectedKey
-    local player = game.Players.LocalPlayer
-    local function notify(title, msg)
-        pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = title, Text = msg, Duration = 2
-            })
-        end)
-    end
-
-    if key == "Q" then
-        local remote = game.ReplicatedStorage:FindFirstChild("ActivateAbility")
-        if remote then remote:FireServer("Q") end
-        notify("Activated", "Ability Q")
-
-    elseif key == "E" then
-        local ui = player.PlayerGui:FindFirstChild("EquipmentUI")
-        if ui then ui.Enabled = true end
-        notify("Opened", "Equipment Menu")
-
-    elseif key == "F" then
-        local remote = game.ReplicatedStorage:FindFirstChild("InteractEvent")
-        if remote then remote:FireServer() end
-        notify("Interacted", "Fired Interaction")
-
-    elseif key == "R" then
-        if player.Character then player.Character:BreakJoints() end
-        notify("Reset", "Character Broken")
-
-    elseif key == "T" then
-        game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("I am Syntaxz 👑", "All")
-        notify("Taunted", "Message Sent")
-
-    else
-        notify("No Action", "[" .. key .. "] is not mapped.")
-    end
-end)
-    
 end
 
 -----------------------
