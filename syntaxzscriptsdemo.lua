@@ -1659,7 +1659,8 @@ end)
 contentY = contentY + 44
 
 -- Key thing
-local keyLabel = Instance.new("TextLabel", UniversalTabFrame)
+local keyLabel = Instance.new("TextLabel", tf)
+local keyBox = Instance.new("TextBox", tf)
 keyLabel.Size = UDim2.new(0, 160, 0, 24)
 keyLabel.Position = UDim2.new(0, 12, 0, 12)
 keyLabel.Text = "Selected Key:"
