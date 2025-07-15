@@ -1,4 +1,4 @@
--- Syntaxz Scripts 5.2
+-- Syntaxz Scripts 5.3
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1658,22 +1658,26 @@ enterBtn.MouseButton1Click:Connect(function()
 end)
 contentY = contentY + 44
 
--- Key thing
-local keyLabel = Instance.new("TextLabel", tf)
-local keyBox = Instance.new("TextBox", tf)
+-- Key Selector Section (Universal Tab)
+local selectedKey = getgenv().SelectedKey or "Q"
+getgenv().SelectedKey = selectedKey
+
+-- GUI: Key Label
+local keyLabel = Instance.new("TextLabel", contentParent)
 keyLabel.Size = UDim2.new(0, 160, 0, 24)
-keyLabel.Position = UDim2.new(0, 12, 0, 12)
+keyLabel.Position = UDim2.new(0, 14, 0, contentY)
 keyLabel.Text = "Selected Key:"
-keyLabel.Font = Enum.Font.Highway
+keyLabel.Font = Enum.Font.GothamBold
 keyLabel.TextSize = 16
 keyLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
 keyLabel.BackgroundTransparency = 1
 
-local keyBox = Instance.new("TextBox", UniversalTabFrame)
+-- GUI: Key Box
+local keyBox = Instance.new("TextBox", contentParent)
 keyBox.Size = UDim2.new(0, 80, 0, 24)
-keyBox.Position = UDim2.new(0, 180, 0, 12)
+keyBox.Position = UDim2.new(0, 180, 0, contentY)
 keyBox.PlaceholderText = "Q"
-keyBox.Text = getgenv().SelectedKey or "Q"
+keyBox.Text = selectedKey
 keyBox.Font = Enum.Font.Code
 keyBox.TextSize = 16
 keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1681,87 +1685,51 @@ keyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 keyBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
 keyBox.BorderSizePixel = 2
 
--- Initialize SelectedKey
-getgenv().SelectedKey = keyBox.Text:upper()
+contentY = contentY + 32
 
--- Validate key input
-keyBox.FocusLost:Connect(function()
-    local inputKey = keyBox.Text:upper()
-    if #inputKey == 1 and inputKey:match("[%a%d]") then
-        getgenv().SelectedKey = inputKey
-        ExternalBtn.Text = "▶ [" .. inputKey .. "]"
-    else
-        keyBox.Text = getgenv().SelectedKey
-    end
-end)
-
--- Inside your Universal Tab setup
-local keyLabel = Instance.new("TextLabel", UniversalTabFrame)
-keyLabel.Size = UDim2.new(0, 160, 0, 24)
-keyLabel.Position = UDim2.new(0, 12, 0, 12)
-keyLabel.Text = "Selected Key:"
-keyLabel.Font = Enum.Font.Highway
-keyLabel.TextSize = 16
-keyLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-keyLabel.BackgroundTransparency = 1
-
-local keyBox = Instance.new("TextBox", UniversalTabFrame)
-keyBox.Size = UDim2.new(0, 80, 0, 24)
-keyBox.Position = UDim2.new(0, 180, 0, 12)
-keyBox.PlaceholderText = "Q"
-keyBox.Text = getgenv().SelectedKey or "Q"
-keyBox.Font = Enum.Font.Code
-keyBox.TextSize = 16
-keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-keyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-keyBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
-keyBox.BorderSizePixel = 2
-
--- Initialize SelectedKey
-getgenv().SelectedKey = keyBox.Text:upper()
-
--- Validate key input
-keyBox.FocusLost:Connect(function()
-    local inputKey = keyBox.Text:upper()
-    if #inputKey == 1 and inputKey:match("[%a%d]") then
-        getgenv().SelectedKey = inputKey
-        ExternalBtn.Text = "▶ [" .. inputKey .. "]"
-    else
-        keyBox.Text = getgenv().SelectedKey
-    end
-end)
-
--- External floating button (place this anywhere in your main executor)
+-- Floating External Button
 local ExternalBtn = Instance.new("TextButton", game.CoreGui)
-ExternalBtn.Size = UDim2.new(0, 100, 0, 36)
+ExternalBtn.Size = UDim2.new(0, 110, 0, 36)
 ExternalBtn.Position = UDim2.new(0, 12, 0.85, 0)
 ExternalBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-ExternalBtn.Text = "▶ [" .. getgenv().SelectedKey .. "]"
+ExternalBtn.Text = "▶ [" .. selectedKey .. "]"
 ExternalBtn.Font = Enum.Font.Highway
 ExternalBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
 ExternalBtn.TextScaled = true
-Instance.new("UICorner", ExternalBtn).CornerRadius = UDim.new(0, 8)
+local corner = Instance.new("UICorner", ExternalBtn)
+corner.CornerRadius = UDim.new(0, 8)
 
--- Notification utility
-local function notify(title, msg, dur)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = title,
-            Text = msg,
-            Duration = dur or 2
-        })
-    end)
-end
+-- Validate on Focus Lost
+keyBox.FocusLost:Connect(function()
+    local inputKey = keyBox.Text:upper()
+    if #inputKey == 1 and inputKey:match("[%a%d]") then
+        getgenv().SelectedKey = inputKey
+        ExternalBtn.Text = "▶ [" .. inputKey .. "]"
+    else
+        keyBox.Text = getgenv().SelectedKey
+    end
+end)
 
--- Simulated key map logic
+-- Simulated Key Mapping
 ExternalBtn.MouseButton1Click:Connect(function()
     local key = getgenv().SelectedKey
     local player = game.Players.LocalPlayer
-    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("ActivateAbility")
+    local notify = function(title, msg, dur)
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = title,
+                Text = msg,
+                Duration = dur or 2
+            })
+        end)
+    end
 
-    if key == "Q" and remote then
-        remote:FireServer("Q")
-        notify("Key Triggered", "Activated Ability Q", 2)
+    if key == "Q" then
+        local remote = game.ReplicatedStorage:FindFirstChild("ActivateAbility")
+        if remote then
+            remote:FireServer("Q")
+            notify("Key Triggered", "Activated Ability Q", 2)
+        end
 
     elseif key == "E" then
         local gui = player.PlayerGui:FindFirstChild("EquipmentUI")
@@ -1769,7 +1737,7 @@ ExternalBtn.MouseButton1Click:Connect(function()
         notify("Key Triggered", "Opened Equipment Menu", 2)
 
     elseif key == "F" then
-        local action = game:GetService("ReplicatedStorage"):FindFirstChild("InteractEvent")
+        local action = game.ReplicatedStorage:FindFirstChild("InteractEvent")
         if action then action:FireServer() end
         notify("Key Triggered", "Fired Interaction", 2)
 
@@ -1786,7 +1754,7 @@ ExternalBtn.MouseButton1Click:Connect(function()
         notify("Key Triggered", "No action mapped for [" .. key .. "]", 2)
     end
 end)
-
+    
 end
 
 -----------------------
