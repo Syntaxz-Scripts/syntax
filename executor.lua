@@ -8,18 +8,24 @@ ExecutorUI.ResetOnSpawn = false
 ExecutorUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local Frame = Instance.new("Frame", ExecutorUI)
-Frame.Size = UDim2.new(0, 480, 0, 360)
+Frame.Size = UDim2.new(0, 480, 0, 300) -- 🩳 reduced height
 Frame.Position = UDim2.new(0.5, -240, 0.25, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
 Frame.BorderSizePixel = 4
 Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
 
--- Drag System
+-- 🖱️ DragZone (for reliable drag)
+local dragZone = Instance.new("Frame", Frame)
+dragZone.Size = UDim2.new(1, 0, 0, 32)
+dragZone.Position = UDim2.new(0, 0, 0, 0)
+dragZone.BackgroundTransparency = 1
+dragZone.ZIndex = 10
+
 local UIS = game:GetService("UserInputService")
 local dragging, dragStart, startPos
 
-Frame.InputBegan:Connect(function(input)
+dragZone.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
@@ -97,9 +103,9 @@ ClearButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 ClearButton.TextScaled = true
 Instance.new("UICorner", ClearButton).CornerRadius = UDim.new(0, 8)
 
--- TextBox
+-- TextBox (adjusted height)
 local TextBox = Instance.new("TextBox", Frame)
-TextBox.Size = UDim2.new(1, -24, 0, 160)
+TextBox.Size = UDim2.new(1, -24, 0, 150)
 TextBox.Position = UDim2.new(0, 12, 0, 48)
 TextBox.Text = "print('Hello World!')"
 TextBox.TextSize = 18
@@ -115,8 +121,8 @@ Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 6)
 
 -- Logger
 local LoggerBox = Instance.new("TextBox", Frame)
-LoggerBox.Size = UDim2.new(1, -24, 0, 64)
-LoggerBox.Position = UDim2.new(0, 12, 0, 220)
+LoggerBox.Size = UDim2.new(1, -24, 0, 50)
+LoggerBox.Position = UDim2.new(0, 12, 0, 210)
 LoggerBox.Text = "[Logger Initialized]\n"
 LoggerBox.TextSize = 14
 LoggerBox.Font = Enum.Font.Code
