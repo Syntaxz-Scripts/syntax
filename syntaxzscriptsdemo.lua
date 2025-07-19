@@ -195,7 +195,7 @@ UIS.InputChanged:Connect(function(input)
 end)
 
 -- Tabs
-local tabNames = {"Credits", "Forsaken", "Universal", "Garden"}
+local tabNames = {"Credits", "Forsaken", "Universal", "Garden", "Settings"}
 local tabButtons, tabFrames = {}, {}
 
 local function getTabBtnHeight()
