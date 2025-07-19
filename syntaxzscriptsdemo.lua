@@ -1766,6 +1766,58 @@ createKeyBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
+-- HDR (Shaders) 
+local HDRToggle = Instance.new("TextButton", contentParent)
+HDRToggle.Size = UDim2.new(0, 180, 0, 30)
+HDRToggle.Position = UDim2.new(0, 14, 0, contentY)
+HDRToggle.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+HDRToggle.TextColor3 = Color3.fromRGB(0, 0, 0)
+HDRToggle.Font = Enum.Font.GothamBold
+HDRToggle.TextSize = 16
+HDRToggle.Text = "HDR: OFF"
+roundify(HDRToggle, 8)
+strokify(HDRToggle, 1.2, Color3.fromRGB(255, 255, 220), 0.4)
+
+contentY = contentY + 40
+
+-- HDR Logic
+local hdrEnabled = false
+local lighting = game:GetService("Lighting")
+
+HDRToggle.MouseButton1Click:Connect(function()
+    hdrEnabled = not hdrEnabled
+    HDRToggle.Text = hdrEnabled and "HDR: ON" or "HDR: OFF"
+
+    if hdrEnabled then
+        lighting.Brightness = 3
+        lighting.EnvironmentDiffuseScale = 0.5
+        lighting.EnvironmentSpecularScale = 1.5
+
+        local cc = lighting:FindFirstChild("ColorCorrection") or Instance.new("ColorCorrectionEffect", lighting)
+        cc.Name = "ColorCorrection"
+        cc.Contrast = 0.3
+        cc.Saturation = 0.25
+        cc.Brightness = 0.05
+
+        local bloom = lighting:FindFirstChild("Bloom") or Instance.new("BloomEffect", lighting)
+        bloom.Name = "Bloom"
+        bloom.Intensity = 0.6
+        bloom.Size = 24
+        bloom.Threshold = 2
+
+        notify("Visuals", "HDR graphics enabled", 2)
+    else
+        lighting.Brightness = 1
+        lighting.EnvironmentDiffuseScale = 1
+        lighting.EnvironmentSpecularScale = 1
+
+        if lighting:FindFirstChild("ColorCorrection") then lighting.ColorCorrection:Destroy() end
+        if lighting:FindFirstChild("Bloom") then lighting.Bloom:Destroy() end
+
+        notify("Visuals", "HDR graphics disabled", 2)
+    end
+end)
+    
 end
 
 -----------------------
