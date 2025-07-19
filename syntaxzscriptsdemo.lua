@@ -1806,12 +1806,30 @@ end
 --------------------
 -- Settings Tab
 --------------------
-
 do
     local tf = tabFrames["Settings"]
-    local settingsVars = {showFPS = false, notifyEnabled = true, selectedKey = "Q"}
     local y = 12
 
+    -- ✅ Scoped vars
+    local Frame = Frame or game.CoreGui:FindFirstChild("RedOutlineExecutorUI") -- fallback
+    if not Frame then print("❌ Frame not found!") return end
+
+    local settingsVars = {showFPS = false, notifyEnabled = true, selectedKey = "Q"}
+
+    local function notify(title, msg)
+        if settingsVars.notifyEnabled then
+            print("🔔 Notification:", title, msg)
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = title, Text = msg, Duration = 2
+                })
+            end)
+        else
+            print("⚠️ Notifications disabled.")
+        end
+    end
+
+    -- ✅ Styled button utility
     local function styledBtn(parent, x, yPos, w, text, col)
         local maxWidth = tf.AbsoluteSize.X - 32
         local width = math.min(w or 180, maxWidth)
@@ -1828,16 +1846,21 @@ do
         return btn
     end
 
-    --  Theme Toggle
+    -- 🧿 Theme Toggle
     local themeBtn = styledBtn(tf, 14, y, 180, "Switch Theme", Color3.fromRGB(255, 0, 0))
     themeBtn.MouseButton1Click:Connect(function()
-        Frame.BackgroundColor3 = Frame.BackgroundColor3 == Color3.fromRGB(0,0,0)
-            and Color3.fromRGB(20,20,20)
-            or Color3.fromRGB(0,0,0)
+        print("🧿 Theme button clicked")
+        pcall(function()
+            local current = Frame.BackgroundColor3
+            Frame.BackgroundColor3 = current == Color3.fromRGB(0,0,0)
+                and Color3.fromRGB(20,20,20)
+                or Color3.fromRGB(0,0,0)
+            notify("Settings", "Theme toggled")
+        end)
     end)
     y += 36
 
-    --  Transparency Slider
+    -- 🌫️ Transparency Slider
     local transparencyBox = Instance.new("TextBox", tf)
     transparencyBox.Size = UDim2.new(0, 180, 0, 30)
     transparencyBox.Position = UDim2.new(0, 14, 0, y)
@@ -1852,18 +1875,30 @@ do
     y += 36
 
     transparencyBox.FocusLost:Connect(function()
-        local val = tonumber(transparencyBox.Text)
-        if val then Frame.BackgroundTransparency = math.clamp(val, 0, 1) end
+        print("🌫️ Transparency box changed:", transparencyBox.Text)
+        pcall(function()
+            local val = tonumber(transparencyBox.Text)
+            if val then
+                Frame.BackgroundTransparency = math.clamp(val, 0, 1)
+                notify("Settings", "Transparency set to " .. val)
+            else
+                notify("Settings", "Invalid transparency value")
+            end
+        end)
     end)
 
-    --  Reset Executor Position
-    local resetBtn = styledBtn(tf, 14, y, 180, "Reset Position", Color3.fromRGB(80,80,80))
+    -- 🎯 Reset Executor Position
+    local resetBtn = styledBtn(tf, 14, y, 180, "Reset Position", Color3.fromRGB(80, 80, 80))
     resetBtn.MouseButton1Click:Connect(function()
-        Frame.Position = UDim2.new(0.5, -240, 0.25, 0)
+        print("🎯 Reset button clicked")
+        pcall(function()
+            Frame.Position = UDim2.new(0.5, -240, 0.25, 0)
+            notify("Settings", "Executor centered")
+        end)
     end)
     y += 36
 
-    --  FPS Toggle
+    -- 🎮 FPS Toggle
     local fpsLabel = Instance.new("TextLabel", coreGui)
     fpsLabel.Size = UDim2.new(0, 120, 0, 20)
     fpsLabel.Position = UDim2.new(0, 12, 0, 60)
@@ -1880,99 +1915,23 @@ do
         end
     end)
 
-    local fpsBtn = styledBtn(tf, 14, y, 180, "Toggle FPS", Color3.fromRGB(120,255,120))
+    local fpsBtn = styledBtn(tf, 14, y, 180, "Toggle FPS", Color3.fromRGB(120, 255, 120))
     fpsBtn.MouseButton1Click:Connect(function()
+        print("🎮 FPS toggle clicked")
         settingsVars.showFPS = not settingsVars.showFPS
         fpsLabel.Visible = settingsVars.showFPS
+        notify("Settings", "FPS display " .. (settingsVars.showFPS and "ON" or "OFF"))
     end)
     y += 36
 
-    --  Notifications Toggle
-    local notifBtn = styledBtn(tf, 14, y, 180, "Toggle Notifications", Color3.fromRGB(255,140,140))
+    -- 🔔 Notifications Toggle
+    local notifBtn = styledBtn(tf, 14, y, 180, "Toggle Notifications", Color3.fromRGB(255, 140, 140))
     notifBtn.MouseButton1Click:Connect(function()
+        print("🔔 Notifications toggle clicked")
         settingsVars.notifyEnabled = not settingsVars.notifyEnabled
+        notify("Settings", "Popups " .. (settingsVars.notifyEnabled and "ENABLED" or "DISABLED"))
     end)
     y += 36
-
-    --  Key Selector + Creator
-    local keyBox = Instance.new("TextBox", tf)
-    keyBox.Size = UDim2.new(0, 120, 0, 24)
-    keyBox.Position = UDim2.new(0, 14, 0, y)
-    keyBox.PlaceholderText = "Q"
-    keyBox.Text = settingsVars.selectedKey
-    keyBox.Font = Enum.Font.Code
-    keyBox.TextSize = 16
-    keyBox.TextColor3 = Color3.fromRGB(255,255,255)
-    keyBox.BackgroundColor3 = Color3.fromRGB(20,20,20)
-    keyBox.BorderColor3 = Color3.fromRGB(255,0,0)
-    keyBox.BorderSizePixel = 2
-    y += 32
-
-    keyBox.FocusLost:Connect(function()
-        local input = keyBox.Text:upper()
-        if #input == 1 and input:match("[%a%d]") then
-            settingsVars.selectedKey = input
-        else
-            keyBox.Text = settingsVars.selectedKey
-        end
-    end)
-
-    local createKeyBtn = styledBtn(tf, 14, y, 180, "Create Key Button", Color3.fromRGB(60,120,180))
-    createKeyBtn.MouseButton1Click:Connect(function()
-        local key = settingsVars.selectedKey
-        local player = game.Players.LocalPlayer
-
-        local btn = Instance.new("TextButton", game.CoreGui)
-        btn.Size = UDim2.new(0, 120, 0, 40)
-        btn.Position = UDim2.new(0, 16, 0.8, 0)
-        btn.BackgroundColor3 = Color3.fromRGB(255,0,0)
-        btn.TextColor3 = Color3.fromRGB(0,0,0)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 18
-        btn.Text = "▶ [" .. key .. "]"
-        btn.Draggable = true
-        btn.Active = true
-        roundify(btn, 8)
-
-        btn.MouseButton1Click:Connect(function()
-            local function notify(title, msg)
-                if settingsVars.notifyEnabled then
-                    pcall(function()
-                        game:GetService("StarterGui"):SetCore("SendNotification", {
-                            Title = title, Text = msg, Duration = 2
-                        })
-                    end)
-                end
-            end
-
-            if key == "Q" then
-                local r = game.ReplicatedStorage:FindFirstChild("ActivateAbility")
-                if r then r:FireServer("Q") end
-                notify("Activated", "Ability Q")
-
-            elseif key == "E" then
-                local gui = player.PlayerGui:FindFirstChild("EquipmentUI")
-                if gui then gui.Enabled = true end
-                notify("Opened", "Equipment Menu")
-
-            elseif key == "F" then
-                local r = game.ReplicatedStorage:FindFirstChild("InteractEvent")
-                if r then r:FireServer() end
-                notify("Interacted", "Fired Interaction")
-
-            elseif key == "R" then
-                if player.Character then player.Character:BreakJoints() end
-                notify("Reset", "Character Broken")
-
-            elseif key == "T" then
-                game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("I am Syntaxz 👑", "All")
-                notify("Taunted", "Message Sent")
-
-            else
-                notify("No Action", "[" .. key .. "] not mapped.")
-            end
-        end)
-    end)
 end
 
 -- End of script (unless you want to add more) 
