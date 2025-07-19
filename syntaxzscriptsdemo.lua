@@ -1658,163 +1658,64 @@ enterBtn.MouseButton1Click:Connect(function()
 end)
 contentY = contentY + 44
 
--- ✅ GLOBAL KEY SELECTION
-getgenv().SelectedKey = getgenv().SelectedKey or "Q"
+--  Shader Preset Selector
+getgenv().RTX_Name = getgenv().RTX_Name or "Midday lite"
 
--- 🔤 KEY SELECTOR LABEL
-local keyLabel = Instance.new("TextLabel", contentParent)
-keyLabel.Size = UDim2.new(0, 160, 0, 24)
-keyLabel.Position = UDim2.new(0, 14, 0, contentY)
-keyLabel.Text = "Selected Key:"
-keyLabel.Font = Enum.Font.GothamBold
-keyLabel.TextSize = 16
-keyLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-keyLabel.BackgroundTransparency = 1
+local shaderLabel = Instance.new("TextLabel", contentParent)
+shaderLabel.Size = UDim2.new(0, 160, 0, 24)
+shaderLabel.Position = UDim2.new(0, 14, 0, contentY)
+shaderLabel.Text = "Shader Preset:"
+shaderLabel.Font = Enum.Font.GothamBold
+shaderLabel.TextSize = 16
+shaderLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+shaderLabel.BackgroundTransparency = 1
 
--- 🔤 KEY SELECTOR BOX
-local keyBox = Instance.new("TextBox", contentParent)
-keyBox.Size = UDim2.new(0, 80, 0, 24)
-keyBox.Position = UDim2.new(0, 180, 0, contentY)
-keyBox.PlaceholderText = "Q"
-keyBox.Text = getgenv().SelectedKey
-keyBox.Font = Enum.Font.Code
-keyBox.TextSize = 16
-keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-keyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-keyBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
-keyBox.BorderSizePixel = 2
+local shaderBox = Instance.new("TextBox", contentParent)
+shaderBox.Size = UDim2.new(0, 120, 0, 24)
+shaderBox.Position = UDim2.new(0, 180, 0, contentY)
+shaderBox.PlaceholderText = "Midday lite"
+shaderBox.Text = getgenv().RTX_Name
+shaderBox.Font = Enum.Font.Code
+shaderBox.TextSize = 16
+shaderBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+shaderBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+shaderBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
+shaderBox.BorderSizePixel = 2
 
 contentY = contentY + 32
 
--- 🖱️ CREATE KEY BUTTON
-local createKeyBtn = Instance.new("TextButton", contentParent)
-createKeyBtn.Size = UDim2.new(0, 180, 0, 30)
-createKeyBtn.Position = UDim2.new(0, 14, 0, contentY)
-createKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 180)
-createKeyBtn.TextColor3 = Color3.new(1,1,1)
-createKeyBtn.Font = Enum.Font.GothamBold
-createKeyBtn.TextSize = 16
-createKeyBtn.Text = "Create Key Button"
-createKeyBtn.BackgroundTransparency = 0.18
-roundify(createKeyBtn, 8)
-strokify(createKeyBtn, 1.1, Color3.fromRGB(130,190,255), 0.3)
-
-contentY = contentY + 40
-
--- 🧠 VALIDATE KEY INPUT
-keyBox.FocusLost:Connect(function()
-    local inputKey = keyBox.Text:upper()
-    if #inputKey == 1 and inputKey:match("[%a%d]") then
-        getgenv().SelectedKey = inputKey
+shaderBox.FocusLost:Connect(function()
+    local input = shaderBox.Text
+    if input and input ~= "" then
+        getgenv().RTX_Name = input
     else
-        keyBox.Text = getgenv().SelectedKey
+        shaderBox.Text = getgenv().RTX_Name
     end
 end)
 
--- ⚙️ CREATE DRAGGABLE BUTTON WITH ACTION
-createKeyBtn.MouseButton1Click:Connect(function()
-    local key = getgenv().SelectedKey
-    local player = game.Players.LocalPlayer
-
-    local triggerBtn = Instance.new("TextButton", game.CoreGui)
-    triggerBtn.Size = UDim2.new(0, 120, 0, 40)
-    triggerBtn.Position = UDim2.new(0, 16, 0.8, 0)
-    triggerBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    triggerBtn.TextColor3 = Color3.new(0,0,0)
-    triggerBtn.Font = Enum.Font.GothamBold
-    triggerBtn.TextSize = 18
-    triggerBtn.Text = "▶ [" .. key .. "]"
-    triggerBtn.Draggable = true
-    triggerBtn.Active = true
-    roundify(triggerBtn, 8)
-
-    triggerBtn.MouseButton1Click:Connect(function()
-        local function notify(title, msg)
-            pcall(function()
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = title, Text = msg, Duration = 2
-                })
-            end)
-        end
-
-        if key == "Q" then
-            local remote = game.ReplicatedStorage:FindFirstChild("ActivateAbility")
-            if remote then remote:FireServer("Q") end
-            notify("Activated", "Ability Q")
-
-        elseif key == "E" then
-            local gui = player.PlayerGui:FindFirstChild("EquipmentUI")
-            if gui then gui.Enabled = true end
-            notify("Opened", "Equipment Menu")
-
-        elseif key == "F" then
-            local remote = game.ReplicatedStorage:FindFirstChild("InteractEvent")
-            if remote then remote:FireServer() end
-            notify("Interacted", "Fired Interaction")
-
-        elseif key == "R" then
-            if player.Character then player.Character:BreakJoints() end
-            notify("Reset", "Character Broken")
-
-        elseif key == "T" then
-            game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("I am Syntaxz 👑", "All")
-            notify("Taunted", "Message Sent")
-
-        else
-            notify("No Action", "[" .. key .. "] not mapped.")
-        end
-    end)
-end)
-
--- HDR (Shaders) 
-local HDRToggle = Instance.new("TextButton", contentParent)
-HDRToggle.Size = UDim2.new(0, 180, 0, 30)
-HDRToggle.Position = UDim2.new(0, 14, 0, contentY)
-HDRToggle.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
-HDRToggle.TextColor3 = Color3.fromRGB(0, 0, 0)
-HDRToggle.Font = Enum.Font.GothamBold
-HDRToggle.TextSize = 16
-HDRToggle.Text = "HDR: OFF"
-roundify(HDRToggle, 8)
-strokify(HDRToggle, 1.2, Color3.fromRGB(255, 255, 220), 0.4)
+--  Enable Shader Button
+local enableShaderBtn = Instance.new("TextButton", contentParent)
+enableShaderBtn.Size = UDim2.new(0, 180, 0, 30)
+enableShaderBtn.Position = UDim2.new(0, 14, 0, contentY)
+enableShaderBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 180)
+enableShaderBtn.TextColor3 = Color3.new(1,1,1)
+enableShaderBtn.Font = Enum.Font.GothamBold
+enableShaderBtn.TextSize = 16
+enableShaderBtn.Text = "Enable Shader"
+roundify(enableShaderBtn, 8)
+strokify(enableShaderBtn, 1.1, Color3.fromRGB(130,190,255), 0.3)
 
 contentY = contentY + 40
 
--- HDR Logic
-local hdrEnabled = false
-local lighting = game:GetService("Lighting")
-
-HDRToggle.MouseButton1Click:Connect(function()
-    hdrEnabled = not hdrEnabled
-    HDRToggle.Text = hdrEnabled and "HDR: ON" or "HDR: OFF"
-
-    if hdrEnabled then
-        lighting.Brightness = 3
-        lighting.EnvironmentDiffuseScale = 0.5
-        lighting.EnvironmentSpecularScale = 1.5
-
-        local cc = lighting:FindFirstChild("ColorCorrection") or Instance.new("ColorCorrectionEffect", lighting)
-        cc.Name = "ColorCorrection"
-        cc.Contrast = 0.3
-        cc.Saturation = 0.25
-        cc.Brightness = 0.05
-
-        local bloom = lighting:FindFirstChild("Bloom") or Instance.new("BloomEffect", lighting)
-        bloom.Name = "Bloom"
-        bloom.Intensity = 0.6
-        bloom.Size = 24
-        bloom.Threshold = 2
-
-        notify("Visuals", "HDR graphics enabled", 2)
+--  Load Pshade Reborn
+enableShaderBtn.MouseButton1Click:Connect(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/randomstring0/unk/refs/heads/main/patrick%20shader.luau"))()
+    end)
+    if success then
+        notify("Shaders", "Loaded preset: " .. getgenv().RTX_Name, 2)
     else
-        lighting.Brightness = 1
-        lighting.EnvironmentDiffuseScale = 1
-        lighting.EnvironmentSpecularScale = 1
-
-        if lighting:FindFirstChild("ColorCorrection") then lighting.ColorCorrection:Destroy() end
-        if lighting:FindFirstChild("Bloom") then lighting.Bloom:Destroy() end
-
-        notify("Visuals", "HDR graphics disabled", 2)
+        notify("Error", "Failed to load shader: " .. tostring(err), 3)
     end
 end)
     
@@ -1901,5 +1802,246 @@ do
         notify("Copied all tools from " .. targetPlayer.Name)
     end)
 end
+
+-----------------------
+-- Settings Tab
+-----------------------
+
+if TabName == "Settings" then
+    local tf = tabFrames[TabName]
+    local y = 12
+
+    --  Theme Toggle
+    local themeBtn = Instance.new("TextButton", tf)
+    themeBtn.Size = UDim2.new(0, 180, 0, 30)
+    themeBtn.Position = UDim2.new(0, 14, 0, y)
+    themeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    themeBtn.TextColor3 = Color3.new(1,1,1)
+    themeBtn.Font = Enum.Font.GothamBold
+    themeBtn.TextSize = 16
+    themeBtn.Text = "Switch Theme"
+    roundify(themeBtn, 8)
+    strokify(themeBtn, 1, Color3.new(1,1,1), 0.4)
+    y += 40
+
+    themeBtn.MouseButton1Click:Connect(function()
+        Frame.BackgroundColor3 = Frame.BackgroundColor3 == Color3.fromRGB(0,0,0)
+            and Color3.fromRGB(20,20,20)
+            or Color3.fromRGB(0,0,0)
+        notify("Settings", "Theme toggled", 2)
+    end)
+
+    --  Transparency Control
+    local transparencySlider = Instance.new("TextBox", tf)
+    transparencySlider.Size = UDim2.new(0, 180, 0, 30)
+    transparencySlider.Position = UDim2.new(0, 14, 0, y)
+    transparencySlider.PlaceholderText = "Transparency 0.0 - 1.0"
+    transparencySlider.Text = ""
+    transparencySlider.Font = Enum.Font.Code
+    transparencySlider.TextSize = 16
+    transparencySlider.TextColor3 = Color3.new(1,1,1)
+    transparencySlider.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    transparencySlider.BorderColor3 = Color3.fromRGB(255,0,0)
+    transparencySlider.BorderSizePixel = 2
+    y += 40
+
+    transparencySlider.FocusLost:Connect(function()
+        local val = tonumber(transparencySlider.Text)
+        if val then
+            Frame.BackgroundTransparency = math.clamp(val, 0, 1)
+            notify("Settings", "Transparency set to " .. val, 2)
+        else
+            transparencySlider.Text = ""
+        end
+    end)
+
+    --  Reset Position
+    local resetBtn = Instance.new("TextButton", tf)
+    resetBtn.Size = UDim2.new(0, 180, 0, 30)
+    resetBtn.Position = UDim2.new(0, 14, 0, y)
+    resetBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    resetBtn.TextColor3 = Color3.new(1,1,1)
+    resetBtn.Font = Enum.Font.GothamBold
+    resetBtn.TextSize = 16
+    resetBtn.Text = "Reset Position"
+    roundify(resetBtn, 8)
+    y += 40
+
+    resetBtn.MouseButton1Click:Connect(function()
+        Frame.Position = UDim2.new(0.5, -240, 0.25, 0)
+        notify("Settings", "Executor centered", 2)
+    end)
+
+    --  FPS Toggle
+    local showFPS = false
+    local fpsLabel = Instance.new("TextLabel", coreGui)
+    fpsLabel.Size = UDim2.new(0, 120, 0, 20)
+    fpsLabel.Position = UDim2.new(0, 12, 0, 60)
+    fpsLabel.BackgroundTransparency = 0.4
+    fpsLabel.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    fpsLabel.TextColor3 = Color3.new(1,1,1)
+    fpsLabel.Font = Enum.Font.Code
+    fpsLabel.TextSize = 14
+    fpsLabel.Visible = false
+
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if showFPS then
+            local fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
+            fpsLabel.Text = "FPS: " .. fps
+        end
+    end)
+
+    local fpsBtn = Instance.new("TextButton", tf)
+    fpsBtn.Size = UDim2.new(0, 180, 0, 30)
+    fpsBtn.Position = UDim2.new(0, 14, 0, y)
+    fpsBtn.BackgroundColor3 = Color3.fromRGB(120, 255, 120)
+    fpsBtn.TextColor3 = Color3.fromRGB(0,0,0)
+    fpsBtn.Font = Enum.Font.GothamBold
+    fpsBtn.TextSize = 16
+    fpsBtn.Text = "Toggle FPS"
+    roundify(fpsBtn, 8)
+    y += 40
+
+    fpsBtn.MouseButton1Click:Connect(function()
+        showFPS = not showFPS
+        fpsLabel.Visible = showFPS
+        notify("Settings", showFPS and "FPS display ON" or "FPS display OFF", 2)
+    end)
+
+    --  Notification Toggle
+    getgenv().NotificationsEnabled = true
+
+    local notifBtn = Instance.new("TextButton", tf)
+    notifBtn.Size = UDim2.new(0, 180, 0, 30)
+    notifBtn.Position = UDim2.new(0, 14, 0, y)
+    notifBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 140)
+    notifBtn.TextColor3 = Color3.new(0,0,0)
+    notifBtn.Font = Enum.Font.GothamBold
+    notifBtn.TextSize = 16
+    notifBtn.Text = "Toggle Notifications"
+    roundify(notifBtn, 8)
+    y += 40
+
+    notifBtn.MouseButton1Click:Connect(function()
+        getgenv().NotificationsEnabled = not getgenv().NotificationsEnabled
+        notify("Settings", getgenv().NotificationsEnabled and "Popups ON" or "Popups OFF", 2)
+    end)
+
+    --  Safe notifier
+    function notify(title, msg, dur)
+        if getgenv().NotificationsEnabled then
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = title, Text = msg, Duration = dur or 2
+                })
+            end)
+        end
+    end
+
+    --  Key Selector
+    getgenv().SelectedKey = getgenv().SelectedKey or "Q"
+
+    local keyLabel = Instance.new("TextLabel", tf)
+    keyLabel.Size = UDim2.new(0, 160, 0, 24)
+    keyLabel.Position = UDim2.new(0, 14, 0, y)
+    keyLabel.Text = "Selected Key:"
+    keyLabel.Font = Enum.Font.GothamBold
+    keyLabel.TextSize = 16
+    keyLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    keyLabel.BackgroundTransparency = 1
+    y += 32
+
+    local keyBox = Instance.new("TextBox", tf)
+    keyBox.Size = UDim2.new(0, 120, 0, 24)
+    keyBox.Position = UDim2.new(0, 14, 0, y)
+    keyBox.PlaceholderText = "Q"
+    keyBox.Text = getgenv().SelectedKey
+    keyBox.Font = Enum.Font.Code
+    keyBox.TextSize = 16
+    keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    keyBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    keyBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
+    keyBox.BorderSizePixel = 2
+    y += 32
+
+    keyBox.FocusLost:Connect(function()
+        local inputKey = keyBox.Text:upper()
+        if #inputKey == 1 and inputKey:match("[%a%d]") then
+            getgenv().SelectedKey = inputKey
+        else
+            keyBox.Text = getgenv().SelectedKey
+        end
+    end)
+
+    --  Create Key Button
+    local createKeyBtn = Instance.new("TextButton", tf)
+    createKeyBtn.Size = UDim2.new(0, 180, 0, 30)
+    createKeyBtn.Position = UDim2.new(0, 14, 0, y)
+    createKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 180)
+    createKeyBtn.TextColor3 = Color3.new(1,1,1)
+    createKeyBtn.Font = Enum.Font.GothamBold
+    createKeyBtn.TextSize = 16
+    createKeyBtn.Text = "Create Key Button"
+    roundify(createKeyBtn, 8)
+        strokify(createKeyBtn, 1.1, Color3.fromRGB(130,190,255), 0.3)
+    y += 40
+
+    createKeyBtn.MouseButton1Click:Connect(function()
+        local key = getgenv().SelectedKey
+        local player = game.Players.LocalPlayer
+
+        local triggerBtn = Instance.new("TextButton", game.CoreGui)
+        triggerBtn.Size = UDim2.new(0, 120, 0, 40)
+        triggerBtn.Position = UDim2.new(0, 16, 0.8, 0)
+        triggerBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        triggerBtn.TextColor3 = Color3.new(0,0,0)
+        triggerBtn.Font = Enum.Font.GothamBold
+        triggerBtn.TextSize = 18
+        triggerBtn.Text = "▶ [" .. key .. "]"
+        triggerBtn.Draggable = true
+        triggerBtn.Active = true
+        roundify(triggerBtn, 8)
+
+        triggerBtn.MouseButton1Click:Connect(function()
+            local function notify(title, msg)
+                if getgenv().NotificationsEnabled then
+                    pcall(function()
+                        game:GetService("StarterGui"):SetCore("SendNotification", {
+                            Title = title, Text = msg, Duration = 2
+                        })
+                    end)
+                end
+            end
+
+            if key == "Q" then
+                local remote = game.ReplicatedStorage:FindFirstChild("ActivateAbility")
+                if remote then remote:FireServer("Q") end
+                notify("Activated", "Ability Q")
+
+            elseif key == "E" then
+                local gui = player.PlayerGui:FindFirstChild("EquipmentUI")
+                if gui then gui.Enabled = true end
+                notify("Opened", "Equipment Menu")
+
+            elseif key == "F" then
+                local remote = game.ReplicatedStorage:FindFirstChild("InteractEvent")
+                if remote then remote:FireServer() end
+                notify("Interacted", "Fired Interaction")
+
+            elseif key == "R" then
+                if player.Character then player.Character:BreakJoints() end
+                notify("Reset", "Character Broken")
+
+            elseif key == "T" then
+                game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer("I am Syntaxz 👑", "All")
+                notify("Taunted", "Message Sent")
+
+            else
+                notify("No Action", "[" .. key .. "] not mapped.")
+            end
+        end)
+    end)
+end
+
 
 -- End of script (unless you want to add more) 
