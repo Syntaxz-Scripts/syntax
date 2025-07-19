@@ -1,4 +1,4 @@
--- Syntaxz Scripts 5.3
+-- Syntaxz Scripts 5.8
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1803,15 +1803,15 @@ do
     end)
 end
 
------------------------
+--------------------
 -- Settings Tab
------------------------
+--------------------
 
 if TabName == "Settings" then
     local tf = tabFrames[TabName]
     local y = 12
 
-    --  Theme Toggle
+    -- 🧿 Theme Toggle
     local themeBtn = Instance.new("TextButton", tf)
     themeBtn.Size = UDim2.new(0, 180, 0, 30)
     themeBtn.Position = UDim2.new(0, 14, 0, y)
@@ -1831,7 +1831,7 @@ if TabName == "Settings" then
         notify("Settings", "Theme toggled", 2)
     end)
 
-    --  Transparency Control
+    -- 🌫️ Transparency Control
     local transparencySlider = Instance.new("TextBox", tf)
     transparencySlider.Size = UDim2.new(0, 180, 0, 30)
     transparencySlider.Position = UDim2.new(0, 14, 0, y)
@@ -1855,7 +1855,7 @@ if TabName == "Settings" then
         end
     end)
 
-    --  Reset Position
+    -- 🎯 Reset Position
     local resetBtn = Instance.new("TextButton", tf)
     resetBtn.Size = UDim2.new(0, 180, 0, 30)
     resetBtn.Position = UDim2.new(0, 14, 0, y)
@@ -1872,7 +1872,7 @@ if TabName == "Settings" then
         notify("Settings", "Executor centered", 2)
     end)
 
-    --  FPS Toggle
+    -- 🎮 FPS Toggle
     local showFPS = false
     local fpsLabel = Instance.new("TextLabel", coreGui)
     fpsLabel.Size = UDim2.new(0, 120, 0, 20)
@@ -1908,7 +1908,7 @@ if TabName == "Settings" then
         notify("Settings", showFPS and "FPS display ON" or "FPS display OFF", 2)
     end)
 
-    --  Notification Toggle
+    -- 🔔 Notification Toggle
     getgenv().NotificationsEnabled = true
 
     local notifBtn = Instance.new("TextButton", tf)
@@ -1927,7 +1927,7 @@ if TabName == "Settings" then
         notify("Settings", getgenv().NotificationsEnabled and "Popups ON" or "Popups OFF", 2)
     end)
 
-    --  Safe notifier
+    -- 🔐 Safe notifier
     function notify(title, msg, dur)
         if getgenv().NotificationsEnabled then
             pcall(function()
@@ -1938,7 +1938,7 @@ if TabName == "Settings" then
         end
     end
 
-    --  Key Selector
+    -- 🎯 Key Selector
     getgenv().SelectedKey = getgenv().SelectedKey or "Q"
 
     local keyLabel = Instance.new("TextLabel", tf)
@@ -1973,7 +1973,7 @@ if TabName == "Settings" then
         end
     end)
 
-    --  Create Key Button
+    -- 🖱️ Create Key Button
     local createKeyBtn = Instance.new("TextButton", tf)
     createKeyBtn.Size = UDim2.new(0, 180, 0, 30)
     createKeyBtn.Position = UDim2.new(0, 14, 0, y)
@@ -2042,6 +2042,5 @@ if TabName == "Settings" then
         end)
     end)
 end
-
 
 -- End of script (unless you want to add more) 
