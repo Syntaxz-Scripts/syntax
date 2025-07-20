@@ -1757,9 +1757,13 @@ avatarBtn.MouseButton1Click:Connect(function()
 
     -- Insert accessories
     local accessoryIds = {
-        14528148289, 73093188685727, 105639766288180, 72131859927934,
-        18835398302, 18835391472
-    }
+    1122112233, -- Cyber Halo
+    7458372940, -- Spiked Mask
+    6034837274, -- Shoulder Cape
+    6208722856, -- Chain
+    6782872493, -- Spiked Hood
+    7144983738, -- Dual Blades
+}
 
     for _, accId in ipairs(accessoryIds) do
         local success, model = pcall(function()
