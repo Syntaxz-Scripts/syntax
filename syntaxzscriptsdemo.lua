@@ -1,4 +1,4 @@
--- Syntaxz Scripts 5.8
+-- Syntaxz Scripts 5.9
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1717,6 +1717,63 @@ enableShaderBtn.MouseButton1Click:Connect(function()
     else
         notify("Error", "Failed to load shader: " .. tostring(err), 3)
     end
+end)
+
+-- Swap Avatars
+local avatarBtn = styledBtn(contentParent, 14, contentY + 36, 170, "Transform Avatar", Color3.fromRGB(255, 60, 180))
+contentY += 36 -- stack height update
+
+-- connect function
+avatarBtn.MouseButton1Click:Connect(function()
+    local plr = game.Players.LocalPlayer
+    local char = plr.Character or plr.CharacterAdded:Wait()
+
+    -- Removes accessories, shirt, and pants
+    for _, item in ipairs(char:GetChildren()) do
+        if item:IsA("Accessory") or item:IsA("Hat") or item:IsA("Shirt") or item:IsA("Pants") then
+            item:Destroy()
+        end
+    end
+
+    -- Add shirt
+    local shirt = Instance.new("Shirt", char)
+    shirt.ShirtTemplate = "rbxassetid://1234567890" -- 🔁 Replace with your shirt ID
+
+    -- Add pants
+    local pants = Instance.new("Pants", char)
+    pants.PantsTemplate = "rbxassetid://9876543210" -- 🔁 Replace with your pants ID
+
+    -- Replace face
+    local head = char:FindFirstChild("Head")
+    local face = head and head:FindFirstChild("face")
+    if face then face.Texture = "rbxassetid://1122334455" end -- 🔁 Replace with your face ID
+
+    -- Skin tone
+    for _, part in ipairs(char:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.BrickColor = BrickColor.new("Really black")
+        end
+    end
+
+    -- Insert accessories
+    local accessoryIds = {
+        14528148289, 73093188685727, 105639766288180, 72131859927934,
+        18835398302, 18835391472
+    }
+
+    for _, accId in ipairs(accessoryIds) do
+        local success, model = pcall(function()
+            return game:GetService("InsertService"):LoadAsset(accId)
+        end)
+        if success and model then
+            local acc = model:FindFirstChildOfClass("Accessory") or model:FindFirstChild("Handle")
+            if acc then acc.Parent = char end
+        else
+            warn("⚠️ Failed to load accessory:", accId)
+        end
+    end
+
+    notify("Avatar", "Transformation complete!", 2)
 end)
     
 end
