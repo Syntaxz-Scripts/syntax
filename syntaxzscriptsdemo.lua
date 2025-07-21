@@ -1719,62 +1719,24 @@ enableShaderBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Client-Sided Avatar Switcher
-local switchAvatarBtn = styledBtn(contentParent, 14, contentY, 200, "Switch Avatar (Cyber Aura)", Color3.fromRGB(150, 80, 180))
+-- Avatar switcher
+    
+local btn = styledBtn(contentParent, contentX, contentY, 200, "Deploy Cyber Avatar", Color3.fromRGB(120, 80, 200))
 contentY += 44
 
-switchAvatarBtn.MouseButton1Click:Connect(function()
-    local player = game.Players.LocalPlayer
-    local char = player.Character or player.CharacterAdded:Wait()
-    local InsertService = game:GetService("InsertService")
+btn.MouseButton1Click:Connect(function()
+    local success, loader = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Syntaxz-Scripts/syntax/refs/heads/main/Avatarloader3000.lua"))()
+    end)
 
-    --  Remove current accessories
-    for _, item in ipairs(char:GetChildren()) do
-        if item:IsA("Accessory") then item:Destroy() end
+    if success and loader then
+        pcall(loader)
+        print("✅ Loaded avatar from GitHub.")
+    else
+        warn("❌ Failed to load Avatarloader3000 from GitHub.")
     end
-
-    --  Verified accessories
-    local accessoryIds = {
-        136470500788503, 72131859927934,
-        18835391472, 18835398302,
-        105639766288180, 14528148289
-    }
-
-    --  Insert them
-    for _, accId in ipairs(accessoryIds) do
-        local success, model = pcall(function()
-            return InsertService:LoadAsset(accId)
-        end)
-        if success and model then
-            local accessory = model:FindFirstChildOfClass("Accessory")
-            if accessory then
-                accessory.Parent = char
-            else
-                notify("Accessory Load", "⚠️ No accessory in: " .. tostring(accId), Color3.fromRGB(255, 180, 80))
-            end
-        else
-            notify("Accessory Load", "❌ Failed to load: " .. tostring(accId), Color3.fromRGB(255, 80, 80))
-        end
-    end
-
-    --  Add Aura Emitter
-    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-    if torso then
-        local aura = Instance.new("ParticleEmitter")
-        aura.Texture = "rbxassetid://243098098" -- change for custom aura look
-        aura.Rate = 24
-        aura.Lifetime = NumberRange.new(1)
-        aura.Speed = NumberRange.new(0.1)
-        aura.Size = NumberSequence.new(1.2)
-        aura.Color = ColorSequence.new(Color3.fromRGB(120, 0, 255), Color3.fromRGB(255, 255, 255))
-        aura.LightEmission = 0.9
-        aura.Transparency = NumberSequence.new(0.3)
-        aura.Parent = torso
-    end
-
-    notify("Avatar", "Switched!", Color3.fromRGB(180, 140, 255))
 end)
-    
+ 
 end
 
 -----------------------
