@@ -1719,71 +1719,62 @@ enableShaderBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Swap Avatars
-local avatarBtn = styledBtn(contentParent, 14, contentY + 36, 170, "Transform Avatar", Color3.fromRGB(255, 60, 180))
-contentY += 36 -- Update vertical position
+-- Client-Sided Avatar Switcher
+local switchAvatarBtn = styledBtn(contentParent, 14, contentY, 200, "Switch Avatar (Cyber Aura)", Color3.fromRGB(150, 80, 180))
+contentY += 44
 
-avatarBtn.MouseButton1Click:Connect(function()
-    local plr = game.Players.LocalPlayer
-    local char = plr.Character or plr.CharacterAdded:Wait()
+switchAvatarBtn.MouseButton1Click:Connect(function()
+    local player = game.Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local InsertService = game:GetService("InsertService")
 
-    -- 🧼 Clear current outfit
+    --  Remove current accessories
     for _, item in ipairs(char:GetChildren()) do
-        if item:IsA("Accessory") or item:IsA("Hat") or item:IsA("Shirt") or item:IsA("Pants") then
-            item:Destroy()
-        end
+        if item:IsA("Accessory") then item:Destroy() end
     end
 
-    --  Add new shirt
-    local shirt = Instance.new("Shirt")
-    shirt.ShirtTemplate = "rbxassetid://1234567890" -- 🔁 Replace with real shirt ID
-    shirt.Parent = char
-
-    --  Add new pants
-    local pants = Instance.new("Pants")
-    pants.PantsTemplate = "rbxassetid://9876543210" -- 🔁 Replace with real pants ID
-    pants.Parent = char
-
-    --  Replace face (if present)
-    local head = char:FindFirstChild("Head")
-    local face = head and head:FindFirstChild("face")
-    if face then
-        face.Texture = "rbxassetid://1122334455" -- 🔁 Replace with real face asset ID
-    end
-
-    --  Override skin tone
-    for _, part in ipairs(char:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.BrickColor = BrickColor.new("Really black")
-        end
-    end
-
-    --  Insert accessories
+    --  Verified accessories
     local accessoryIds = {
-        14528148289, 105639766288180, 18835391472,
-        18835398302, 72131859927934, 136470500788503
-        -- You can add more here as long as they're ≤11-digit and valid
+        136470500788503, 72131859927934,
+        18835391472, 18835398302,
+        105639766288180, 14528148289
     }
 
+    --  Insert them
     for _, accId in ipairs(accessoryIds) do
         local success, model = pcall(function()
-            return game:GetService("InsertService"):LoadAsset(accId)
+            return InsertService:LoadAsset(accId)
         end)
         if success and model then
             local accessory = model:FindFirstChildOfClass("Accessory")
             if accessory then
                 accessory.Parent = char
             else
-                notify("Accessory Loader", "⚠️ No accessory object in asset: " .. tostring(accId), Color3.fromRGB(255, 180, 80))
+                notify("Accessory Load", "⚠️ No accessory in: " .. tostring(accId), Color3.fromRGB(255, 180, 80))
             end
         else
-            notify("Accessory Loader", "❌ Failed to load asset: " .. tostring(accId), Color3.fromRGB(255, 80, 80))
+            notify("Accessory Load", "❌ Failed to load: " .. tostring(accId), Color3.fromRGB(255, 80, 80))
         end
     end
 
-    notify("Avatar", " Transformation complete!", Color3.fromRGB(255, 120, 200))
-end)
+    --  Add Aura Emitter
+    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+    if torso then
+        local aura = Instance.new("ParticleEmitter")
+        aura.Texture = "rbxassetid://243098098" -- change for custom aura look
+        aura.Rate = 24
+        aura.Lifetime = NumberRange.new(1)
+        aura.Speed = NumberRange.new(0.1)
+        aura.Size = NumberSequence.new(1.2)
+        aura.Color = ColorSequence.new(Color3.fromRGB(120, 0, 255), Color3.fromRGB(255, 255, 255))
+        aura.LightEmission = 0.9
+        aura.Transparency = NumberSequence.new(0.3)
+        aura.Parent = torso
+    end
 
+    notify("Avatar", "Switch completed! ", Color3.fromRGB(180, 140, 255))
+end)
+    
 end
 
 -----------------------
