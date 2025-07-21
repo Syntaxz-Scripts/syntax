@@ -1721,65 +1721,69 @@ end)
 
 -- Swap Avatars
 local avatarBtn = styledBtn(contentParent, 14, contentY + 36, 170, "Transform Avatar", Color3.fromRGB(255, 60, 180))
-contentY += 36 -- stack height update
+contentY += 36 -- Update vertical position
 
--- connect function
 avatarBtn.MouseButton1Click:Connect(function()
     local plr = game.Players.LocalPlayer
     local char = plr.Character or plr.CharacterAdded:Wait()
 
-    -- Removes accessories, shirt, and pants
+    -- 🧼 Clear current outfit
     for _, item in ipairs(char:GetChildren()) do
         if item:IsA("Accessory") or item:IsA("Hat") or item:IsA("Shirt") or item:IsA("Pants") then
             item:Destroy()
         end
     end
 
-    -- Add shirt
-    local shirt = Instance.new("Shirt", char)
-    shirt.ShirtTemplate = "rbxassetid://1234567890" -- 🔁 Replace with your shirt ID
+    --  Add new shirt
+    local shirt = Instance.new("Shirt")
+    shirt.ShirtTemplate = "rbxassetid://1234567890" -- 🔁 Replace with real shirt ID
+    shirt.Parent = char
 
-    -- Add pants
-    local pants = Instance.new("Pants", char)
-    pants.PantsTemplate = "rbxassetid://9876543210" -- 🔁 Replace with your pants ID
+    --  Add new pants
+    local pants = Instance.new("Pants")
+    pants.PantsTemplate = "rbxassetid://9876543210" -- 🔁 Replace with real pants ID
+    pants.Parent = char
 
-    -- Replace face
+    --  Replace face (if present)
     local head = char:FindFirstChild("Head")
     local face = head and head:FindFirstChild("face")
-    if face then face.Texture = "rbxassetid://1122334455" end -- 🔁 Replace with your face ID
+    if face then
+        face.Texture = "rbxassetid://1122334455" -- 🔁 Replace with real face asset ID
+    end
 
-    -- Skin tone
+    --  Override skin tone
     for _, part in ipairs(char:GetChildren()) do
         if part:IsA("BasePart") then
             part.BrickColor = BrickColor.new("Really black")
         end
     end
 
-    -- Insert accessories
+    --  Insert accessories
     local accessoryIds = {
-    1122112233, -- Cyber Halo
-    7458372940, -- Spiked Mask
-    6034837274, -- Shoulder Cape
-    6208722856, -- Chain
-    6782872493, -- Spiked Hood
-    7144983738, -- Dual Blades
-}
+        14528148289, 105639766288180, 18835391472,
+        18835398302, 72131859927934, 136470500788503
+        -- You can add more here as long as they're ≤11-digit and valid
+    }
 
     for _, accId in ipairs(accessoryIds) do
         local success, model = pcall(function()
             return game:GetService("InsertService"):LoadAsset(accId)
         end)
         if success and model then
-            local acc = model:FindFirstChildOfClass("Accessory") or model:FindFirstChild("Handle")
-            if acc then acc.Parent = char end
+            local accessory = model:FindFirstChildOfClass("Accessory")
+            if accessory then
+                accessory.Parent = char
+            else
+                notify("Accessory Loader", "⚠️ No accessory object in asset: " .. tostring(accId), Color3.fromRGB(255, 180, 80))
+            end
         else
-            warn("⚠️ Failed to load accessory:", accId)
+            notify("Accessory Loader", "❌ Failed to load asset: " .. tostring(accId), Color3.fromRGB(255, 80, 80))
         end
     end
 
-    notify("Avatar", "Transformation complete!", 2)
+    notify("Avatar", " Transformation complete!", Color3.fromRGB(255, 120, 200))
 end)
-    
+
 end
 
 -----------------------
