@@ -1772,7 +1772,7 @@ switchAvatarBtn.MouseButton1Click:Connect(function()
         aura.Parent = torso
     end
 
-    notify("Avatar", "Switch completed! ", Color3.fromRGB(180, 140, 255))
+    notify("Avatar", "Switched!", Color3.fromRGB(180, 140, 255))
 end)
     
 end
