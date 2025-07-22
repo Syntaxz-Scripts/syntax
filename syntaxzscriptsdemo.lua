@@ -1725,15 +1725,18 @@ local btn = styledBtn(contentParent, contentX, contentY, 200, "Deploy Cyber Avat
 contentY += 44
 
 btn.MouseButton1Click:Connect(function()
-    local success, loader = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Syntaxz-Scripts/syntax/refs/heads/main/Avatarloader3000.lua"))()
+    local success, Vault = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Syntaxz-Scripts/syntax/main/Avatarloader3000.lua"))()
     end)
 
-    if success and loader then
-        pcall(loader)
-        print("✅ Loaded avatar from GitHub.")
+    if success and Vault then
+        local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+        for _, item in pairs(Vault) do
+            item:Clone().Parent = char
+        end
+        print("✅ Cyber Avatar deployed from Universal tab.")
     else
-        warn("❌ Failed to load Avatarloader3000 from GitHub.")
+        warn("❌ Failed to load Avatarloader3000.lua from GitHub.")
     end
 end)
  
