@@ -592,6 +592,7 @@ local function orbitAttack(key, cooldownFlag, cooldownTime)
     task.delay(cooldownTime, function()
         if key == "Q" then cooldownQ = false else cooldownR = false end
     end)
+end
 -- just in case if it doesn't work  
 local externalButtons = {}
 
@@ -1482,9 +1483,9 @@ contentY = contentY + 44
         autoTpWalkVars.lastTp = 0
     end)
 
-    -- ==============================
-    -- Pocket Dimension
-    -- ==============================
+    ----------------------------------
+    -- Pocket Dimension (AI GENERATED) p.s.: this was added for fun
+    ----------------------------------
 
 local OFFSET = Vector3.new(10000, 0, 0)
 local enterBtn = styledBtn(contentParent, 14, contentY, 220, "Enter Pocket Dimension", Color3.fromRGB(140,190,220))
@@ -1495,7 +1496,7 @@ enterBtn.MouseButton1Click:Connect(function()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- 🌀 Portal near player
+    --  Portal near player
     local portal = Instance.new("Part")
     portal.Size = Vector3.new(8, 8, 8)
     portal.Shape = Enum.PartType.Ball
@@ -1517,7 +1518,7 @@ enterBtn.MouseButton1Click:Connect(function()
     swirl.Color = ColorSequence.new(Color3.fromRGB(90,180,255), Color3.fromRGB(255,255,255))
     swirl.LightEmission = 0.9
 
-    -- 🌄 Build Floating Island
+    --  Build Floating Island
     local function buildSkyIsland()
         local folder = Instance.new("Folder")
         folder.Name = "ClientSkyIsland"
@@ -1560,7 +1561,7 @@ enterBtn.MouseButton1Click:Connect(function()
             end
         end
 
-        -- ☁️ Clouds
+        --  Clouds
         local cloudAnchor = Instance.new("Part")
         cloudAnchor.Size = Vector3.new(4, 1, 4)
         cloudAnchor.Position = OFFSET + Vector3.new(0, 150, 0)
@@ -1578,7 +1579,7 @@ enterBtn.MouseButton1Click:Connect(function()
         cloudEmitter.LightEmission = 0.6
         cloudEmitter.Color = ColorSequence.new(Color3.fromRGB(220, 230, 255))
 
-        -- 🔮 Return Rune
+        --  Return Rune
         local rune = Instance.new("Part")
         rune.Size = Vector3.new(4, 1, 4)
         rune.Position = OFFSET + Vector3.new(0, 126, 0)
@@ -1618,7 +1619,7 @@ enterBtn.MouseButton1Click:Connect(function()
         end)
     end
 
-    -- 🌌 Portal activated
+    --  Portal activated
     portal.Touched:Connect(function(hit)
         local hum = hit.Parent and hit.Parent:FindFirstChildOfClass("Humanoid")
         local root = hit.Parent and hit.Parent:FindFirstChild("HumanoidRootPart")
@@ -1634,7 +1635,7 @@ enterBtn.MouseButton1Click:Connect(function()
             theme.Parent = workspace
             theme:Play()
 
-            -- 🎚️ Fade out when leaving
+            --  Fade out when leaving
             task.spawn(function()
                 local isFading = false
                 RunService.RenderStepped:Connect(function()
@@ -1734,7 +1735,7 @@ btn.MouseButton1Click:Connect(function()
         for _, item in pairs(Vault) do
             item:Clone().Parent = char
         end
-        print("✅ Cyber Avatar deployed from Universal tab.")
+        print("✅ Avatar loaded from Universal tab.")
     else
         warn("❌ Failed to load Avatarloader3000.lua from GitHub.")
     end
