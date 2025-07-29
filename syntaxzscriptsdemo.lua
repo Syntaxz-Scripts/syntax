@@ -1722,8 +1722,9 @@ end)
 
 -- Avatar switcher
     
-local btn = styledBtn(contentParent, contentX, 14, contentY, 340, "Load Custom Avatar", Color3.fromRGB(120, 80, 200))
+local btn = styledBtn(contentParent, 14, contentY, 220, "Load Custom Avatar", Color3.fromRGB(120, 80, 200))
 contentY += 44
+
 
 btn.MouseButton1Click:Connect(function()
     local success, Vault = pcall(function()
