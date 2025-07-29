@@ -1,4 +1,4 @@
--- Syntaxz Scripts 5.9
+-- Syntaxz Scripts 6.0
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1739,7 +1739,115 @@ btn.MouseButton1Click:Connect(function()
         warn("❌ Failed to load Avatarloader3000.lua from GitHub.")
     end
 end)
- 
+
+-- Speed Mirage (After images) 
+local phaseCloneBtn = styledBtn(contentParent, 14, contentY, 220, "Phase Clone Dash", Color3.fromRGB(130,200,250))
+contentY += 44
+
+phaseCloneBtn.MouseButton1Click:Connect(function()
+    startPhaseCloneDash()
+end)
+
+-- Create afterimage clones
+local function createGhostClone(position)
+    local ghost = Instance.new("Part", workspace)
+    ghost.Size = Vector3.new(3,6,1.5)
+    ghost.Anchored = true
+    ghost.CanCollide = false
+    ghost.Position = position
+    ghost.Material = Enum.Material.Neon
+    ghost.Color = Color3.fromRGB(100, 200, 255)
+    ghost.Transparency = 0.4
+    ghost.Name = "GhostClone"
+
+    local swirl = Instance.new("ParticleEmitter", ghost)
+    swirl.Texture = "rbxassetid://296874871"
+    swirl.Rate = 20
+    swirl.Lifetime = NumberRange.new(0.3,0.5)
+    swirl.Size = NumberSequence.new(1)
+    swirl.Speed = NumberRange.new(0.5)
+    swirl.LightEmission = 0.9
+    swirl.Color = ColorSequence.new(Color3.fromRGB(120,220,255))
+
+    task.delay(0.3, function() ghost:Destroy() end)
+end
+
+-- Motion blur burst (client sided) 
+local function activateMotionBlur(duration)
+    local blur = Lighting:FindFirstChild("PhaseMotionBlur")
+    if not blur then
+        blur = Instance.new("BlurEffect")
+        blur.Size = 0
+        blur.Name = "PhaseMotionBlur"
+        blur.Parent = Lighting
+    end
+
+    TweenService:Create(blur, TweenInfo.new(0.2), {Size = 22}):Play()
+    task.delay(duration or 0.5, function()
+        TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
+        task.delay(0.5, function() blur:Destroy() end)
+    end)
+end
+
+-- Main sequence
+local function startPhaseCloneDash()
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local PHASE1_DURATION = 2
+    local PHASE2_BURSTS = 12
+    local BURST_OFFSET = 22
+    local BURST_INTERVAL = 0.02
+    local JITTER_DISTANCE = 0.5
+    local JITTER_SPEED = 8e9
+    local jitterTime, lastOffset = 0, 0
+    local jitterConnection = nil
+
+    notify("⚡ Phase Clone initialized!", Color3.fromRGB(140,255,255))
+
+    -- 1st Part: Hyperspeed jitter
+    jitterConnection = RunService.RenderStepped:Connect(function(dt)
+        jitterTime += dt * JITTER_SPEED
+        local offset = math.sin(jitterTime) * JITTER_DISTANCE
+        local basePos = hrp.Position - hrp.CFrame.RightVector * lastOffset
+        local newPos = basePos + hrp.CFrame.RightVector * offset
+        hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
+        lastOffset = offset
+
+        if math.random() < 0.05 then
+            createGhostClone(hrp.Position + Vector3.new(0,2,0))
+        end
+    end)
+
+    -- 2nd Part: Blink-speed lateral bursts
+    task.delay(PHASE1_DURATION, function()
+        if jitterConnection then jitterConnection:Disconnect() end
+        notify("Phase activated!", Color3.fromRGB(255,200,90))
+        activateMotionBlur(0.5)
+
+        local direction = 1
+        local originalPos = hrp.Position
+
+        local function teleportZapBurst()
+            local offset = hrp.CFrame.RightVector * direction * BURST_OFFSET
+            local newPos = originalPos + offset
+            hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
+
+            -- Echo trail clones
+            for j = 1, 2 do
+                task.delay(j * 0.01, function()
+                    createGhostClone(hrp.Position + hrp.CFrame.RightVector * direction * (BURST_OFFSET * 0.5 * j))
+                end)
+            end
+
+            direction *= -1
+        end
+
+        for i = 1, PHASE2_BURSTS do
+            task.delay(i * BURST_INTERVAL, teleportZapBurst)
+        end
+    end)
 end
 
 -----------------------
