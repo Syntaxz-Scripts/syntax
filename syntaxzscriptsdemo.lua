@@ -592,7 +592,6 @@ local function orbitAttack(key, cooldownFlag, cooldownTime)
     task.delay(cooldownTime, function()
         if key == "Q" then cooldownQ = false else cooldownR = false end
     end)
-end
 -- just in case if it doesn't work  
 local externalButtons = {}
 
@@ -1483,9 +1482,9 @@ contentY = contentY + 44
         autoTpWalkVars.lastTp = 0
     end)
 
-    ----------------------------------
-    -- Pocket Dimension (AI GENERATED) p.s.: this was added for fun
-    ----------------------------------
+    -- ==============================
+    -- Pocket Dimension
+    -- ==============================
 
 local OFFSET = Vector3.new(10000, 0, 0)
 local enterBtn = styledBtn(contentParent, 14, contentY, 220, "Enter Pocket Dimension", Color3.fromRGB(140,190,220))
@@ -1496,7 +1495,7 @@ enterBtn.MouseButton1Click:Connect(function()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    --  Portal near player
+    -- 🌀 Portal near player
     local portal = Instance.new("Part")
     portal.Size = Vector3.new(8, 8, 8)
     portal.Shape = Enum.PartType.Ball
@@ -1518,7 +1517,7 @@ enterBtn.MouseButton1Click:Connect(function()
     swirl.Color = ColorSequence.new(Color3.fromRGB(90,180,255), Color3.fromRGB(255,255,255))
     swirl.LightEmission = 0.9
 
-    --  Build Floating Island
+    -- 🌄 Build Floating Island
     local function buildSkyIsland()
         local folder = Instance.new("Folder")
         folder.Name = "ClientSkyIsland"
@@ -1561,7 +1560,7 @@ enterBtn.MouseButton1Click:Connect(function()
             end
         end
 
-        --  Clouds
+        -- ☁️ Clouds
         local cloudAnchor = Instance.new("Part")
         cloudAnchor.Size = Vector3.new(4, 1, 4)
         cloudAnchor.Position = OFFSET + Vector3.new(0, 150, 0)
@@ -1579,7 +1578,7 @@ enterBtn.MouseButton1Click:Connect(function()
         cloudEmitter.LightEmission = 0.6
         cloudEmitter.Color = ColorSequence.new(Color3.fromRGB(220, 230, 255))
 
-        --  Return Rune
+        -- 🔮 Return Rune
         local rune = Instance.new("Part")
         rune.Size = Vector3.new(4, 1, 4)
         rune.Position = OFFSET + Vector3.new(0, 126, 0)
@@ -1619,7 +1618,7 @@ enterBtn.MouseButton1Click:Connect(function()
         end)
     end
 
-    --  Portal activated
+    -- 🌌 Portal activated
     portal.Touched:Connect(function(hit)
         local hum = hit.Parent and hit.Parent:FindFirstChildOfClass("Humanoid")
         local root = hit.Parent and hit.Parent:FindFirstChild("HumanoidRootPart")
@@ -1635,7 +1634,7 @@ enterBtn.MouseButton1Click:Connect(function()
             theme.Parent = workspace
             theme:Play()
 
-            --  Fade out when leaving
+            -- 🎚️ Fade out when leaving
             task.spawn(function()
                 local isFading = false
                 RunService.RenderStepped:Connect(function()
@@ -1722,9 +1721,8 @@ end)
 
 -- Avatar switcher
     
-local btn = styledBtn(contentParent, 14, contentY, 220, "Load Custom Avatar", Color3.fromRGB(120, 80, 200))
+local btn = styledBtn(contentParent, contentX, contentY, 200, "Deploy Cyber Avatar", Color3.fromRGB(120, 80, 200))
 contentY += 44
-
 
 btn.MouseButton1Click:Connect(function()
     local success, Vault = pcall(function()
@@ -1736,13 +1734,13 @@ btn.MouseButton1Click:Connect(function()
         for _, item in pairs(Vault) do
             item:Clone().Parent = char
         end
-        print("✅ Avatar loaded from Universal tab.")
+        print("✅ Cyber Avatar deployed from Universal tab.")
     else
         warn("❌ Failed to load Avatarloader3000.lua from GitHub.")
     end
 end)
 
--- Speed Mirage (After images) 
+-- Phase Clone Dash Button
 local phaseCloneBtn = styledBtn(contentParent, 14, contentY, 220, "Phase Clone Dash", Color3.fromRGB(130,200,250))
 contentY += 44
 
@@ -1750,7 +1748,7 @@ phaseCloneBtn.MouseButton1Click:Connect(function()
     startPhaseCloneDash()
 end)
 
--- Create afterimage clones
+-- Create ghost afterimage clones
 local function createGhostClone(position)
     local ghost = Instance.new("Part", workspace)
     ghost.Size = Vector3.new(3,6,1.5)
@@ -1774,7 +1772,7 @@ local function createGhostClone(position)
     task.delay(0.3, function() ghost:Destroy() end)
 end
 
--- Motion blur burst (client sided) 
+-- Motion blur burst (cinematic effect)
 local function activateMotionBlur(duration)
     local blur = Lighting:FindFirstChild("PhaseMotionBlur")
     if not blur then
@@ -1808,7 +1806,7 @@ local function startPhaseCloneDash()
 
     notify("⚡ Phase Clone initialized!", Color3.fromRGB(140,255,255))
 
-    -- 1st Part: Hyperspeed jitter
+    -- Phase 1: Ultra-speed jitter
     jitterConnection = RunService.RenderStepped:Connect(function(dt)
         jitterTime += dt * JITTER_SPEED
         local offset = math.sin(jitterTime) * JITTER_DISTANCE
@@ -1822,10 +1820,10 @@ local function startPhaseCloneDash()
         end
     end)
 
-    -- 2nd Part: Blink-speed lateral bursts
+    -- Phase 2: Blink-speed lateral bursts
     task.delay(PHASE1_DURATION, function()
         if jitterConnection then jitterConnection:Disconnect() end
-        notify("Phase activated!", Color3.fromRGB(255,200,90))
+        notify("🔮 Phase Clone Activated!", Color3.fromRGB(255,200,90))
         activateMotionBlur(0.5)
 
         local direction = 1
@@ -1850,6 +1848,8 @@ local function startPhaseCloneDash()
             task.delay(i * BURST_INTERVAL, teleportZapBurst)
         end
     end)
+end
+    
 end
 
 -----------------------
