@@ -1740,7 +1740,7 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Movement Prediction (Predicts players movement and logs their behaviour) 
+-- Movement Prediction + Behavior Analysis System
 local predictionVars = {
     enabled = false,
     connections = {},
@@ -1751,7 +1751,7 @@ local predictionVars = {
     behaviorData = {}
 }
 
--- Styling Helper func
+-- Styling Helpers
 local function roundify(inst, radius)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, radius or 18)
@@ -1816,14 +1816,23 @@ local function createPredictionLabel(playerName, position, behavior)
 end
 
 local function spawnGhost(playerName, position)
-    local ghost = Instance.new("Part")
-    ghost.Anchored = true
-    ghost.CanCollide = false
-    ghost.Size = Vector3.new(2, 3, 1)
-    ghost.Position = position
-    ghost.Transparency = 0.7
-    ghost.BrickColor = BrickColor.new("Institutional white")
+    local player = game:GetService("Players"):FindFirstChild(playerName)
+    if not player or not player.Character then return end
+
+    local ghost = player.Character:Clone()
     ghost.Name = "Ghost_" .. playerName
+    for _, part in pairs(ghost:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Transparency = 0.3
+            part.Color = Color3.new(1, 1, 1)
+            part.Material = Enum.Material.Neon
+        elseif part:IsA("Accessory") or part:IsA("Shirt") or part:IsA("Pants") then
+            part:Destroy()
+        elseif part:IsA("Humanoid") then
+            part.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+        end
+    end
+    ghost:SetPrimaryPartCFrame(CFrame.new(position))
     ghost.Parent = workspace
 
     predictionVars.ghosts[playerName] = ghost
@@ -1844,7 +1853,7 @@ local function drawTrajectory(playerName, startPos, endPos)
     beam.Attachment1 = beamPart1
     beam.Width0 = 0.1
     beam.Width1 = 0.1
-    beam.Color = ColorSequence.new(Color3.fromRGB(255, 255, 0))
+    beam.Color = ColorSequence.new(Color3.new(1, 1, 1))
     beam.FaceCamera = true
     beam.Parent = workspace
 
@@ -1908,6 +1917,10 @@ local function updatePrediction(player)
     local behavior = analyzeBehavior(player)
 
     if predictionVars.labels[player.Name] then
+        local labelGui = predictionVars.labels[player.Name]:FindFirstChildOfClass("BillboardGui")
+        if labelGui and labelGui:FindFirstChildOfClass("TextLabel") then
+            labelGui.TextLabel.Text = "Next: " .. behavior
+        end
         predictionVars.labels[player.Name].Position = predictedPos
     else
         createPredictionLabel(player.Name, predictedPos, behavior)
@@ -1919,8 +1932,8 @@ end
 
 local function enablePrediction()
     predictionVars.enabled = true
-    predictionVars.connections.main = RunService.Heartbeat:Connect(function()
-        for _, p in ipairs(Players:GetPlayers()) do
+    predictionVars.connections.main = game:GetService("RunService").Heartbeat:Connect(function()
+        for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
             if p ~= player and p.Character then
                 updatePrediction(p)
             end
@@ -1947,7 +1960,7 @@ local function disablePrediction()
 end
 
 -- Toggle Button (Universal tab)
-local predictBtn = styledBtn(contentParent, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
+local predictBtn = styledBtn(tf, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
 predictBtn.MouseButton1Click:Connect(function()
     predictionVars.enabled = not predictionVars.enabled
     predictBtn.Text = "Predict Movement: " .. (predictionVars.enabled and "ON" or "OFF")
