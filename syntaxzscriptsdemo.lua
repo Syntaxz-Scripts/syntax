@@ -1960,18 +1960,25 @@ local function disablePrediction()
 end
 
 -- Toggle Button (Universal tab)
-local predictBtn = styledBtn(contentParent, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
+-- Detect correct parent first
+local parentFrame = isMobile and contentParent or tabFrames["Universal"]
+-- create button
+local predictBtn = styledBtn(parentFrame, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
+
+-- Ensure that it's properly positioned (I hope so) 
+predictBtn.Position = UDim2.new(0, 10, 0, contentY)
+predictBtn.Size = UDim2.new(0, 200, 0, 40)
+predictBtn.ZIndex = 3
+predictBtn.Visible = true
+
+-- Toggle behavior
+local isPredicting = false
 predictBtn.MouseButton1Click:Connect(function()
-    predictionVars.enabled = not predictionVars.enabled
-    predictBtn.Text = "Predict Movement: " .. (predictionVars.enabled and "ON" or "OFF")
-    if predictionVars.enabled then
-        enablePrediction()
-    else
-        disablePrediction()
-    end
+    isPredicting = not isPredicting
+    predictBtn.Text = "Predict Movement: " .. (isPredicting and "ON" or "OFF")
+    predictBtn.BackgroundColor3 = isPredicting and Color3.fromRGB(0, 255, 80) or Color3.fromRGB(255, 180, 60)
 end)
-contentY += 44
-    
+
 end
 
 -----------------------
