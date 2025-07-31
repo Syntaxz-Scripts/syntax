@@ -1,4 +1,4 @@
--- Syntaxz Scripts ver 6.7 (ayo SIX SEVEN 🤣🤣🤣) 
+-- Syntaxz Scripts 6.0
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1960,7 +1960,7 @@ local function updatePrediction(p)
 
     local velocity = hrp.Velocity
     local predictedPos = hrp.Position + velocity * predictionVars
-local function updatePrediction(p)
+    local function updatePrediction(p)
     local hrp = nil
     for i = 1, 10 do
         hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
