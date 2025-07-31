@@ -1,4 +1,4 @@
--- Syntaxz Scripts 6.0
+-- Syntaxz Scripts ver 6.7 (ayo SIX SEVEN 🤣🤣🤣) 
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1960,7 +1960,7 @@ local function disablePrediction()
 end
 
 -- Toggle Button (Universal tab)
-local predictBtn = styledBtn(tf, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
+local predictBtn = styledBtn(contentParent, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
 predictBtn.MouseButton1Click:Connect(function()
     predictionVars.enabled = not predictionVars.enabled
     predictBtn.Text = "Predict Movement: " .. (predictionVars.enabled and "ON" or "OFF")
