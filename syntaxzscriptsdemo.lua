@@ -418,7 +418,7 @@ toggleBtn.MouseButton1Click:Connect(function()
     else
         animateClose()
     end
-end)
+end) 
 
 gui.AncestryChanged:Connect(function()
     if not gui:IsDescendantOf(game) then
@@ -1741,299 +1741,130 @@ btn.MouseButton1Click:Connect(function()
 end)
 
 -- Movement Prediction + Behavior Analysis System
-local player = game:GetService("Players").LocalPlayer
-local predictionVars = {
-    enabled = false,
-    connections = {},
-    predictionTime = 0.5,
-    labels = {},
-    ghosts = {},
-    beams = {},
-    behaviorData = {}
-}
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local prediction = {enabled = false, time = 0.3, ghosts = {}, labels = {}, beams = {}, behavior = {}}
 
--- Styling Helpers
-local function roundify(inst, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 18)
-    corner.Parent = inst
-end
-
-local function strokify(inst, thickness, color, transparency)
-    local s = Instance.new("UIStroke")
-    s.Thickness = thickness or 2
-    s.Color = color or Color3.fromRGB(180, 220, 255)
-    s.Transparency = transparency or 0.4
-    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    s.Parent = inst
-end
-
-local function styledBtn(parent, y, text, col)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0, 220, 0, 34)
-    btn.Position = UDim2.new(0, 14, 0, y)
-    btn.BackgroundColor3 = col or Color3.fromRGB(255, 180, 60)
-    btn.TextColor3 = Color3.fromRGB(0,0,0)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
-    btn.Text = text
-    roundify(btn, 10)
-    strokify(btn, 1, Color3.fromRGB(255, 220, 120), 0.3)
-    return btn
-end
-
-local function notify(msg, col)
-    print(msg)
-end
-
--- Behavior Analysis
-local function behaviorConfidence(p)
-    local data = predictionVars.behaviorData[p.Name]
-    if not data or #data < 5 then return { type = "Unknown", confidence = 0 } end
-
-    local recent = data[#data]
-    local prev = data[#data - 4]
-
-    local scores = {
-        Rush = math.clamp((recent.velocity - prev.velocity).Magnitude / 30, 0, 1),
-        Idle = math.clamp(1 - (recent.position - prev.position).Magnitude / 5, 0, 1),
-        Strafe = math.clamp(math.abs(recent.velocity.X - prev.velocity.X) / 20, 0, 1),
-        Zigzag = math.clamp(math.abs(recent.velocity.Z - prev.velocity.Z) / 20, 0, 1),
-        Walk = math.clamp((recent.position - prev.position).Magnitude / 5, 0, 1)
-    }
-
-    -- Chase detection
-    local chaseScore = 0
-    for _, other in ipairs(game:GetService("Players"):GetPlayers()) do
-        if other ~= p and other.Character then
-            local otherHRP = other.Character:FindFirstChild("HumanoidRootPart")
-            if otherHRP then
-                local toOther = (otherHRP.Position - recent.position).Unit
-                local velocityDir = recent.velocity.Unit
-                local dot = velocityDir:Dot(toOther)
-                local dist = (otherHRP.Position - recent.position).Magnitude
-                if dot > 0.7 and dist < 30 then
-                    chaseScore = math.clamp(dot * (1 - dist / 30), 0, 1)
-                    break
-                end
-            end
-        end
-    end
-    scores.Chase = chaseScore
-
-    local bestType, bestScore = "Unknown", 0
-    for behavior, score in pairs(scores) do
-        if score > bestScore then
-            bestType = behavior
-            bestScore = score
-        end
-    end
-
-    return {
-        type = bestType,
-        confidence = math.floor(bestScore * 100)
-    }
-end
-
--- Movement Logging
-local function logMovement(p)
-    local hrp = nil
-    for i = 1, 10 do
-        hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then break end
-        task.wait(0.1)
-    end
+local function log(p)
+    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     local name = p.Name
-    predictionVars.behaviorData[name] = predictionVars.behaviorData[name] or {}
-
-    table.insert(predictionVars.behaviorData[name], {
-        time = tick(),
-        position = hrp.Position,
-        velocity = hrp.Velocity
-    })
-
-    if #predictionVars.behaviorData[name] > 50 then
-        table.remove(predictionVars.behaviorData[name], 1)
-    end
+    prediction.behavior[name] = prediction.behavior[name] or {}
+    table.insert(prediction.behavior[name], {pos = hrp.Position, vel = hrp.Velocity, time = tick()})
+    if #prediction.behavior[name] > 30 then table.remove(prediction.behavior[name], 1) end
 end
 
--- Prediction Visuals
-local function createPredictionLabel(playerName, position, behavior)
-    local part = Instance.new("Part")
-    part.Anchored = true
-    part.CanCollide = false
-    part.Transparency = 1
-    part.Size = Vector3.new(0.2, 0.2, 0.2)
-    part.Position = position
-    part.Name = "PredictionAnchor_" .. playerName
-    part.Parent = workspace
-
-    local gui = Instance.new("BillboardGui", part)
-    gui.Size = UDim2.new(0, 120, 0, 40)
-    gui.AlwaysOnTop = true
-    gui.StudsOffset = Vector3.new(0, 2, 0)
-
-    local label = Instance.new("TextLabel", gui)
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = "Next: " .. behavior
-    label.TextColor3 = Color3.fromRGB(255, 255, 0)
-    label.Font = Enum.Font.GothamBold
-    label.TextScaled = true
-    roundify(label, 6)
-    strokify(label, 1, Color3.fromRGB(255, 255, 120), 0.25)
-
-    predictionVars.labels[playerName] = part
-end
-
-local function spawnGhost(playerName, position)
-    local target = game:GetService("Players"):FindFirstChild(playerName)
-    if not target or not target.Character then return end
-
-    local ghost = target.Character:Clone()
-    ghost.Name = "Ghost_" .. playerName
-    for _, part in pairs(ghost:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Transparency = 0.3
-            part.Color = Color3.new(1, 1, 1)
-            part.Material = Enum.Material.Neon
-        elseif part:IsA("Accessory") or part:IsA("Shirt") or part:IsA("Pants") then
-            part:Destroy()
-        elseif part:IsA("Humanoid") then
-            part.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-        end
-    end
-    ghost:SetPrimaryPartCFrame(CFrame.new(position))
-    ghost.Parent = workspace
-
-    predictionVars.ghosts[playerName] = ghost
-    task.delay(1.5, function()
-        if ghost then ghost:Destroy() end
-    end)
-end
-
-local function drawTrajectory(playerName, startPos, endPos)
-    local anchor0 = Instance.new("Part", workspace)
-    anchor0.Anchored = true
-    anchor0.CanCollide = false
-    anchor0.Size = Vector3.new(0.2, 0.2, 0.2)
-    anchor0.Position = startPos
-    anchor0.Transparency = 1
-
-    local anchor1 = Instance.new("Part", workspace)
-    anchor1.Anchored = true
-    anchor1.CanCollide = false
-    anchor1.Size = Vector3.new(0.2, 0.2, 0.2)
-    anchor1.Position = endPos
-    anchor1.Transparency = 1
-
-    local beamPart0 = Instance.new("Attachment", anchor0)
-    local beamPart1 = Instance.new("Attachment", anchor1)
-
-    local beam = Instance.new("Beam")
-    beam.Attachment0 = beamPart0
-    beam.Attachment1 = beamPart1
-    beam.Width0 = 0.1
-    beam.Width1 = 0.1
-    beam.Color = ColorSequence.new(Color3.new(1, 1, 1))
-    beam.FaceCamera = true
-    beam.Parent = workspace
-
-    predictionVars.beams[playerName] = {beam, beamPart0, beamPart1, anchor0, anchor1}
-    task.delay(1.5, function()
-        for _, obj in ipairs(predictionVars.beams[playerName]) do
-            if obj then obj:Destroy() end
-        end
-    end)
-end
-
-local function updatePrediction(p)
-    local hrp = nil
-    for i = 1, 10 do
-        hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then break end
-        task.wait(0.1)
-    end
-    if not hrp then return end
-
-    local velocity = hrp.Velocity
-    local predictedPos = hrp.Position + velocity * predictionVars.predictionTime
-    local function updatePrediction(p)
-    local hrp = nil
-    for i = 1, 10 do
-        hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then break end
-        task.wait(0.1)
-    end
-    if not hrp then return end
-
-    local velocity = hrp.Velocity
-    local predictedPos = hrp.Position + velocity * predictionVars.predictionTime
-
-    logMovement(p)
-    local result = behaviorConfidence(p)
-    local behavior = result.type
-    local conf = result.confidence
-    local labelText = "Next: " .. behavior .. " (" .. conf .. "%)"
-
-    if predictionVars.labels[p.Name] then
-        local labelGui = predictionVars.labels[p.Name]:FindFirstChildOfClass("BillboardGui")
-        if labelGui and labelGui:FindFirstChildOfClass("TextLabel") then
-            labelGui.TextLabel.Text = labelText
-        end
-        predictionVars.labels[p.Name].Position = predictedPos
-    else
-        createPredictionLabel(p.Name, predictedPos, labelText)
-    end
-
-    spawnGhost(p.Name, predictedPos)
-    drawTrajectory(p.Name, hrp.Position, predictedPos)
-end
-
-local function enablePrediction()
-    predictionVars.enabled = true
-    predictionVars.connections.main = game:GetService("RunService").Heartbeat:Connect(function()
-        for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
-            if p ~= player and p.Character then
-                updatePrediction(p)
+local function analyze(p)
+    local d = prediction.behavior[p.Name]
+    if not d or #d < 5 then return "Unknown", 0 end
+    local a,b = d[#d], d[#d - 4]
+    local scores = {
+        Rush = ((a.vel - b.vel).Magnitude/30),
+        Idle = (1 - (a.pos - b.pos).Magnitude/5),
+        Strafe = math.abs(a.vel.X - b.vel.X)/20,
+        Zigzag = math.abs(a.vel.Z - b.vel.Z)/20,
+        Walk = ((a.pos - b.pos).Magnitude/5)
+    }
+    local chase = 0
+    for _,o in ipairs(Players:GetPlayers()) do
+        if o ~= p and o.Character and o.Character:FindFirstChild("HumanoidRootPart") then
+            local oh = o.Character.HumanoidRootPart
+            local dir = (oh.Position - a.pos).Unit
+            local dot = a.vel.Unit:Dot(dir)
+            local dist = (oh.Position - a.pos).Magnitude
+            if dot > 0.7 and dist < 30 then
+                chase = math.clamp(dot * (1 - dist/30), 0, 1) break
             end
         end
+    end
+    scores.Chase = chase
+    local best, score = "Unknown", 0
+    for k,v in pairs(scores) do if v > score then best, score = k, v end end
+    return best, math.floor(score*100)
+end
+
+local function spawnGhost(p, pos)
+    local ghost = p.Character:Clone()
+    for _,v in pairs(ghost:GetDescendants()) do
+        if v:IsA("BasePart") then v.Transparency = 0.4; v.Material = Enum.Material.Neon
+        elseif v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") then v:Destroy()
+        end
+    end
+    ghost.Name = "Ghost_"..p.Name
+    ghost:SetPrimaryPartCFrame(CFrame.new(pos))
+    ghost.Parent = workspace
+    prediction.ghosts[p.Name] = ghost
+    task.delay(1, function() if ghost then ghost:Destroy() end end)
+end
+
+local function drawBeam(p, start, stop)
+    local a0 = Instance.new("Part", workspace)
+    local a1 = Instance.new("Part", workspace)
+    for _,a in pairs({a0,a1}) do a.Anchored=true;a.CanCollide=false;a.Size=Vector3.new(0.2,0.2,0.2);a.Transparency=1 end
+    a0.Position = start; a1.Position = stop
+    local at0 = Instance.new("Attachment", a0)
+    local at1 = Instance.new("Attachment", a1)
+    local beam = Instance.new("Beam", workspace)
+    beam.Attachment0 = at0; beam.Attachment1 = at1
+    beam.Width0 = 0.1; beam.Width1 = 0.1; beam.Color = ColorSequence.new(Color3.fromRGB(255,255,255))
+    prediction.beams[p.Name] = beam
+    task.delay(1, function() beam:Destroy(); a0:Destroy(); a1:Destroy() end)
+end
+
+local function label(p, pos, txt)
+    local anchor = Instance.new("Part", workspace)
+    anchor.Size = Vector3.new(0.2,0.2,0.2); anchor.Anchored=true; anchor.CanCollide=false; anchor.Transparency=1
+    anchor.Position = pos
+    local gui = Instance.new("BillboardGui", anchor)
+    gui.Size = UDim2.new(0,120,0,30); gui.AlwaysOnTop=true; gui.StudsOffset=Vector3.new(0,2,0)
+    local label = Instance.new("TextLabel", gui)
+    label.Size = UDim2.new(1,0,1,0); label.BackgroundTransparency=1
+    label.Font=Enum.Font.GothamBold; label.TextScaled=true
+    label.Text = txt; label.TextColor3 = Color3.new(1,1,0)
+    prediction.labels[p.Name] = anchor
+    task.delay(1, function() anchor:Destroy() end)
+end
+
+local function update(p)
+    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local future = hrp.Position + hrp.Velocity * prediction.time
+    log(p)
+    local type, conf = analyze(p)
+    label(p, future, "Next: "..type.." ("..conf.."%)")
+    spawnGhost(p, future)
+    drawBeam(p, hrp.Position, future)
+end
+
+local function enable()
+    prediction.enabled = true
+    RunService.Heartbeat:Connect(function()
+        for _,p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then update(p) end
+        end
     end)
-    notify("Behavioral prediction enabled!", Color3.fromRGB(255, 255, 100))
 end
 
-local function disablePrediction()
-    predictionVars.enabled = false
-    if predictionVars.connections.main then
-        predictionVars.connections.main:Disconnect()
-        predictionVars.connections.main = nil
-    end
-    for _, anchor in pairs(predictionVars.labels) do anchor:Destroy() end
-    for _, ghost in pairs(predictionVars.ghosts) do ghost:Destroy() end
-    for _, beamSet in pairs(predictionVars.beams) do
-        for _, obj in ipairs(beamSet) do obj:Destroy() end
-    end
-    predictionVars.labels = {}
-    predictionVars.ghosts = {}
-    predictionVars.beams = {}
-    notify("Prediction disabled.", Color3.fromRGB(255, 100, 100))
-end
-
--- Toggle Button
-local predictBtn = styledBtn(tf, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
+enable()
+-- create toggle button
+local tf = tabFrames["Universal"] -- your Universal tab frame
+local predictBtn = styledBtn(tf, contentY, "Prediction: OFF", Color3.fromRGB(60, 180, 60))
 predictBtn.MouseButton1Click:Connect(function()
-    predictionVars.enabled = not predictionVars.enabled
-    predictBtn.Text = "Predict Movement: " .. (predictionVars.enabled and "ON" or "OFF")
-    if predictionVars.enabled then
-        enablePrediction()
+    prediction.enabled = not prediction.enabled
+    predictBtn.Text = "Prediction: " .. (prediction.enabled and "ON" or "OFF")
+    predictBtn.BackgroundColor3 = prediction.enabled and Color3.fromRGB(20,120,60) or Color3.fromRGB(60,180,60)
+    if prediction.enabled then
+        enable()
+        notify("Prediction enabled!", Color3.fromRGB(120,255,120))
     else
-        disablePrediction()
+        disable()
+        notify("Prediction disabled.", Color3.fromRGB(255,120,120))
     end
 end)
-contentY += 44
+contentY += 44 -- if you're stacking buttons vertically
 
+		
 end
 
 -----------------------
