@@ -1741,6 +1741,7 @@ btn.MouseButton1Click:Connect(function()
 end)
 
 -- Movement Prediction + Behavior Analysis System
+local player = game:GetService("Players").LocalPlayer
 local predictionVars = {
     enabled = false,
     connections = {},
@@ -1756,7 +1757,6 @@ local function roundify(inst, radius)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, radius or 18)
     corner.Parent = inst
-    return corner
 end
 
 local function strokify(inst, thickness, color, transparency)
@@ -1766,7 +1766,6 @@ local function strokify(inst, thickness, color, transparency)
     s.Transparency = transparency or 0.4
     s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     s.Parent = inst
-    return s
 end
 
 local function styledBtn(parent, y, text, col)
@@ -1787,6 +1786,80 @@ local function notify(msg, col)
     print(msg)
 end
 
+-- Behavior Analysis
+local function behaviorConfidence(p)
+    local data = predictionVars.behaviorData[p.Name]
+    if not data or #data < 5 then return { type = "Unknown", confidence = 0 } end
+
+    local recent = data[#data]
+    local prev = data[#data - 4]
+
+    local scores = {
+        Rush = math.clamp((recent.velocity - prev.velocity).Magnitude / 30, 0, 1),
+        Idle = math.clamp(1 - (recent.position - prev.position).Magnitude / 5, 0, 1),
+        Strafe = math.clamp(math.abs(recent.velocity.X - prev.velocity.X) / 20, 0, 1),
+        Zigzag = math.clamp(math.abs(recent.velocity.Z - prev.velocity.Z) / 20, 0, 1),
+        Walk = math.clamp((recent.position - prev.position).Magnitude / 5, 0, 1)
+    }
+
+    -- Chase detection
+    local chaseScore = 0
+    for _, other in ipairs(game:GetService("Players"):GetPlayers()) do
+        if other ~= p and other.Character then
+            local otherHRP = other.Character:FindFirstChild("HumanoidRootPart")
+            if otherHRP then
+                local toOther = (otherHRP.Position - recent.position).Unit
+                local velocityDir = recent.velocity.Unit
+                local dot = velocityDir:Dot(toOther)
+                local dist = (otherHRP.Position - recent.position).Magnitude
+                if dot > 0.7 and dist < 30 then
+                    chaseScore = math.clamp(dot * (1 - dist / 30), 0, 1)
+                    break
+                end
+            end
+        end
+    end
+    scores.Chase = chaseScore
+
+    local bestType, bestScore = "Unknown", 0
+    for behavior, score in pairs(scores) do
+        if score > bestScore then
+            bestType = behavior
+            bestScore = score
+        end
+    end
+
+    return {
+        type = bestType,
+        confidence = math.floor(bestScore * 100)
+    }
+end
+
+-- Movement Logging
+local function logMovement(p)
+    local hrp = nil
+    for i = 1, 10 do
+        hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then break end
+        task.wait(0.1)
+    end
+    if not hrp then return end
+
+    local name = p.Name
+    predictionVars.behaviorData[name] = predictionVars.behaviorData[name] or {}
+
+    table.insert(predictionVars.behaviorData[name], {
+        time = tick(),
+        position = hrp.Position,
+        velocity = hrp.Velocity
+    })
+
+    if #predictionVars.behaviorData[name] > 50 then
+        table.remove(predictionVars.behaviorData[name], 1)
+    end
+end
+
+-- Prediction Visuals
 local function createPredictionLabel(playerName, position, behavior)
     local part = Instance.new("Part")
     part.Anchored = true
@@ -1816,10 +1889,10 @@ local function createPredictionLabel(playerName, position, behavior)
 end
 
 local function spawnGhost(playerName, position)
-    local player = game:GetService("Players"):FindFirstChild(playerName)
-    if not player or not player.Character then return end
+    local target = game:GetService("Players"):FindFirstChild(playerName)
+    if not target or not target.Character then return end
 
-    local ghost = player.Character:Clone()
+    local ghost = target.Character:Clone()
     ghost.Name = "Ghost_" .. playerName
     for _, part in pairs(ghost:GetDescendants()) do
         if part:IsA("BasePart") then
@@ -1842,11 +1915,22 @@ local function spawnGhost(playerName, position)
 end
 
 local function drawTrajectory(playerName, startPos, endPos)
-    local beamPart0 = Instance.new("Attachment", workspace.Terrain)
-    beamPart0.WorldPosition = startPos
+    local anchor0 = Instance.new("Part", workspace)
+    anchor0.Anchored = true
+    anchor0.CanCollide = false
+    anchor0.Size = Vector3.new(0.2, 0.2, 0.2)
+    anchor0.Position = startPos
+    anchor0.Transparency = 1
 
-    local beamPart1 = Instance.new("Attachment", workspace.Terrain)
-    beamPart1.WorldPosition = endPos
+    local anchor1 = Instance.new("Part", workspace)
+    anchor1.Anchored = true
+    anchor1.CanCollide = false
+    anchor1.Size = Vector3.new(0.2, 0.2, 0.2)
+    anchor1.Position = endPos
+    anchor1.Transparency = 1
+
+    local beamPart0 = Instance.new("Attachment", anchor0)
+    local beamPart1 = Instance.new("Attachment", anchor1)
 
     local beam = Instance.new("Beam")
     beam.Attachment0 = beamPart0
@@ -1857,7 +1941,7 @@ local function drawTrajectory(playerName, startPos, endPos)
     beam.FaceCamera = true
     beam.Parent = workspace
 
-    predictionVars.beams[playerName] = {beam, beamPart0, beamPart1}
+    predictionVars.beams[playerName] = {beam, beamPart0, beamPart1, anchor0, anchor1}
     task.delay(1.5, function()
         for _, obj in ipairs(predictionVars.beams[playerName]) do
             if obj then obj:Destroy() end
@@ -1865,69 +1949,47 @@ local function drawTrajectory(playerName, startPos, endPos)
     end)
 end
 
-local function logMovement(player)
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+local function updatePrediction(p)
+    local hrp = nil
+    for i = 1, 10 do
+        hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then break end
+        task.wait(0.1)
+    end
     if not hrp then return end
 
-    local name = player.Name
-    predictionVars.behaviorData[name] = predictionVars.behaviorData[name] or {}
-
-    table.insert(predictionVars.behaviorData[name], {
-        time = tick(),
-        position = hrp.Position,
-        velocity = hrp.Velocity
-    })
-
-    if #predictionVars.behaviorData[name] > 50 then
-        table.remove(predictionVars.behaviorData[name], 1)
+    local velocity = hrp.Velocity
+    local predictedPos = hrp.Position + velocity * predictionVars
+local function updatePrediction(p)
+    local hrp = nil
+    for i = 1, 10 do
+        hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then break end
+        task.wait(0.1)
     end
-end
-
-local function analyzeBehavior(player)
-    local data = predictionVars.behaviorData[player.Name]
-    if not data or #data < 5 then return "Unknown" end
-
-    local recent = data[#data]
-    local prev = data[#data - 4]
-
-    local deltaPos = (recent.position - prev.position).Magnitude
-    local deltaVel = (recent.velocity - prev.velocity).Magnitude
-
-    if deltaVel > 20 then
-        return "Rush"
-    elseif deltaPos < 2 then
-        return "Idle"
-    elseif math.abs(recent.velocity.X - prev.velocity.X) > 10 then
-        return "Strafe"
-    elseif math.abs(recent.velocity.Z - prev.velocity.Z) > 10 then
-        return "Zigzag"
-    else
-        return "Walk"
-    end
-end
-
-local function updatePrediction(player)
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
     local velocity = hrp.Velocity
     local predictedPos = hrp.Position + velocity * predictionVars.predictionTime
 
-    logMovement(player)
-    local behavior = analyzeBehavior(player)
+    logMovement(p)
+    local result = behaviorConfidence(p)
+    local behavior = result.type
+    local conf = result.confidence
+    local labelText = "Next: " .. behavior .. " (" .. conf .. "%)"
 
-    if predictionVars.labels[player.Name] then
-        local labelGui = predictionVars.labels[player.Name]:FindFirstChildOfClass("BillboardGui")
+    if predictionVars.labels[p.Name] then
+        local labelGui = predictionVars.labels[p.Name]:FindFirstChildOfClass("BillboardGui")
         if labelGui and labelGui:FindFirstChildOfClass("TextLabel") then
-            labelGui.TextLabel.Text = "Next: " .. behavior
+            labelGui.TextLabel.Text = labelText
         end
-        predictionVars.labels[player.Name].Position = predictedPos
+        predictionVars.labels[p.Name].Position = predictedPos
     else
-        createPredictionLabel(player.Name, predictedPos, behavior)
+        createPredictionLabel(p.Name, predictedPos, labelText)
     end
 
-    spawnGhost(player.Name, predictedPos)
-    drawTrajectory(player.Name, hrp.Position, predictedPos)
+    spawnGhost(p.Name, predictedPos)
+    drawTrajectory(p.Name, hrp.Position, predictedPos)
 end
 
 local function enablePrediction()
@@ -1959,25 +2021,19 @@ local function disablePrediction()
     notify("Prediction disabled.", Color3.fromRGB(255, 100, 100))
 end
 
--- Toggle Button for prediction system
-local predictBtn = styledBtn(contentParent, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
-predictBtn.ZIndex = 3
-predictBtn.Visible = true
-
+-- Toggle Button
+local predictBtn = styledBtn(tf, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
 predictBtn.MouseButton1Click:Connect(function()
     predictionVars.enabled = not predictionVars.enabled
     predictBtn.Text = "Predict Movement: " .. (predictionVars.enabled and "ON" or "OFF")
-    predictBtn.BackgroundColor3 = predictionVars.enabled and Color3.fromRGB(0, 255, 80) or Color3.fromRGB(255, 180, 60)
-
     if predictionVars.enabled then
         enablePrediction()
     else
         disablePrediction()
     end
 end)
-
 contentY += 44
-    
+
 end
 
 -----------------------
