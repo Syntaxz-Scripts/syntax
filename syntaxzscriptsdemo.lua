@@ -1959,7 +1959,7 @@ local function updatePrediction(p)
     if not hrp then return end
 
     local velocity = hrp.Velocity
-    local predictedPos = hrp.Position + velocity * predictionVars
+    local predictedPos = hrp.Position + velocity * predictionVars.predictionTime
     local function updatePrediction(p)
     local hrp = nil
     for i = 1, 10 do
