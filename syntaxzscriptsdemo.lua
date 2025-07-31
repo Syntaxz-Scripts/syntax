@@ -1740,115 +1740,224 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Phase Clone Dash Button
-local phaseCloneBtn = styledBtn(contentParent, 14, contentY, 220, "Phase Clone Dash", Color3.fromRGB(130,200,250))
-contentY += 44
+-- Movement Prediction (Predicts players movement and logs their behaviour) 
+local predictionVars = {
+    enabled = false,
+    connections = {},
+    predictionTime = 0.5,
+    labels = {},
+    ghosts = {},
+    beams = {},
+    behaviorData = {}
+}
 
-phaseCloneBtn.MouseButton1Click:Connect(function()
-    startPhaseCloneDash()
-end)
+-- Styling Helper func
+local function roundify(inst, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 18)
+    corner.Parent = inst
+    return corner
+end
 
--- Create ghost afterimage clones
-local function createGhostClone(position)
-    local ghost = Instance.new("Part", workspace)
-    ghost.Size = Vector3.new(3,6,1.5)
+local function strokify(inst, thickness, color, transparency)
+    local s = Instance.new("UIStroke")
+    s.Thickness = thickness or 2
+    s.Color = color or Color3.fromRGB(180, 220, 255)
+    s.Transparency = transparency or 0.4
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = inst
+    return s
+end
+
+local function styledBtn(parent, y, text, col)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0, 220, 0, 34)
+    btn.Position = UDim2.new(0, 14, 0, y)
+    btn.BackgroundColor3 = col or Color3.fromRGB(255, 180, 60)
+    btn.TextColor3 = Color3.fromRGB(0,0,0)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.Text = text
+    roundify(btn, 10)
+    strokify(btn, 1, Color3.fromRGB(255, 220, 120), 0.3)
+    return btn
+end
+
+local function notify(msg, col)
+    print(msg)
+end
+
+local function createPredictionLabel(playerName, position, behavior)
+    local part = Instance.new("Part")
+    part.Anchored = true
+    part.CanCollide = false
+    part.Transparency = 1
+    part.Size = Vector3.new(0.2, 0.2, 0.2)
+    part.Position = position
+    part.Name = "PredictionAnchor_" .. playerName
+    part.Parent = workspace
+
+    local gui = Instance.new("BillboardGui", part)
+    gui.Size = UDim2.new(0, 120, 0, 40)
+    gui.AlwaysOnTop = true
+    gui.StudsOffset = Vector3.new(0, 2, 0)
+
+    local label = Instance.new("TextLabel", gui)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "Next: " .. behavior
+    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    roundify(label, 6)
+    strokify(label, 1, Color3.fromRGB(255, 255, 120), 0.25)
+
+    predictionVars.labels[playerName] = part
+end
+
+local function spawnGhost(playerName, position)
+    local ghost = Instance.new("Part")
     ghost.Anchored = true
     ghost.CanCollide = false
+    ghost.Size = Vector3.new(2, 3, 1)
     ghost.Position = position
-    ghost.Material = Enum.Material.Neon
-    ghost.Color = Color3.fromRGB(100, 200, 255)
-    ghost.Transparency = 0.4
-    ghost.Name = "GhostClone"
+    ghost.Transparency = 0.7
+    ghost.BrickColor = BrickColor.new("Institutional white")
+    ghost.Name = "Ghost_" .. playerName
+    ghost.Parent = workspace
 
-    local swirl = Instance.new("ParticleEmitter", ghost)
-    swirl.Texture = "rbxassetid://296874871"
-    swirl.Rate = 20
-    swirl.Lifetime = NumberRange.new(0.3,0.5)
-    swirl.Size = NumberSequence.new(1)
-    swirl.Speed = NumberRange.new(0.5)
-    swirl.LightEmission = 0.9
-    swirl.Color = ColorSequence.new(Color3.fromRGB(120,220,255))
-
-    task.delay(0.3, function() ghost:Destroy() end)
-end
-
--- Motion blur burst (cinematic effect)
-local function activateMotionBlur(duration)
-    local blur = Lighting:FindFirstChild("PhaseMotionBlur")
-    if not blur then
-        blur = Instance.new("BlurEffect")
-        blur.Size = 0
-        blur.Name = "PhaseMotionBlur"
-        blur.Parent = Lighting
-    end
-
-    TweenService:Create(blur, TweenInfo.new(0.2), {Size = 22}):Play()
-    task.delay(duration or 0.5, function()
-        TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
-        task.delay(0.5, function() blur:Destroy() end)
+    predictionVars.ghosts[playerName] = ghost
+    task.delay(1.5, function()
+        if ghost then ghost:Destroy() end
     end)
 end
 
--- Main sequence
-local function startPhaseCloneDash()
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+local function drawTrajectory(playerName, startPos, endPos)
+    local beamPart0 = Instance.new("Attachment", workspace.Terrain)
+    beamPart0.WorldPosition = startPos
+
+    local beamPart1 = Instance.new("Attachment", workspace.Terrain)
+    beamPart1.WorldPosition = endPos
+
+    local beam = Instance.new("Beam")
+    beam.Attachment0 = beamPart0
+    beam.Attachment1 = beamPart1
+    beam.Width0 = 0.1
+    beam.Width1 = 0.1
+    beam.Color = ColorSequence.new(Color3.fromRGB(255, 255, 0))
+    beam.FaceCamera = true
+    beam.Parent = workspace
+
+    predictionVars.beams[playerName] = {beam, beamPart0, beamPart1}
+    task.delay(1.5, function()
+        for _, obj in ipairs(predictionVars.beams[playerName]) do
+            if obj then obj:Destroy() end
+        end
+    end)
+end
+
+local function logMovement(player)
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    local PHASE1_DURATION = 2
-    local PHASE2_BURSTS = 12
-    local BURST_OFFSET = 22
-    local BURST_INTERVAL = 0.02
-    local JITTER_DISTANCE = 0.5
-    local JITTER_SPEED = 8e9
-    local jitterTime, lastOffset = 0, 0
-    local jitterConnection = nil
+    local name = player.Name
+    predictionVars.behaviorData[name] = predictionVars.behaviorData[name] or {}
 
-    notify("⚡ Phase Clone initialized!", Color3.fromRGB(140,255,255))
+    table.insert(predictionVars.behaviorData[name], {
+        time = tick(),
+        position = hrp.Position,
+        velocity = hrp.Velocity
+    })
 
-    -- Phase 1: Ultra-speed jitter
-    jitterConnection = RunService.RenderStepped:Connect(function(dt)
-        jitterTime += dt * JITTER_SPEED
-        local offset = math.sin(jitterTime) * JITTER_DISTANCE
-        local basePos = hrp.Position - hrp.CFrame.RightVector * lastOffset
-        local newPos = basePos + hrp.CFrame.RightVector * offset
-        hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
-        lastOffset = offset
-
-        if math.random() < 0.05 then
-            createGhostClone(hrp.Position + Vector3.new(0,2,0))
-        end
-    end)
-
-    -- Phase 2: Blink-speed lateral bursts
-    task.delay(PHASE1_DURATION, function()
-        if jitterConnection then jitterConnection:Disconnect() end
-        notify("🔮 Phase Clone Activated!", Color3.fromRGB(255,200,90))
-        activateMotionBlur(0.5)
-
-        local direction = 1
-        local originalPos = hrp.Position
-
-        local function teleportZapBurst()
-            local offset = hrp.CFrame.RightVector * direction * BURST_OFFSET
-            local newPos = originalPos + offset
-            hrp.CFrame = CFrame.new(newPos, newPos + hrp.CFrame.LookVector)
-
-            -- Echo trail clones
-            for j = 1, 2 do
-                task.delay(j * 0.01, function()
-                    createGhostClone(hrp.Position + hrp.CFrame.RightVector * direction * (BURST_OFFSET * 0.5 * j))
-                end)
-            end
-
-            direction *= -1
-        end
-
-        for i = 1, PHASE2_BURSTS do
-            task.delay(i * BURST_INTERVAL, teleportZapBurst)
-        end
-    end)
+    if #predictionVars.behaviorData[name] > 50 then
+        table.remove(predictionVars.behaviorData[name], 1)
+    end
 end
+
+local function analyzeBehavior(player)
+    local data = predictionVars.behaviorData[player.Name]
+    if not data or #data < 5 then return "Unknown" end
+
+    local recent = data[#data]
+    local prev = data[#data - 4]
+
+    local deltaPos = (recent.position - prev.position).Magnitude
+    local deltaVel = (recent.velocity - prev.velocity).Magnitude
+
+    if deltaVel > 20 then
+        return "Rush"
+    elseif deltaPos < 2 then
+        return "Idle"
+    elseif math.abs(recent.velocity.X - prev.velocity.X) > 10 then
+        return "Strafe"
+    elseif math.abs(recent.velocity.Z - prev.velocity.Z) > 10 then
+        return "Zigzag"
+    else
+        return "Walk"
+    end
+end
+
+local function updatePrediction(player)
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local velocity = hrp.Velocity
+    local predictedPos = hrp.Position + velocity * predictionVars.predictionTime
+
+    logMovement(player)
+    local behavior = analyzeBehavior(player)
+
+    if predictionVars.labels[player.Name] then
+        predictionVars.labels[player.Name].Position = predictedPos
+    else
+        createPredictionLabel(player.Name, predictedPos, behavior)
+    end
+
+    spawnGhost(player.Name, predictedPos)
+    drawTrajectory(player.Name, hrp.Position, predictedPos)
+end
+
+local function enablePrediction()
+    predictionVars.enabled = true
+    predictionVars.connections.main = RunService.Heartbeat:Connect(function()
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                updatePrediction(p)
+            end
+        end
+    end)
+    notify("Behavioral prediction enabled!", Color3.fromRGB(255, 255, 100))
+end
+
+local function disablePrediction()
+    predictionVars.enabled = false
+    if predictionVars.connections.main then
+        predictionVars.connections.main:Disconnect()
+        predictionVars.connections.main = nil
+    end
+    for _, anchor in pairs(predictionVars.labels) do anchor:Destroy() end
+    for _, ghost in pairs(predictionVars.ghosts) do ghost:Destroy() end
+    for _, beamSet in pairs(predictionVars.beams) do
+        for _, obj in ipairs(beamSet) do obj:Destroy() end
+    end
+    predictionVars.labels = {}
+    predictionVars.ghosts = {}
+    predictionVars.beams = {}
+    notify("Prediction disabled.", Color3.fromRGB(255, 100, 100))
+end
+
+-- Toggle Button (Universal tab)
+local predictBtn = styledBtn(tf, contentY, "Predict Movement: OFF", Color3.fromRGB(255, 180, 60))
+predictBtn.MouseButton1Click:Connect(function()
+    predictionVars.enabled = not predictionVars.enabled
+    predictBtn.Text = "Predict Movement: " .. (predictionVars.enabled and "ON" or "OFF")
+    if predictionVars.enabled then
+        enablePrediction()
+    else
+        disablePrediction()
+    end
+end)
+contentY += 44
     
 end
 
