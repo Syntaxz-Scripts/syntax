@@ -1,4 +1,6 @@
--- Syntaxz Scripts 6.7 AYO SIX SEVEN? 🤣🤣
+--_____________________________--
+--== Syntaxz Scripts ver 6.7 ==--
+--¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1879,10 +1881,9 @@ end
 -- Prediction Variables
 local predictionVars = { enabled = false }
 
--- Prediction Toggle Button
-local predictBtn = Instance.new("TextButton", tabFrames["Universal"])
+local predictBtn = Instance.new("TextButton", tf)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
-predictBtn.Position = UDim2.new(0, 14, 0, 310)
+predictBtn.Position = UDim2.new(0, 14, 0, contentY) -- Use your contentY tracker
 predictBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 180)
 predictBtn.TextColor3 = Color3.fromRGB(255,255,255)
 predictBtn.Font = Enum.Font.Gotham
@@ -1890,18 +1891,19 @@ predictBtn.TextSize = 17
 predictBtn.Text = "Prediction: OFF"
 predictBtn.AutoButtonColor = true
 predictBtn.BackgroundTransparency = 0.20
-predictBtn.ClipsDescendants = true
 roundify(predictBtn, 11)
 strokify(predictBtn, 1.1, Color3.fromRGB(100,180,220), 0.35)
+predictBtn.ClipsDescendants = true
 
--- Toggle Behavior
+contentY += 44
+
+-- Prediction button logic
 predictBtn.MouseButton1Click:Connect(function()
     predictionVars.enabled = not predictionVars.enabled
     predictBtn.Text = "Prediction: " .. (predictionVars.enabled and "ON" or "OFF")
 
     if predictionVars.enabled then
         notify("Prediction Enabled!", Color3.fromRGB(100,200,150))
-        -- Prediction module activation
         if prediction and prediction.Enable then prediction:Enable() end
     else
         notify("Prediction Disabled", Color3.fromRGB(200,80,80))
