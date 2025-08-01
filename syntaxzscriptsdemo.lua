@@ -2,9 +2,9 @@
 --== Syntaxz Scripts ver 6.7 ==-- 
 --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
-  --/¯---------------------¯\--
-  --| Note: AYO SIX SEVEN 🤣|--
-  --\_---------------------_/--
+  --/¯----------------------¯\--
+  --| Upd: Prediction System |--
+  --\_----------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1751,15 +1751,16 @@ end)
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local Debris = game:GetService("Debris")
 
 local Prediction = {
     enabled = false,
-    timeOffset = 0.3, -- How many seconds ahead to project
+    timeOffset = 0.3,
     logs = {},
     connections = {},
 }
 
--- Logs player movement over time
+-- Logs player movement
 function Prediction:Log(player)
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
@@ -1774,7 +1775,7 @@ function Prediction:Log(player)
     self.logs[player.Name] = data
 end
 
--- Determines behavior label and confidence
+-- Analyze movement behavior
 local function analyzeBehavior(log)
     if not log or #log < 2 then return "Unknown", 0 end
     local a, b = log[#log], log[#log - 1]
@@ -1786,37 +1787,45 @@ local function analyzeBehavior(log)
     return "Walking", 70
 end
 
--- Creates ghost marker with label at predicted position
-local function spawnGhost(name, pos, behavior)
-    local part = Instance.new("Part")
-    part.Size = Vector3.new(2, 2, 2)
-    part.Shape = Enum.PartType.Ball
-    part.Anchored = true
-    part.CanCollide = false
-    part.Material = Enum.Material.Neon
-    part.Color = Color3.fromRGB(100, 200, 255)
-    part.Position = pos
-    part.Name = "Ghost_" .. name
-    part.Parent = workspace
+-- Spawn ghost markers spaced along trajectory
+local function spawnGhosts(name, startPos, endPos, behavior, confidence)
+    local count = math.clamp(math.floor(confidence / 40), 1, 3)
+    for i = 1, count do
+        local t = i / (count + 1)
+        local pos = startPos:Lerp(endPos, t)
 
-    local gui = Instance.new("BillboardGui", part)
-    gui.Size = UDim2.new(0, 120, 0, 30)
-    gui.StudsOffset = Vector3.new(0, 2, 0)
-    gui.AlwaysOnTop = true
+        local ghost = Instance.new("Part")
+        ghost.Size = Vector3.new(2, 2, 2)
+        ghost.Shape = Enum.PartType.Ball
+        ghost.Anchored = true
+        ghost.CanCollide = false
+        ghost.Material = Enum.Material.Neon
+        ghost.Color = Color3.fromRGB(100 + confidence, 200, 255 - confidence)
+        ghost.Position = pos
+        ghost.Name = "Ghost_" .. name
+        ghost.Transparency = 0
+        ghost.Parent = workspace
+        Debris:AddItem(ghost, 1.5)
 
-    local label = Instance.new("TextLabel", gui)
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Font = Enum.Font.GothamBold
-    label.TextScaled = true
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.Text = name .. ": " .. behavior
+        local gui = Instance.new("BillboardGui", ghost)
+        gui.Size = UDim2.new(0, 120, 0, 30)
+        gui.StudsOffset = Vector3.new(0, 2, 0)
+        gui.AlwaysOnTop = true
 
-    task.delay(1.5, function() part:Destroy() end)
+        local label = Instance.new("TextLabel", gui)
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 0.4
+        label.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        label.Font = Enum.Font.GothamBold
+        label.TextScaled = true
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextStrokeTransparency = 0.5
+        label.Text = behavior .. " (" .. confidence .. "%)"
+    end
 end
 
--- Draws a neon beam from current to predicted position
-local function drawBeam(startPos, endPos)
+-- Draw beam from current to predicted position
+local function drawBeam(startPos, endPos, confidence)
     local a0 = Instance.new("Part")
     local a1 = Instance.new("Part")
     for _, p in pairs({a0, a1}) do
@@ -1825,6 +1834,7 @@ local function drawBeam(startPos, endPos)
         p.Size = Vector3.new(0.2, 0.2, 0.2)
         p.Transparency = 1
         p.Parent = workspace
+        Debris:AddItem(p, 1.5)
     end
     a0.Position = startPos
     a1.Position = endPos
@@ -1835,19 +1845,17 @@ local function drawBeam(startPos, endPos)
     local beam = Instance.new("Beam", a0)
     beam.Attachment0 = att0
     beam.Attachment1 = att1
-    beam.Width0 = 0.25
-    beam.Width1 = 0.25
-    beam.Color = ColorSequence.new(Color3.fromRGB(120, 200, 255), Color3.fromRGB(255, 255, 255))
+    beam.Width0 = 0.2 + (confidence / 100) * 0.4
+    beam.Width1 = beam.Width0
+    beam.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 200, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+    }
     beam.Transparency = NumberSequence.new(0.1)
     beam.FaceCamera = true
-
-    task.delay(1.5, function()
-        a0:Destroy()
-        a1:Destroy()
-    end)
 end
 
--- Called each frame to predict player movement
+-- Update prediction visuals
 function Prediction:Update(player)
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
@@ -1858,10 +1866,11 @@ function Prediction:Update(player)
 
     local projected = hrp.Position + hrp.Velocity * self.timeOffset
     local behavior, confidence = analyzeBehavior(log)
-    spawnGhost(player.Name, projected, behavior .. " (" .. confidence .. "%)")
-    drawBeam(hrp.Position, projected)
+    spawnGhosts(player.Name, hrp.Position, projected, behavior, confidence)
+    drawBeam(hrp.Position, projected, confidence)
 end
 
+-- Enable prediction system
 function Prediction:Enable()
     if self.enabled then return end
     self.enabled = true
@@ -1874,6 +1883,7 @@ function Prediction:Enable()
     end))
 end
 
+-- Disable prediction system
 function Prediction:Disable()
     self.enabled = false
     for _, c in pairs(self.connections) do
@@ -1881,7 +1891,7 @@ function Prediction:Disable()
     end
     self.connections = {}
 end
-
+	
 -- Prediction button logic
 universalVars.prediction = universalVars.prediction or false
 
