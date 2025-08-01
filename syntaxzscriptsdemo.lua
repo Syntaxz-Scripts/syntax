@@ -1883,39 +1883,34 @@ function Prediction:Disable()
 end
 
 -- Prediction button logic
-do
-    local tf = tabFrames["Universal"] -- Universal tab frame
-    local contentParent = tf
-    if isMobile() then
-        contentParent = scroll -- Use scrolling frame for mobile
+-- Track prediction toggle
+universalVars.prediction = universalVars.prediction or false
+
+-- Create the styled button
+local predictBtn = styledBtn(contentParent, 14, contentY, 180, "Prediction: OFF", Color3.fromRGB(50, 80, 120))
+
+-- Toggle behavior
+predictBtn.MouseButton1Click:Connect(function()
+    universalVars.prediction = not universalVars.prediction
+    predictBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
+
+    if universalVars.prediction then
+        notify("Prediction Enabled!", Color3.fromRGB(100,200,150))
+        if Prediction and Prediction.Enable then Prediction:Enable() end
+    else
+        notify("Prediction Disabled", Color3.fromRGB(200,80,80))
+        if Prediction and Prediction.Disable then Prediction:Disable() end
     end
+end)
 
-    -- Prediction state variable
-    local predictionVars = { enabled = false }
+-- Stack layout
+contentY += 44
 
-    -- Create button
-    local predictBtn = Instance.new("TextButton", contentParent)
-    predictBtn.Size = UDim2.new(0, 180, 0, 34)
-    predictBtn.Position = UDim2.new(0, 14, 0, contentY)
-    predictBtn.Text = "Prediction: OFF"
-    predictBtn.Font = Enum.Font.GothamSemibold
-    predictBtn.TextSize = 16
-    predictBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    predictBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-    predictBtn.BorderSizePixel = 0
-    predictBtn.AutoButtonColor = false
+-- Expand mobile scroll frame if needed
+if isMobile() and scroll then
+    scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
+end
 
-    -- Button toggle logic
-    predictBtn.MouseButton1Click:Connect(function()
-        predictionVars.enabled = not predictionVars.enabled
-        if predictionVars.enabled then
-            predictBtn.Text = "Prediction: ON"
-            predictBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
-        else
-            predictBtn.Text = "Prediction: OFF"
-            predictBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        end
-    end)
 
     -- Layout update
     contentY += 44
