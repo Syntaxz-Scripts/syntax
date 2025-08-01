@@ -1,4 +1,4 @@
--- Syntaxz Scripts 6.0
+-- Syntaxz Scripts 6.7 AYO SIX SEVEN? 🤣🤣
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1740,130 +1740,174 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Movement Prediction + Behavior Analysis System
+--== Enhanced Prediction System ==--
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local prediction = {enabled = false, time = 0.3, ghosts = {}, labels = {}, beams = {}, behavior = {}}
+local LocalPlayer = Players.LocalPlayer
 
-local function log(p)
-    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+local Prediction = {
+    enabled = false,
+    timeOffset = 0.3, -- How many seconds ahead to project
+    logs = {},
+    connections = {},
+}
+
+-- Logs player movement over time
+function Prediction:Log(player)
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    local name = p.Name
-    prediction.behavior[name] = prediction.behavior[name] or {}
-    table.insert(prediction.behavior[name], {pos = hrp.Position, vel = hrp.Velocity, time = tick()})
-    if #prediction.behavior[name] > 30 then table.remove(prediction.behavior[name], 1) end
+
+    local data = self.logs[player.Name] or {}
+    table.insert(data, {
+        pos = hrp.Position,
+        vel = hrp.Velocity,
+        time = tick()
+    })
+    if #data > 30 then table.remove(data, 1) end
+    self.logs[player.Name] = data
 end
 
-local function analyze(p)
-    local d = prediction.behavior[p.Name]
-    if not d or #d < 5 then return "Unknown", 0 end
-    local a,b = d[#d], d[#d - 4]
-    local scores = {
-        Rush = ((a.vel - b.vel).Magnitude/30),
-        Idle = (1 - (a.pos - b.pos).Magnitude/5),
-        Strafe = math.abs(a.vel.X - b.vel.X)/20,
-        Zigzag = math.abs(a.vel.Z - b.vel.Z)/20,
-        Walk = ((a.pos - b.pos).Magnitude/5)
-    }
-    local chase = 0
-    for _,o in ipairs(Players:GetPlayers()) do
-        if o ~= p and o.Character and o.Character:FindFirstChild("HumanoidRootPart") then
-            local oh = o.Character.HumanoidRootPart
-            local dir = (oh.Position - a.pos).Unit
-            local dot = a.vel.Unit:Dot(dir)
-            local dist = (oh.Position - a.pos).Magnitude
-            if dot > 0.7 and dist < 30 then
-                chase = math.clamp(dot * (1 - dist/30), 0, 1) break
-            end
-        end
-    end
-    scores.Chase = chase
-    local best, score = "Unknown", 0
-    for k,v in pairs(scores) do if v > score then best, score = k, v end end
-    return best, math.floor(score*100)
+-- Determines behavior label and confidence
+local function analyzeBehavior(log)
+    if not log or #log < 2 then return "Unknown", 0 end
+    local a, b = log[#log], log[#log - 1]
+    local speedChange = (a.vel - b.vel).Magnitude
+    local moveChange = (a.pos - b.pos).Magnitude
+
+    if speedChange > 10 then return "Rushing", 85 end
+    if moveChange < 2 then return "Idle", 90 end
+    return "Walking", 70
 end
 
-local function spawnGhost(p, pos)
-    local ghost = p.Character:Clone()
-    for _,v in pairs(ghost:GetDescendants()) do
-        if v:IsA("BasePart") then v.Transparency = 0.4; v.Material = Enum.Material.Neon
-        elseif v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") then v:Destroy()
-        end
-    end
-    ghost.Name = "Ghost_"..p.Name
-    ghost:SetPrimaryPartCFrame(CFrame.new(pos))
-    ghost.Parent = workspace
-    prediction.ghosts[p.Name] = ghost
-    task.delay(1, function() if ghost then ghost:Destroy() end end)
-end
+-- Creates ghost marker with label at predicted position
+local function spawnGhost(name, pos, behavior)
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(2, 2, 2)
+    part.Shape = Enum.PartType.Ball
+    part.Anchored = true
+    part.CanCollide = false
+    part.Material = Enum.Material.Neon
+    part.Color = Color3.fromRGB(100, 200, 255)
+    part.Position = pos
+    part.Name = "Ghost_" .. name
+    part.Parent = workspace
 
-local function drawBeam(p, start, stop)
-    local a0 = Instance.new("Part", workspace)
-    local a1 = Instance.new("Part", workspace)
-    for _,a in pairs({a0,a1}) do a.Anchored=true;a.CanCollide=false;a.Size=Vector3.new(0.2,0.2,0.2);a.Transparency=1 end
-    a0.Position = start; a1.Position = stop
-    local at0 = Instance.new("Attachment", a0)
-    local at1 = Instance.new("Attachment", a1)
-    local beam = Instance.new("Beam", workspace)
-    beam.Attachment0 = at0; beam.Attachment1 = at1
-    beam.Width0 = 0.1; beam.Width1 = 0.1; beam.Color = ColorSequence.new(Color3.fromRGB(255,255,255))
-    prediction.beams[p.Name] = beam
-    task.delay(1, function() beam:Destroy(); a0:Destroy(); a1:Destroy() end)
-end
+    local gui = Instance.new("BillboardGui", part)
+    gui.Size = UDim2.new(0, 120, 0, 30)
+    gui.StudsOffset = Vector3.new(0, 2, 0)
+    gui.AlwaysOnTop = true
 
-local function label(p, pos, txt)
-    local anchor = Instance.new("Part", workspace)
-    anchor.Size = Vector3.new(0.2,0.2,0.2); anchor.Anchored=true; anchor.CanCollide=false; anchor.Transparency=1
-    anchor.Position = pos
-    local gui = Instance.new("BillboardGui", anchor)
-    gui.Size = UDim2.new(0,120,0,30); gui.AlwaysOnTop=true; gui.StudsOffset=Vector3.new(0,2,0)
     local label = Instance.new("TextLabel", gui)
-    label.Size = UDim2.new(1,0,1,0); label.BackgroundTransparency=1
-    label.Font=Enum.Font.GothamBold; label.TextScaled=true
-    label.Text = txt; label.TextColor3 = Color3.new(1,1,0)
-    prediction.labels[p.Name] = anchor
-    task.delay(1, function() anchor:Destroy() end)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.Text = name .. ": " .. behavior
+
+    task.delay(1.5, function() part:Destroy() end)
 end
 
-local function update(p)
-    local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local future = hrp.Position + hrp.Velocity * prediction.time
-    log(p)
-    local type, conf = analyze(p)
-    label(p, future, "Next: "..type.." ("..conf.."%)")
-    spawnGhost(p, future)
-    drawBeam(p, hrp.Position, future)
-end
+-- Draws a neon beam from current to predicted position
+local function drawBeam(startPos, endPos)
+    local a0 = Instance.new("Part")
+    local a1 = Instance.new("Part")
+    for _, p in pairs({a0, a1}) do
+        p.Anchored = true
+        p.CanCollide = false
+        p.Size = Vector3.new(0.2, 0.2, 0.2)
+        p.Transparency = 1
+        p.Parent = workspace
+    end
+    a0.Position = startPos
+    a1.Position = endPos
 
-local function enable()
-    prediction.enabled = true
-    RunService.Heartbeat:Connect(function()
-        for _,p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character then update(p) end
-        end
+    local att0 = Instance.new("Attachment", a0)
+    local att1 = Instance.new("Attachment", a1)
+
+    local beam = Instance.new("Beam", a0)
+    beam.Attachment0 = att0
+    beam.Attachment1 = att1
+    beam.Width0 = 0.25
+    beam.Width1 = 0.25
+    beam.Color = ColorSequence.new(Color3.fromRGB(120, 200, 255), Color3.fromRGB(255, 255, 255))
+    beam.Transparency = NumberSequence.new(0.1)
+    beam.FaceCamera = true
+
+    task.delay(1.5, function()
+        a0:Destroy()
+        a1:Destroy()
     end)
 end
 
-enable()
--- create toggle button
-local tf = tabFrames["Universal"] -- your Universal tab frame
-local predictBtn = styledBtn(tf, contentY, "Prediction: OFF", Color3.fromRGB(60, 180, 60))
+-- Called each frame to predict player movement
+function Prediction:Update(player)
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    self:Log(player)
+    local log = self.logs[player.Name]
+    if not log then return end
+
+    local projected = hrp.Position + hrp.Velocity * self.timeOffset
+    local behavior, confidence = analyzeBehavior(log)
+    spawnGhost(player.Name, projected, behavior .. " (" .. confidence .. "%)")
+    drawBeam(hrp.Position, projected)
+end
+
+function Prediction:Enable()
+    if self.enabled then return end
+    self.enabled = true
+    table.insert(self.connections, RunService.Heartbeat:Connect(function()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                self:Update(p)
+            end
+        end
+    end))
+end
+
+function Prediction:Disable()
+    self.enabled = false
+    for _, c in pairs(self.connections) do
+        pcall(function() c:Disconnect() end)
+    end
+    self.connections = {}
+end
+
+-- Prediction Variables
+local predictionVars = { enabled = false }
+
+-- Prediction Toggle Button
+local predictBtn = Instance.new("TextButton", tabFrames["Universal"])
+predictBtn.Size = UDim2.new(0, 180, 0, 34)
+predictBtn.Position = UDim2.new(0, 14, 0, 310)
+predictBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 180)
+predictBtn.TextColor3 = Color3.fromRGB(255,255,255)
+predictBtn.Font = Enum.Font.Gotham
+predictBtn.TextSize = 17
+predictBtn.Text = "Prediction: OFF"
+predictBtn.AutoButtonColor = true
+predictBtn.BackgroundTransparency = 0.20
+predictBtn.ClipsDescendants = true
+roundify(predictBtn, 11)
+strokify(predictBtn, 1.1, Color3.fromRGB(100,180,220), 0.35)
+
+-- Toggle Behavior
 predictBtn.MouseButton1Click:Connect(function()
-    prediction.enabled = not prediction.enabled
-    predictBtn.Text = "Prediction: " .. (prediction.enabled and "ON" or "OFF")
-    predictBtn.BackgroundColor3 = prediction.enabled and Color3.fromRGB(20,120,60) or Color3.fromRGB(60,180,60)
-    if prediction.enabled then
-        enable()
-        notify("Prediction enabled!", Color3.fromRGB(120,255,120))
+    predictionVars.enabled = not predictionVars.enabled
+    predictBtn.Text = "Prediction: " .. (predictionVars.enabled and "ON" or "OFF")
+
+    if predictionVars.enabled then
+        notify("Prediction Enabled!", Color3.fromRGB(100,200,150))
+        -- Prediction module activation
+        if prediction and prediction.Enable then prediction:Enable() end
     else
-        disable()
-        notify("Prediction disabled.", Color3.fromRGB(255,120,120))
+        notify("Prediction Disabled", Color3.fromRGB(200,80,80))
+        if prediction and prediction.Disable then prediction:Disable() end
     end
 end)
-contentY += 44 -- if you're stacking buttons vertically
-
 		
 end
 
