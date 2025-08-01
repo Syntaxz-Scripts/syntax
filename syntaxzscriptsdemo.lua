@@ -693,7 +693,7 @@ end
 -----------------------
 do
     local tf = tabFrames["Universal"]
-    local universalVars = {fullbright = false, acBypass = false, infHealth = false}
+    local universalVars = {fullbright = false, acBypass = false, infHealth = false, prediction = false}
     local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime = 0}
 
     local function styledBtn(parent, x, y, w, text, col)
