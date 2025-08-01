@@ -1920,6 +1920,19 @@ do
     -- Layout update
     contentY += 44
 
+-- Declare scroll first
+local scroll 
+
+if isMobile() then
+    scroll = Instance.new("ScrollingFrame", tf)
+    scroll.Size = UDim2.new(1, -16, 1, -16)
+    scroll.Position = UDim2.new(0, 8, 0, 8)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 800)
+    scroll.BackgroundTransparency = 1
+    scroll.ScrollBarThickness = 12
+    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+end
+		
     -- Ensure CanvasSize covers content on mobile
     if isMobile() then
         scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
