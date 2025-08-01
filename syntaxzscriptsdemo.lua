@@ -1883,42 +1883,33 @@ function Prediction:Disable()
 end
 
 -- Prediction button logic
--- Track prediction toggle
 universalVars.prediction = universalVars.prediction or false
 
--- Create the styled button
-local predictBtn = styledBtn(contentParent, 14, contentY, 180, "Prediction: OFF", Color3.fromRGB(50, 80, 120))
+-- Create styled Prediction button
+local predictBtn = styledBtn(contentParent, 14, contentY, 180, "Prediction: OFF", Color3.fromRGB(60, 90, 140))
 
--- Toggle behavior
+-- Toggle functionality
 predictBtn.MouseButton1Click:Connect(function()
     universalVars.prediction = not universalVars.prediction
     predictBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
 
     if universalVars.prediction then
-        notify("Prediction Enabled!", Color3.fromRGB(100,200,150))
+        predictBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+        notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150))
         if Prediction and Prediction.Enable then Prediction:Enable() end
     else
-        notify("Prediction Disabled", Color3.fromRGB(200,80,80))
+        predictBtn.BackgroundColor3 = Color3.fromRGB(60, 90, 140)
+        notify("Prediction Disabled", Color3.fromRGB(200, 80, 80))
         if Prediction and Prediction.Disable then Prediction:Disable() end
     end
 end)
 
--- Stack layout
+-- Stack placement
 contentY += 44
 
--- Expand mobile scroll frame if needed
+-- Update scroll canvas on mobile
 if isMobile() and scroll then
     scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
-end
-
-
-    -- Layout update
-    contentY += 44
-		
-    -- Ensure CanvasSize covers content on mobile
-    if isMobile() and scroll then
-        scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
-    end
 end
 		
 end
