@@ -1,6 +1,10 @@
---_____________________________--
---== Syntaxz Scripts ver 6.7 ==--
---¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯--
+--_____________________________-- 
+--== Syntaxz Scripts ver 6.7 ==-- 
+--¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
+
+--/¯---------------------¯\--
+--| Note: AYO SIX SEVEN 🤣|--
+--\_---------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1878,38 +1882,49 @@ function Prediction:Disable()
     self.connections = {}
 end
 
--- Prediction Variables
-local predictionVars = { enabled = false }
-
-local predictBtn = Instance.new("TextButton", tf)
-predictBtn.Size = UDim2.new(0, 180, 0, 34)
-predictBtn.Position = UDim2.new(0, 14, 0, contentY) -- Use your contentY tracker
-predictBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 180)
-predictBtn.TextColor3 = Color3.fromRGB(255,255,255)
-predictBtn.Font = Enum.Font.Gotham
-predictBtn.TextSize = 17
-predictBtn.Text = "Prediction: OFF"
-predictBtn.AutoButtonColor = true
-predictBtn.BackgroundTransparency = 0.20
-roundify(predictBtn, 11)
-strokify(predictBtn, 1.1, Color3.fromRGB(100,180,220), 0.35)
-predictBtn.ClipsDescendants = true
-
-contentY += 44
-
 -- Prediction button logic
-predictBtn.MouseButton1Click:Connect(function()
-    predictionVars.enabled = not predictionVars.enabled
-    predictBtn.Text = "Prediction: " .. (predictionVars.enabled and "ON" or "OFF")
-
-    if predictionVars.enabled then
-        notify("Prediction Enabled!", Color3.fromRGB(100,200,150))
-        if prediction and prediction.Enable then prediction:Enable() end
-    else
-        notify("Prediction Disabled", Color3.fromRGB(200,80,80))
-        if prediction and prediction.Disable then prediction:Disable() end
+do
+    local tf = tabFrames["Universal"] -- Universal tab frame
+    local contentParent = tf
+    if isMobile() then
+        contentParent = scroll -- Use scrolling frame for mobile
     end
-end)
+
+    -- Prediction state variable
+    local predictionVars = { enabled = false }
+
+    -- Create button
+    local predictBtn = Instance.new("TextButton", contentParent)
+    predictBtn.Size = UDim2.new(0, 180, 0, 34)
+    predictBtn.Position = UDim2.new(0, 14, 0, contentY)
+    predictBtn.Text = "Prediction: OFF"
+    predictBtn.Font = Enum.Font.GothamSemibold
+    predictBtn.TextSize = 16
+    predictBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    predictBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    predictBtn.BorderSizePixel = 0
+    predictBtn.AutoButtonColor = false
+
+    -- Button toggle logic
+    predictBtn.MouseButton1Click:Connect(function()
+        predictionVars.enabled = not predictionVars.enabled
+        if predictionVars.enabled then
+            predictBtn.Text = "Prediction: ON"
+            predictBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+        else
+            predictBtn.Text = "Prediction: OFF"
+            predictBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        end
+    end)
+
+    -- Layout update
+    contentY += 44
+
+    -- Ensure CanvasSize covers content on mobile
+    if isMobile() then
+        scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
+    end
+end
 		
 end
 
