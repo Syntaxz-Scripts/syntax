@@ -1748,149 +1748,90 @@ end)
 
 --== Enhanced Prediction System ==--
 
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Debris = game:GetService("Debris")
+local RunService = game:GetService("RunService")
 
-local Prediction = {
-    enabled = false,
-    timeOffset = 0.3,
-    logs = {},
-    connections = {},
-}
+local predictionTime = 0.35 -- seconds ahead
+local beamColor = Color3.fromRGB(0, 255, 255)
+local maxLifetime = 1.5
 
--- Logs player movement
-function Prediction:Log(player)
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+function createPredictionVisual(player, confidence)
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
 
-    local data = self.logs[player.Name] or {}
-    table.insert(data, {
-        pos = hrp.Position,
-        vel = hrp.Velocity,
-        time = tick()
-    })
-    if #data > 30 then table.remove(data, 1) end
-    self.logs[player.Name] = data
-end
+    local hrp = player.Character.HumanoidRootPart
+    local currentPos = hrp.Position
+    local velocity = hrp.Velocity
+    local predictedPos = currentPos + (velocity * predictionTime)
 
--- Analyze movement behavior
-local function analyzeBehavior(log)
-    if not log or #log < 2 then return "Unknown", 0 end
-    local a, b = log[#log], log[#log - 1]
-    local speedChange = (a.vel - b.vel).Magnitude
-    local moveChange = (a.pos - b.pos).Magnitude
-
-    if speedChange > 10 then return "Rushing", 85 end
-    if moveChange < 2 then return "Idle", 90 end
-    return "Walking", 70
-end
-
--- Spawn ghost markers spaced along trajectory
-local function spawnGhosts(name, startPos, endPos, behavior, confidence)
-    local count = math.clamp(math.floor(confidence / 40), 1, 3)
-    for i = 1, count do
-        local t = i / (count + 1)
-        local pos = startPos:Lerp(endPos, t)
-
-        local ghost = Instance.new("Part")
-        ghost.Size = Vector3.new(2, 2, 2)
-        ghost.Shape = Enum.PartType.Ball
-        ghost.Anchored = true
-        ghost.CanCollide = false
-        ghost.Material = Enum.Material.Neon
-        ghost.Color = Color3.fromRGB(100 + confidence, 200, 255 - confidence)
-        ghost.Position = pos
-        ghost.Name = "Ghost_" .. name
-        ghost.Transparency = 0
-        ghost.Parent = workspace
-        Debris:AddItem(ghost, 1.5)
-
-        local gui = Instance.new("BillboardGui", ghost)
-        gui.Size = UDim2.new(0, 120, 0, 30)
-        gui.StudsOffset = Vector3.new(0, 2, 0)
-        gui.AlwaysOnTop = true
-
-        local label = Instance.new("TextLabel", gui)
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 0.4
-        label.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        label.Font = Enum.Font.GothamBold
-        label.TextScaled = true
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextStrokeTransparency = 0.5
-        label.Text = behavior .. " (" .. confidence .. "%)"
-    end
-end
-
--- Draw beam from current to predicted position
-local function drawBeam(startPos, endPos, confidence)
-    local a0 = Instance.new("Part")
-    local a1 = Instance.new("Part")
-    for _, p in pairs({a0, a1}) do
-        p.Anchored = true
-        p.CanCollide = false
-        p.Size = Vector3.new(0.2, 0.2, 0.2)
-        p.Transparency = 1
-        p.Parent = workspace
-        Debris:AddItem(p, 1.5)
-    end
-    a0.Position = startPos
-    a1.Position = endPos
-
-    local att0 = Instance.new("Attachment", a0)
-    local att1 = Instance.new("Attachment", a1)
-
-    local beam = Instance.new("Beam", a0)
-    beam.Attachment0 = att0
-    beam.Attachment1 = att1
-    beam.Width0 = 0.2 + (confidence / 100) * 0.4
-    beam.Width1 = beam.Width0
-    beam.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 200, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-    }
-    beam.Transparency = NumberSequence.new(0.1)
-    beam.FaceCamera = true
-end
-
--- Update prediction visuals
-function Prediction:Update(player)
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    self:Log(player)
-    local log = self.logs[player.Name]
-    if not log then return end
-
-    local projected = hrp.Position + hrp.Velocity * self.timeOffset
-    local behavior, confidence = analyzeBehavior(log)
-    spawnGhosts(player.Name, hrp.Position, projected, behavior, confidence)
-    drawBeam(hrp.Position, projected, confidence)
-end
-
--- Enable prediction system
-function Prediction:Enable()
-    if self.enabled then return end
-    self.enabled = true
-    table.insert(self.connections, RunService.Heartbeat:Connect(function()
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                self:Update(p)
-            end
+    -- R6 Dummy ghost
+    local ghost = Instance.new("Model")
+    ghost.Name = "Ghost"
+    for _, part in ipairs(player.Character:GetChildren()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            local clone = part:Clone()
+            clone.Transparency = 0.7
+            clone.Anchored = true
+            clone.CanCollide = false
+            clone.CFrame = part.CFrame + (velocity * predictionTime)
+            clone.Parent = ghost
         end
-    end))
+    end
+    ghost.Parent = workspace
+
+    -- Beam anchors
+    local a0 = Instance.new("Attachment")
+    local a1 = Instance.new("Attachment")
+    a0.WorldPosition = currentPos
+    a1.WorldPosition = predictedPos
+
+    local beam = Instance.new("Beam")
+    beam.Attachment0 = a0
+    beam.Attachment1 = a1
+    beam.FaceCamera = true
+    beam.Width0 = 0.1 + confidence * 0.05
+    beam.Width1 = beam.Width0
+    beam.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, beamColor), ColorSequenceKeypoint.new(1, beamColor)})
+    beam.Transparency = NumberSequence.new(0.3)
+    beam.Parent = workspace
+
+    a0.Parent = workspace
+    a1.Parent = workspace
+
+    -- Confidence text
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 100, 0, 30)
+    billboard.StudsOffset = Vector3.new(0, 3, 0) + Vector3.new(math.random(-1,1), 0, math.random(-1,1))
+    billboard.Adornee = hrp
+    billboard.AlwaysOnTop = true
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = string.format("Confidence: %.1f%%", confidence * 100)
+    label.TextColor3 = Color3.new(1, 1 - confidence, 0)
+    label.TextStrokeTransparency = 0.4
+    label.TextScaled = true
+    label.Parent = billboard
+    billboard.Parent = workspace
+
+    -- Cleanup
+    delay(maxLifetime, function()
+        ghost:Destroy()
+        a0:Destroy()
+        a1:Destroy()
+        beam:Destroy()
+        billboard:Destroy()
+    end)
 end
 
--- Disable prediction system
-function Prediction:Disable()
-    self.enabled = false
-    for _, c in pairs(self.connections) do
-        pcall(function() c:Disconnect() end)
+-- Live prediction loop (example logic)
+RunService.Heartbeat:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer then
+            createPredictionVisual(player, math.random()) -- Replace with real confidence calc
+        end
     end
-    self.connections = {}
-end
+end)
 	
 -- Prediction button logic
 universalVars.prediction = universalVars.prediction or false
