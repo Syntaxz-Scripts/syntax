@@ -2,9 +2,9 @@
 --== Syntaxz Scripts ver 6.7 ==-- 
 --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
---/¯---------------------¯\--
---| Note: AYO SIX SEVEN 🤣|--
---\_---------------------_/--
+  --/¯---------------------¯\--
+  --| Note: AYO SIX SEVEN 🤣|--
+  --\_---------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
