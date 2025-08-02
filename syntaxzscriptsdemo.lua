@@ -1753,35 +1753,44 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
--- Local Player
+-- Variables
 local localPlayer = Players.LocalPlayer
-
--- Prediction Toggle
 local predictionEnabled = false
-
--- Ghost Folder
 local ghostFolder = Instance.new("Folder", workspace)
 ghostFolder.Name = "PredictionGhosts"
 
--- Velocity History
 local velocityHistory = {}
+local predictionCooldowns = {}
+local cleanupInterval = 5
+local lastCleanup = tick()
 
--- Behavior Classification
+-- Helper
+local function sum(array)
+    local total = 0
+    for _, v in ipairs(array) do
+        total += v
+    end
+    return total
+end
+
 local function classifyBehavior(history)
     if #history < 2 then return "Unknown" end
 
-    local angles, speeds = {}, {}
+    local magnitudes, angles = {}, {}
+
     for i = 2, #history do
         local v1, v2 = history[i-1], history[i]
-        table.insert(speeds, v2.Magnitude)
+        table.insert(magnitudes, v2.Magnitude)
 
-        local dot = v1:Dot(v2)
-        local angle = math.acos(math.clamp(dot / (v1.Magnitude * v2.Magnitude), -1, 1))
-        table.insert(angles, angle)
+        local dot, denom = v1:Dot(v2), v1.Magnitude * v2.Magnitude
+        if denom > 0 then
+            local angle = math.acos(math.clamp(dot / denom, -1, 1))
+            table.insert(angles, angle)
+        end
     end
 
-    local avgSpeed = (#speeds > 0) and (math.sum(speeds) / #speeds) or 0
-    local avgAngle = (#angles > 0) and (math.sum(angles) / #angles) or 0
+    local avgSpeed = #magnitudes > 0 and (sum(magnitudes) / #magnitudes) or 0
+    local avgAngle = #angles > 0 and (sum(angles) / #angles) or 0
 
     if avgSpeed < 1 then return "Idle"
     elseif avgAngle > 1.2 then return "Zigzag"
@@ -1790,41 +1799,13 @@ local function classifyBehavior(history)
     end
 end
 
--- Prediction UI
-local function renderPredictionText(player, behavior, confidence)
-    local gui = player:FindFirstChild("PlayerGui")
-    if not gui then return end
-
-    local screenGui = gui:FindFirstChild("PredictionGui")
-    if not screenGui then
-        screenGui = Instance.new("ScreenGui", gui)
-        screenGui.Name = "PredictionGui"
-    end
-
-    local label = screenGui:FindFirstChild("PredictionLabel")
-    if not label then
-        label = Instance.new("TextLabel", screenGui)
-        label.Name = "PredictionLabel"
-        label.Size = UDim2.new(0, 180, 0, 40)
-        label.Position = UDim2.new(0, 40, 0, 20)
-        label.BackgroundTransparency = 1
-        label.TextScaled = true
-        label.Font = Enum.Font.GothamBold
-        label.TextStrokeTransparency = 0.4
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-
-    label.Text = string.format("Behavior: %s\nConfidence: %.1f%%", behavior, confidence * 100)
-end
-
--- Ghost + Beam Visuals
-local function spawnGhostWithBeam(player, position, transparency)
+local function spawnGhost(player, position, alpha)
     local ghost = Instance.new("Part")
     ghost.Size = Vector3.new(2, 3, 1)
     ghost.Position = position
     ghost.Anchored = true
     ghost.CanCollide = false
-    ghost.Transparency = transparency
+    ghost.Transparency = alpha
     ghost.Material = Enum.Material.ForceField
     ghost.Color = Color3.fromRGB(255, 255, 255)
     ghost.Parent = ghostFolder
@@ -1835,35 +1816,52 @@ local function spawnGhostWithBeam(player, position, transparency)
 
     local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if root then
-        local a0 = Instance.new("Attachment", root)
-        local a1 = Instance.new("Attachment", ghost)
+        local a0, a1 = Instance.new("Attachment", root), Instance.new("Attachment", ghost)
 
         local beam = Instance.new("Beam")
-        beam.Attachment0 = a0
-        beam.Attachment1 = a1
-        beam.Width0 = 0.2
-        beam.Width1 = 0.2
+        beam.Attachment0, beam.Attachment1 = a0, a1
+        beam.Width0, beam.Width1 = 0.2, 0.2
         beam.Color = ColorSequence.new(Color3.fromRGB(0, 255, 255))
-        beam.Transparency = NumberSequence.new(transparency)
-        beam.FaceCamera = true
-        beam.LightInfluence = 0
+        beam.Transparency = NumberSequence.new(alpha)
+        beam.FaceCamera, beam.LightInfluence = true, 0
         beam.Parent = ghost
 
-        delay(1, function()
-            a0:Destroy()
-            a1:Destroy()
-        end)
+        task.delay(1, function() a0:Destroy(); a1:Destroy() end)
     end
 end
 
--- Prediction Logic
-local function predictPlayer(player)
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+local function renderPredictionText(player, behavior, confidence)
+    local gui = player:FindFirstChild("PlayerGui")
+    if not gui then return end
 
-    local root = character.HumanoidRootPart
+    local screenGui = gui:FindFirstChild("PredictionGui") or Instance.new("ScreenGui", gui)
+    screenGui.Name = "PredictionGui"
+
+    local label = screenGui:FindFirstChild("PredictionLabel") or Instance.new("TextLabel", screenGui)
+    label.Name = "PredictionLabel"
+    label.Size = UDim2.new(0, 180, 0, 40)
+    label.Position = UDim2.new(0, 40, 0, 20)
+    label.BackgroundTransparency = 1
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.TextStrokeTransparency = 0.4
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    label.Text = string.format("Behavior: %s\nConfidence: %.1f%%", behavior, confidence * 100)
+end
+
+local function predictPlayer(player)
+    local now = tick()
+    local lastTime = predictionCooldowns[player.UserId] or 0
+    if now - lastTime < 1 then return end
+    predictionCooldowns[player.UserId] = now
+
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
     local velocity = root.Velocity
-    if velocity.Magnitude < 0.1 then return end
+    if velocity.Magnitude < 0.05 then return end
 
     velocityHistory[player.UserId] = velocityHistory[player.UserId] or {}
     table.insert(velocityHistory[player.UserId], velocity)
@@ -1872,29 +1870,40 @@ local function predictPlayer(player)
     end
 
     local direction = velocity.Unit
-    local speed = velocity.Magnitude
-    local confidence = math.clamp(1 - (math.abs(speed - 2) / 4), 0.1, 1)
+    local confidence = math.clamp(velocity.Magnitude / 50, 0.1, 1)
     local behavior = classifyBehavior(velocityHistory[player.UserId])
 
     renderPredictionText(player, behavior, confidence)
 
     for i = 1, 3 do
-        local futurePos = root.Position + direction * (i * 0.5)
-        spawnGhostWithBeam(player, futurePos, 0.5 - (i * 0.1))
+        local offset = direction * i * 0.5
+        spawnGhost(player, root.Position + offset, 0.5 - i * 0.1)
     end
 end
 
--- Heartbeat Loop
+-- Clean ghosts
+local function cleanGhosts()
+    if tick() - lastCleanup < cleanupInterval then return end
+    lastCleanup = tick()
+    for _, g in ipairs(ghostFolder:GetChildren()) do
+        if g:IsA("Part") and g.Transparency >= 1 then
+            g:Destroy()
+        end
+    end
+end
+
+-- Update loop
 RunService.Heartbeat:Connect(function()
     if not predictionEnabled then return end
-    for _, player in pairs(Players:GetPlayers()) do
+    cleanGhosts()
+    for _, player in Players:GetPlayers() do
         if player ~= localPlayer then
             predictPlayer(player)
         end
     end
 end)
 
--- Mobile Button Integration
+-- UI Button
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1903,8 +1912,8 @@ predictBtn.TextColor3 = Color3.fromRGB(255,255,255)
 predictBtn.Font = Enum.Font.GothamBold
 predictBtn.TextSize = 16
 predictBtn.Text = "Prediction: OFF"
-predictBtn.AutoButtonColor = true
 predictBtn.BackgroundTransparency = 0.18
+predictBtn.AutoButtonColor = true
 
 local corner = Instance.new("UICorner", predictBtn)
 corner.CornerRadius = UDim.new(0, 11)
@@ -1912,10 +1921,9 @@ corner.CornerRadius = UDim.new(0, 11)
 predictBtn.MouseButton1Click:Connect(function()
     predictionEnabled = not predictionEnabled
     predictBtn.Text = "Prediction: " .. (predictionEnabled and "ON" or "OFF")
-    predictBtn.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(60, 90, 140)
+    predictBtn.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0,180,0) or Color3.fromRGB(60,90,140)
 end)
 
--- Stack next element below
 contentY += 44
 		
 end
