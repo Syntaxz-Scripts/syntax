@@ -1752,14 +1752,12 @@ end)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local Sound Overview
 
-```lua
+
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
 
 -- VariablesService = game:GetService("SoundService")
 
@@ -1772,11 +1770,6 @@ local behaviorLog = {}
 
 -- Neon Eye Feedback
 local function triggerEyeGlow(characterLog = {}
-
--- Sound Setup
-local failSound = Instance.new("Sound", SoundService)
-failSound.SoundId = "rbxassetid://YOUR_FAIL_SOUND_ID" -- Replace with your asset ID
-failSound.Volume = 1
 
 -- Neon Eye Feedback
 local function triggerEyeGlow(character)
