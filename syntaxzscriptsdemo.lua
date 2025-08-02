@@ -1748,38 +1748,61 @@ end)
 
 --== Enhanced Prediction System ==--
 
--- SERVICES
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
+local Sound Overview
 
--- CONFIGURATION
-local predictionTime = 0.35
-local ghostFadeTime = 3
-local beamColor = Color3.fromRGB(0, 170, 255)
-local confidenceColors = {
-    High = Color3.fromRGB(0, 255, 0),
-    Medium = Color3.fromRGB(255, 255, 0),
-    Low = Color3.fromRGB(255, 0, 0)
-}
+```lua
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 
--- STATE
+-- VariablesService = game:GetService("SoundService")
+
+-- Variables
+local localPlayer = Players.LocalPlayer
 local predictionEnabled = false
+local ghostFolder = Instance.new("Folder", workspace)
+ghostFolder.Name = "PredictionGhosts"
+local behaviorLog = {}
 
--- SOUND SETUP
+-- Sound
+local localPlayer = Players.LocalPlayer
+local predictionEnabled = false
+local ghostFolder = Instance.new("Folder", workspace)
+ghostFolder.Name = "PredictionGhosts"
+local behavior Setup
 local failSound = Instance.new("Sound", SoundService)
-failSound.SoundId = "rbxassetid://YOUR_FAIL_SOUND_ID" -- Replace with your sound asset ID
+failSound.SoundId = "rbxassetid://YOUR_FAIL_SOUND_ID" -- Replace with your asset ID
 failSound.Volume = 1
 
--- NEON EYE FEEDBACK
+-- Neon Eye Feedback
+local function triggerEyeGlow(characterLog = {}
+
+-- Sound Setup
+local failSound = Instance.new("Sound", SoundService)
+failSound.SoundId = "rbxassetid://YOUR_FAIL_SOUND_ID" -- Replace with your asset ID
+failSound.Volume = 1
+
+-- Neon Eye Feedback
 local function triggerEyeGlow(character)
+    local eyes)
     local eyes = character:FindFirstChild("Eyes")
     if eyes and eyes:IsA("BasePart") then
         eyes.Material = Enum.Material.Neon
-        eyes.Color = confidenceColors.Low
+        eyes.Color = Color3.fromRGB(255, 0, 0)
+        eyes.Transparency = 0.2
+        fail = character:FindFirstChild("Eyes")
+    if eyes and eyes:IsA("BasePart") then
+        eyes.Material = Enum.Material.Neon
+        eyes.Color = Color3.fromRGB(255, 0, 0)
         eyes.Transparency = 0.2
         failSound:Play()
+       Sound:Play()
         task.delay(3, function()
             eyes.Color = Color3.fromRGB(255, 255, 255)
             eyes.Transparency = 0.5
@@ -1787,56 +1810,47 @@ local function triggerEyeGlow(character)
     end
 end
 
--- GHOST SPAWN
-local function spawnGhost(character, predictedPos)
-    local ghost = Instance.new("Model")
-    ghost.Name = "Ghost_" .. character.Name
-    for _, part in ipairs(character:GetChildren()) do
-        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-            local clone = part:Clone()
-            clone.Anchored = true
-            clone.CanCollide = false
-            clone.Transparency = 0.6
-            clone.CFrame = part.CFrame + (predictedPos - character.HumanoidRootPart.Position)
-            clone.Parent = ghost
-        end
+-- Behavior Logging
+local function logBehavior(player, action, confidence task.delay(3, function()
+            eyes.Color = Color3.fromRGB(255, 255, 255)
+            eyes.Transparency = 0.5
+        end)
     end
-    ghost.Parent = workspace
-
-    for _, part in ipairs(ghost:GetChildren()) do
-        if part:IsA("BasePart") then
-            local tween = TweenService:Create(part, TweenInfo.new(ghostFadeTime), {Transparency = 1})
-            tween:Play()
-        end
-    end
-    task.delay(ghostFadeTime, function()
-        ghost:Destroy()
-    end)
 end
 
--- TRAJECTORY BEAM
-local function drawBeam(startPos, endPos, confidence)
-    local beam = Instance.new("Part")
-    beam.Anchored = true
-    beam.CanCollide = false
-    beam.Material = Enum.Material.Neon
-    beam.Color = beamColor
-    beam.Transparency = 0.3
-    beam.Size = Vector3.new(0.2 + confidence * 0.1, 0.2, (startPos - endPos).Magnitude)
-    beam.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -beam.Size.Z / 2)
-    beam.Parent = workspace
-    task.delay(1.5, function()
-        beam:Destroy()
-    end)
+-- Behavior Logging
+local function logBehavior(player)
+    behaviorLog[player.UserId] = behaviorLog[player.UserId] or {}
+    table.insert(behaviorLog[player.UserId], {
+        time = os.time(),
+        action = action,
+        confidence = confidence
+   , action, confidence)
+    behaviorLog[player.UserId] = behaviorLog[player.UserId] or {}
+    table.insert(behaviorLog[player.UserId], {
+        time = os.time(),
+        action = action,
+        confidence = confidence
+    })
 end
 
--- PREDICTION TEXT
-local function renderPredictionText(player, confidence)
+-- Prediction })
+end
+
+-- Prediction Text UI
+local function renderPredictionText(player, action, confidence)
+    local gui = player:FindFirstChild("PlayerGui")
+    if not gui then return end
+
+    local screenGui = gui:FindFirstChild("PredictionGui")
+    if not Text UI
+local function renderPredictionText(player, action, confidence)
     local gui = player:FindFirstChild("PlayerGui")
     if not gui then return end
 
     local screenGui = gui:FindFirstChild("PredictionGui")
     if not screenGui then
+        screenGui screenGui then
         screenGui = Instance.new("ScreenGui", gui)
         screenGui.Name = "PredictionGui"
     end
@@ -1845,80 +1859,168 @@ local function renderPredictionText(player, confidence)
     if not label then
         label = Instance.new("TextLabel", screenGui)
         label.Name = "PredictionLabel"
-        label.Size = UDim2.new(0, 120, 0, 30)
+        label = Instance.new("ScreenGui", gui)
+        screenGui.Name = "PredictionGui"
+    end
+
+    local label = screenGui:FindFirstChild("PredictionLabel")
+    if not label then
+        label = Instance.new("TextLabel", screenGui)
+        label.Name = "Prediction.Size = UDim2.new(0, 180, 0, 40)
+        label.Position = UDim2.new(0, 40, 0, 20)
         label.BackgroundTransparency = 1
         label.TextScaled = true
-        label.Font = Enum.Font.SourceSansBold
+       Label"
+        label.Size = UDim2.new(0, 180, 0, 40)
+        label.Position = UDim2.new(0, 40, 0, 20)
+        label.BackgroundTransparency = 1
+        label.Text label.Font = Enum.Font.GothamBold
+        label.TextStrokeTransparency = 0.4
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
 
-    local color = confidence >= 0.8 and confidenceColors.High
-               or confidence >= 0.5 and confidenceColors.Medium
-               or confidenceColors.Low
+    label.Text =Scaled = true
+        label.Font = Enum.Font.GothamBold
+        label.TextStrokeTransparency = 0.4
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
 
-    label.Text = confidence and string.format("Confidence: %.1f%%", confidence * 100) or "Prediction Error"
-    label.TextColor3 = color
-    label.TextStrokeTransparency = 0.4
-    label.Position = UDim2.new(0, 40, 0, 20)
+ string.format("Action: %s\nConfidence: %.1f%%", action, confidence * 100)
 end
 
--- MAIN VISUAL FUNCTION
-local function createPredictionVisual(player, confidence)
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+-- Ghost +    label.Text = string.format("Action: %s\nConfidence: %.1f%%", action, confidence * 100)
+end
 
-    local hrp = player.Character.HumanoidRootPart
-    local velocity = hrp.Velocity
-    local predictedPos = hrp.Position + (velocity * predictionTime)
+-- Ghost + Beam
+local function Beam
+local function spawnGhostWithBeam(player, position, transparency)
+    local ghost = Instance.new("Part")
+    ghost.Size = Vector3.new(2, 3, 1)
+    ghost.Position = position
+    ghost.Anchored = true
+    ghost.CanCollide = false spawnGhostWithBeam(player, position, transparency)
+    local ghost = Instance.new("Part")
+    ghost.Size = Vector3.new(2, 3, 1)
+    ghost.Position = position
+    ghost.Anchored = true
+    ghost
+    ghost.Transparency = transparency
+    ghost.Material = Enum.Material.ForceField
+    ghost.Color = Color3.fromRGB(255, 255, 255)
+    ghost.Parent = ghostFolder
 
-    if velocity.Magnitude < 0.1 then return end
+    local fade = TweenService:Create.CanCollide = false
+    ghost.Transparency = transparency
+    ghost.Material = Enum.Material.ForceField
+    ghost.Color = Color3.fromRGB(255, 255, 255)
+    ghost.Parent = ghostFolder
 
-    drawBeam(hrp.Position, predictedPos, confidence)
-    renderPredictionText(player, confidence)
+    local fade = TweenService:Create(ghost, TweenInfo(ghost, TweenInfo.new(1), {Transparency = 1})
+    fade:Play()
+    fade.Completed:Connect(function()
+        ghost:Destroy()
+    end)
+
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart.new(1), {Transparency = 1})
+    fade:Play()
+    fade.Completed:Connect(function()
+        ghost:Destroy()
+    end)
+
+    local root = player.Character and player.Character:FindFirstChild("")
+    if root then
+        local a0 = Instance.new("Attachment", root)
+        local a1 = Instance.new("Attachment", ghost)
+
+        local beam = Instance.new("Beam")
+        beam.Attachment0 = a0
+        beam.Attachment1 = a1
+        beam.WidthHumanoidRootPart")
+    if root then
+        local a0 = Instance.new("Attachment", root)
+        local a1 = Instance.new("Attachment", ghost)
+
+        local beam = Instance.new("Beam")
+        beam.Attachment0 = a0
+        beam.Attachment1 = a1
+        beam.Width0 = 0.2
+        beam0 = 0.2
+        beam.Width1 = 0.2
+        beam.Color = ColorSequence.new(Color3.fromRGB(0, 255, 255))
+        beam.Transparency = NumberSequence.new(transparency)
+        beam.FaceCamera = true
+        beam.LightInfluence = 0
+        beam.Parent = ghost
+
+       .Width1 = 0.2
+        beam.Color = ColorSequence.new(Color3.fromRGB(0, 255, 255))
+        beam.Transparency = NumberSequence.new(transparency)
+        beam.FaceCamera = true
+        beam.LightInfluence = 0
+        beam.Parent = ghost
+
+        delay(1, function()
+            a0:Destroy()
+            a1:Destroy()
+        end)
+    end
+end
+
+-- Prediction Logic
+local function predictPlayer(player)
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+    local root = character.HumanoidRootPart
+    local velocity = root.Velocity
+    if velocity.Magnitude < 1 then return end
+
+    local direction = velocity.Unit
+    local speed = velocity.Magnitude
+    local action = speed > 20 and "Running" or "Walking"
+    local confidence = math.clamp(speed / 50, 0.1, 1)
+
+    renderPredictionText(player, action, confidence)
+    logBehavior(player, action, confidence)
+
+    for i = 1, math.clamp(math.floor(speed / 10), 1, 3) do
+        local futurePos = root.Position + direction * (i * 0.5)
+        spawnGhostWithBeam(player, futurePos, 0.5 - (i * 0.1))
+    end
 
     if confidence < 0.3 then
-        triggerEyeGlow(player.Character)
-        spawnGhost(player.Character, predictedPos)
+        triggerEyeGlow(character)
     end
 end
 
--- HEARTBEAT LOOP
+-- Heartbeat Loop
 RunService.Heartbeat:Connect(function()
     if not predictionEnabled then return end
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer then
-            createPredictionVisual(player, math.random()) -- Replace with real prediction logic
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer then
+            predictPlayer(player)
         end
     end
 end)
 
--- BUTTON LOGIC (from your original script)
-local universalVars = universalVars or {}
-universalVars.prediction = universalVars.prediction or false
+-- Universal Tab Button (replace with your tab reference)
+local function createPredictionButton(universalTab)
+    local button = Instance.new("TextButton", universalTab)
+    button.Size = UDim2.new(0, 150, 0, 30)
+    button.Position = UDim2.new(0, 10, 0, 10)
+    button.Text = "Prediction: OFF"
+    button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    button.TextColor3 = Color3.new(1, 1, 1)
 
-local function notify(msg, col)
-    print("[Prediction] " .. msg)
+    button.MouseButton1Click:Connect(function()
+        predictionEnabled = not predictionEnabled
+        button.Text = predictionEnabled and "Prediction: ON" or "Prediction: OFF"
+        button.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(100, 100, 100)
+    end)
 end
 
--- Create toggle button
-local gui = Players.LocalPlayer:WaitForChild("PlayerGui")
-local toggleGui = Instance.new("ScreenGui", gui)
-toggleGui.Name = "PredictionToggleGui"
-
-local toggleButton = Instance.new("TextButton", toggleGui)
-toggleButton.Size = UDim2.new(0, 140, 0, 40)
-toggleButton.Position = UDim2.new(0, 20, 0, 60)
-toggleButton.Text = "Prediction: OFF"
-toggleButton.BackgroundColor3 = Color3.fromRGB(60, 90, 140)
-toggleButton.TextColor3 = Color3.new(1, 1, 1)
-toggleButton.Font = Enum.Font.SourceSansBold
-toggleButton.TextScaled = true
-
-toggleButton.MouseButton1Click:Connect(function()
-    universalVars.prediction = not universalVars.prediction
-    predictionEnabled = universalVars.prediction
-    toggleButton.Text = "Prediction: " .. (predictionEnabled and "ON" or "OFF")
-    toggleButton.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0, 170, 80) or Color3.fromRGB(60, 90, 140)
-    notify("Prediction " .. (predictionEnabled and "Enabled!" or "Disabled"), predictionEnabled and Color3.fromRGB(100, 200, 150) or Color3.fromRGB(200, 80, 80))
-end)
+-- if ts don't work use ts ↓
+-- createPredictionButton(tabFrames["Universal"])
 
 -- Stack placement
 contentY += 44
