@@ -2006,6 +2006,8 @@ local function createPredictionButton(universalTab)
         predictionEnabled = not predictionEnabled
         button.Text = predictionEnabled and "Prediction: ON" or "Prediction: OFF"
         button.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(100, 100, 100)
+    createPredictionButton(tabframes["Universal"]) 
+									
     end)
 end
 
