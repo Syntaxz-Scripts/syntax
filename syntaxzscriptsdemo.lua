@@ -1770,16 +1770,6 @@ local ghostFolder = Instance.new("Folder", workspace)
 ghostFolder.Name = "PredictionGhosts"
 local behaviorLog = {}
 
--- Sound
-local localPlayer = Players.LocalPlayer
-local predictionEnabled = false
-local ghostFolder = Instance.new("Folder", workspace)
-ghostFolder.Name = "PredictionGhosts"
-local behavior Setup
-local failSound = Instance.new("Sound", SoundService)
-failSound.SoundId = "rbxassetid://YOUR_FAIL_SOUND_ID" -- Replace with your asset ID
-failSound.Volume = 1
-
 -- Neon Eye Feedback
 local function triggerEyeGlow(characterLog = {}
 
