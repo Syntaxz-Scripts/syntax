@@ -1753,39 +1753,45 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
--- Variables
+-- Local Player
 local localPlayer = Players.LocalPlayer
+
+-- Prediction Toggle
 local predictionEnabled = false
+
+-- Ghost Folder
 local ghostFolder = Instance.new("Folder", workspace)
 ghostFolder.Name = "PredictionGhosts"
-local behaviorLog = {}
 
--- Neon Eye Feedback (no sound)
-local function triggerEyeGlow(character)
-    local eyes = character:FindFirstChild("Eyes")
-    if eyes and eyes:IsA("BasePart") then
-        eyes.Material = Enum.Material.Neon
-        eyes.Color = Color3.fromRGB(255, 0, 0)
-        eyes.Transparency = 0.2
-        task.delay(3, function()
-            eyes.Color = Color3.fromRGB(255, 255, 255)
-            eyes.Transparency = 0.5
-        end)
+-- Velocity History
+local velocityHistory = {}
+
+-- Behavior Classification
+local function classifyBehavior(history)
+    if #history < 2 then return "Unknown" end
+
+    local angles, speeds = {}, {}
+    for i = 2, #history do
+        local v1, v2 = history[i-1], history[i]
+        table.insert(speeds, v2.Magnitude)
+
+        local dot = v1:Dot(v2)
+        local angle = math.acos(math.clamp(dot / (v1.Magnitude * v2.Magnitude), -1, 1))
+        table.insert(angles, angle)
+    end
+
+    local avgSpeed = (#speeds > 0) and (math.sum(speeds) / #speeds) or 0
+    local avgAngle = (#angles > 0) and (math.sum(angles) / #angles) or 0
+
+    if avgSpeed < 1 then return "Idle"
+    elseif avgAngle > 1.2 then return "Zigzag"
+    elseif avgSpeed > 2.5 then return "Chase"
+    else return "Roam"
     end
 end
 
--- Behavior Logging
-local function logBehavior(player, action, confidence)
-    behaviorLog[player.UserId] = behaviorLog[player.UserId] or {}
-    table.insert(behaviorLog[player.UserId], {
-        time = os.time(),
-        action = action,
-        confidence = confidence
-    })
-end
-
--- Prediction Text UI
-local function renderPredictionText(player, action, confidence)
+-- Prediction UI
+local function renderPredictionText(player, behavior, confidence)
     local gui = player:FindFirstChild("PlayerGui")
     if not gui then return end
 
@@ -1808,10 +1814,10 @@ local function renderPredictionText(player, action, confidence)
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
 
-    label.Text = string.format("Action: %s\nConfidence: %.1f%%", action, confidence * 100)
+    label.Text = string.format("Behavior: %s\nConfidence: %.1f%%", behavior, confidence * 100)
 end
 
--- Ghost + Beam
+-- Ghost + Beam Visuals
 local function spawnGhostWithBeam(player, position, transparency)
     local ghost = Instance.new("Part")
     ghost.Size = Vector3.new(2, 3, 1)
@@ -1825,9 +1831,7 @@ local function spawnGhostWithBeam(player, position, transparency)
 
     local fade = TweenService:Create(ghost, TweenInfo.new(1), {Transparency = 1})
     fade:Play()
-    fade.Completed:Connect(function()
-        ghost:Destroy()
-    end)
+    fade.Completed:Connect(function() ghost:Destroy() end)
 
     local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if root then
@@ -1859,23 +1863,24 @@ local function predictPlayer(player)
 
     local root = character.HumanoidRootPart
     local velocity = root.Velocity
-    if velocity.Magnitude < 1 then return end
+    if velocity.Magnitude < 0.1 then return end
+
+    velocityHistory[player.UserId] = velocityHistory[player.UserId] or {}
+    table.insert(velocityHistory[player.UserId], velocity)
+    if #velocityHistory[player.UserId] > 10 then
+        table.remove(velocityHistory[player.UserId], 1)
+    end
 
     local direction = velocity.Unit
     local speed = velocity.Magnitude
-    local action = speed > 20 and "Running" or "Walking"
-    local confidence = math.clamp(speed / 50, 0.1, 1)
+    local confidence = math.clamp(1 - (math.abs(speed - 2) / 4), 0.1, 1)
+    local behavior = classifyBehavior(velocityHistory[player.UserId])
 
-    renderPredictionText(player, action, confidence)
-    logBehavior(player, action, confidence)
+    renderPredictionText(player, behavior, confidence)
 
-    for i = 1, math.clamp(math.floor(speed / 10), 1, 3) do
+    for i = 1, 3 do
         local futurePos = root.Position + direction * (i * 0.5)
         spawnGhostWithBeam(player, futurePos, 0.5 - (i * 0.1))
-    end
-
-    if confidence < 0.3 then
-        triggerEyeGlow(character)
     end
 end
 
@@ -1889,55 +1894,29 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Prediction button logic
-local predictionEnabled = false
+-- Mobile Button Integration
+local predictBtn = Instance.new("TextButton", contentParent)
+predictBtn.Size = UDim2.new(0, 180, 0, 34)
+predictBtn.Position = UDim2.new(0, 14, 0, contentY)
+predictBtn.BackgroundColor3 = Color3.fromRGB(60, 90, 140)
+predictBtn.TextColor3 = Color3.fromRGB(255,255,255)
+predictBtn.Font = Enum.Font.GothamBold
+predictBtn.TextSize = 16
+predictBtn.Text = "Prediction: OFF"
+predictBtn.AutoButtonColor = true
+predictBtn.BackgroundTransparency = 0.18
 
-local predictionFrame = Instance.new("Frame", universalTab)
-predictionFrame.Name = "PredictionButton"
-predictionFrame.Size = UDim2.new(0, 120, 0, 30)
-predictionFrame.Position = UDim2.new(0, 10, 0, 200)
-predictionFrame.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-predictionFrame.BorderSizePixel = 0
+local corner = Instance.new("UICorner", predictBtn)
+corner.CornerRadius = UDim.new(0, 11)
 
-Instance.new("UICorner", predictionFrame).CornerRadius = UDim.new(0, 6)
-
-local label = Instance.new("TextLabel", predictionFrame)
-label.Text = "Prediction OFF"
-label.Size = UDim2.new(1, 0, 1, 0)
-label.BackgroundTransparency = 1
-label.TextColor3 = Color3.new(1, 1, 1)
-label.Font = Enum.Font.GothamBold
-label.TextScaled = true
-
-local clickArea = Instance.new("TextButton", predictionFrame)
-clickArea.Size = UDim2.new(1, 0, 1, 0)
-clickArea.BackgroundTransparency = 1
-clickArea.Text = ""
-
--- Prediction dependency declared beforehand
-local predictionModule = require(script.Parent:WaitForChild("Prediction"))
-
--- Button Logic (only activates once predictionModule is available)
-clickArea.MouseButton1Click:Connect(function()
+predictBtn.MouseButton1Click:Connect(function()
     predictionEnabled = not predictionEnabled
-    
-    label.Text = predictionEnabled and "Prediction ON" or "Prediction OFF"
-    predictionFrame.BackgroundColor3 = predictionEnabled 
-        and Color3.fromRGB(0, 180, 0) 
-        or Color3.fromRGB(200, 0, 0)
+    predictBtn.Text = "Prediction: " .. (predictionEnabled and "ON" or "OFF")
+    predictBtn.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(60, 90, 140)
+end)
 
-    -- Activate prediction logic
-    if predictionEnabled then
-        predictionModule:Enable()  -- Assuming you have an Enable method
-    else
-        predictionModule:Disable()
-    end
-end) 
-
--- Update scroll canvas on mobile
-if isMobile() and scroll then
-    scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
-end
+-- Stack next element below
+contentY += 44
 		
 end
 
