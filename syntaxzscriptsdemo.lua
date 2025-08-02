@@ -1907,6 +1907,16 @@ end)
 -- Advance layout
 contentY += 44
 
+-- Adds the last button
+local predictBtn = Instance.new("TextButton", contentParent)
+predictBtn.Position = UDim2.new(0, 14, 0, contentY)
+
+contentY += 44
+
+-- scrol ven sybau
+if isMobile() and scroll then
+    scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
+end	
 	
 end
 
