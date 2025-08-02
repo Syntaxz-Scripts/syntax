@@ -1889,24 +1889,50 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Universal Tab Button (replace with your tab reference)
-local function createPredictionButton(universalTab)
-    local button = Instance.new("TextButton", universalTab)
-    button.Size = UDim2.new(0, 150, 0, 30)
-    button.Position = UDim2.new(0, 10, 0, 10)
-    button.Text = "Prediction: OFF"
-    button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    button.TextColor3 = Color3.new(1, 1, 1)
+-- Prediction button logic
+local predictionEnabled = false
 
-    button.MouseButton1Click:Connect(function()
-        predictionEnabled = not predictionEnabled
-        button.Text = predictionEnabled and "Prediction: ON" or "Prediction: OFF"
-        button.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(100, 100, 100)
-    end)
-end
+local predictionFrame = Instance.new("Frame", universalTab)
+predictionFrame.Name = "PredictionButton"
+predictionFrame.Size = UDim2.new(0, 120, 0, 30)
+predictionFrame.Position = UDim2.new(0, 10, 0, 200)
+predictionFrame.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+predictionFrame.BorderSizePixel = 0
 
--- Call this with your actual Universal tab frame
--- createPredictionButton(tabFrames["Universal"])
+Instance.new("UICorner", predictionFrame).CornerRadius = UDim.new(0, 6)
+
+local label = Instance.new("TextLabel", predictionFrame)
+label.Text = "Prediction OFF"
+label.Size = UDim2.new(1, 0, 1, 0)
+label.BackgroundTransparency = 1
+label.TextColor3 = Color3.new(1, 1, 1)
+label.Font = Enum.Font.GothamBold
+label.TextScaled = true
+
+local clickArea = Instance.new("TextButton", predictionFrame)
+clickArea.Size = UDim2.new(1, 0, 1, 0)
+clickArea.BackgroundTransparency = 1
+clickArea.Text = ""
+
+-- Prediction dependency declared beforehand
+local predictionModule = require(script.Parent:WaitForChild("Prediction"))
+
+-- Button Logic (only activates once predictionModule is available)
+clickArea.MouseButton1Click:Connect(function()
+    predictionEnabled = not predictionEnabled
+    
+    label.Text = predictionEnabled and "Prediction ON" or "Prediction OFF"
+    predictionFrame.BackgroundColor3 = predictionEnabled 
+        and Color3.fromRGB(0, 180, 0) 
+        or Color3.fromRGB(200, 0, 0)
+
+    -- Activate prediction logic
+    if predictionEnabled then
+        predictionModule:Enable()  -- Assuming you have an Enable method
+    else
+        predictionModule:Disable()
+    end
+end)
 
 -- Stack placement
 contentY += 44
