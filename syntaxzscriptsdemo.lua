@@ -1932,10 +1932,7 @@ clickArea.MouseButton1Click:Connect(function()
     else
         predictionModule:Disable()
     end
-end)
-
--- Stack placement
-contentY += 44
+end) 
 
 -- Update scroll canvas on mobile
 if isMobile() and scroll then
