@@ -1753,44 +1753,46 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
--- Variables
+-- Local Player
 local localPlayer = Players.LocalPlayer
+
+-- Prediction Toggle
 local predictionEnabled = false
+
+-- Ghost Folder
 local ghostFolder = Instance.new("Folder", workspace)
 ghostFolder.Name = "PredictionGhosts"
 
+-- Velocity History
 local velocityHistory = {}
-local predictionCooldowns = {}
-local cleanupInterval = 5
-local lastCleanup = tick()
+local lastUpdate = {}
 
--- Helper
+-- Helper: Sum
 local function sum(array)
     local total = 0
-    for _, v in ipairs(array) do
-        total += v
-    end
+    for _, v in ipairs(array) do total += v end
     return total
 end
 
+-- Behavior Classification
 local function classifyBehavior(history)
     if #history < 2 then return "Unknown" end
 
-    local magnitudes, angles = {}, {}
-
+    local angles, speeds = {}, {}
     for i = 2, #history do
         local v1, v2 = history[i-1], history[i]
-        table.insert(magnitudes, v2.Magnitude)
+        table.insert(speeds, v2.Magnitude)
 
-        local dot, denom = v1:Dot(v2), v1.Magnitude * v2.Magnitude
+        local dot = v1:Dot(v2)
+        local denom = v1.Magnitude * v2.Magnitude
         if denom > 0 then
             local angle = math.acos(math.clamp(dot / denom, -1, 1))
             table.insert(angles, angle)
         end
     end
 
-    local avgSpeed = #magnitudes > 0 and (sum(magnitudes) / #magnitudes) or 0
-    local avgAngle = #angles > 0 and (sum(angles) / #angles) or 0
+    local avgSpeed = sum(speeds) / #speeds
+    local avgAngle = sum(angles) / #angles
 
     if avgSpeed < 1 then return "Idle"
     elseif avgAngle > 1.2 then return "Zigzag"
@@ -1799,13 +1801,41 @@ local function classifyBehavior(history)
     end
 end
 
-local function spawnGhost(player, position, alpha)
+-- Prediction Text UI
+local function renderPredictionText(player, behavior, confidence)
+    local gui = player:FindFirstChild("PlayerGui")
+    if not gui then return end
+
+    local screenGui = gui:FindFirstChild("PredictionGui")
+    if not screenGui then
+        screenGui = Instance.new("ScreenGui", gui)
+        screenGui.Name = "PredictionGui"
+    end
+
+    local label = screenGui:FindFirstChild("PredictionLabel")
+    if not label then
+        label = Instance.new("TextLabel", screenGui)
+        label.Name = "PredictionLabel"
+        label.Size = UDim2.new(0, 180, 0, 40)
+        label.Position = UDim2.new(0, 40, 0, 20)
+        label.BackgroundTransparency = 1
+        label.TextScaled = true
+        label.Font = Enum.Font.GothamBold
+        label.TextStrokeTransparency = 0.4
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end
+
+    label.Text = string.format("Behavior: %s\nConfidence: %.1f%%", behavior, confidence * 100)
+end
+
+-- Ghost + Beam
+local function spawnGhostWithBeam(player, position, transparency)
     local ghost = Instance.new("Part")
     ghost.Size = Vector3.new(2, 3, 1)
     ghost.Position = position
     ghost.Anchored = true
     ghost.CanCollide = false
-    ghost.Transparency = alpha
+    ghost.Transparency = transparency
     ghost.Material = Enum.Material.ForceField
     ghost.Color = Color3.fromRGB(255, 255, 255)
     ghost.Parent = ghostFolder
@@ -1816,45 +1846,32 @@ local function spawnGhost(player, position, alpha)
 
     local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if root then
-        local a0, a1 = Instance.new("Attachment", root), Instance.new("Attachment", ghost)
+        local a0 = Instance.new("Attachment", root)
+        local a1 = Instance.new("Attachment", ghost)
 
         local beam = Instance.new("Beam")
-        beam.Attachment0, beam.Attachment1 = a0, a1
-        beam.Width0, beam.Width1 = 0.2, 0.2
+        beam.Attachment0 = a0
+        beam.Attachment1 = a1
+        beam.Width0 = 0.2
+        beam.Width1 = 0.2
         beam.Color = ColorSequence.new(Color3.fromRGB(0, 255, 255))
-        beam.Transparency = NumberSequence.new(alpha)
-        beam.FaceCamera, beam.LightInfluence = true, 0
+        beam.Transparency = NumberSequence.new(transparency)
+        beam.FaceCamera = true
+        beam.LightInfluence = 0
         beam.Parent = ghost
 
-        task.delay(1, function() a0:Destroy(); a1:Destroy() end)
+        task.delay(1, function()
+            a0:Destroy()
+            a1:Destroy()
+        end)
     end
 end
 
-local function renderPredictionText(player, behavior, confidence)
-    local gui = player:FindFirstChild("PlayerGui")
-    if not gui then return end
-
-    local screenGui = gui:FindFirstChild("PredictionGui") or Instance.new("ScreenGui", gui)
-    screenGui.Name = "PredictionGui"
-
-    local label = screenGui:FindFirstChild("PredictionLabel") or Instance.new("TextLabel", screenGui)
-    label.Name = "PredictionLabel"
-    label.Size = UDim2.new(0, 180, 0, 40)
-    label.Position = UDim2.new(0, 40, 0, 20)
-    label.BackgroundTransparency = 1
-    label.TextScaled = true
-    label.Font = Enum.Font.GothamBold
-    label.TextStrokeTransparency = 0.4
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-    label.Text = string.format("Behavior: %s\nConfidence: %.1f%%", behavior, confidence * 100)
-end
-
+-- Prediction Logic
 local function predictPlayer(player)
     local now = tick()
-    local lastTime = predictionCooldowns[player.UserId] or 0
-    if now - lastTime < 1 then return end
-    predictionCooldowns[player.UserId] = now
+    if lastUpdate[player.UserId] and now - lastUpdate[player.UserId] < 1 then return end
+    lastUpdate[player.UserId] = now
 
     local char = player.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -1869,33 +1886,21 @@ local function predictPlayer(player)
         table.remove(velocityHistory[player.UserId], 1)
     end
 
-    local direction = velocity.Unit
+    local direction = velocity.Magnitude > 0 and velocity.Unit or Vector3.zero
     local confidence = math.clamp(velocity.Magnitude / 50, 0.1, 1)
     local behavior = classifyBehavior(velocityHistory[player.UserId])
 
     renderPredictionText(player, behavior, confidence)
 
     for i = 1, 3 do
-        local offset = direction * i * 0.5
-        spawnGhost(player, root.Position + offset, 0.5 - i * 0.1)
+        local futurePos = root.Position + direction * (i * 0.5)
+        spawnGhostWithBeam(player, futurePos, 0.5 - i * 0.1)
     end
 end
 
--- Clean ghosts
-local function cleanGhosts()
-    if tick() - lastCleanup < cleanupInterval then return end
-    lastCleanup = tick()
-    for _, g in ipairs(ghostFolder:GetChildren()) do
-        if g:IsA("Part") and g.Transparency >= 1 then
-            g:Destroy()
-        end
-    end
-end
-
--- Update loop
+-- Heartbeat Loop
 RunService.Heartbeat:Connect(function()
     if not predictionEnabled then return end
-    cleanGhosts()
     for _, player in Players:GetPlayers() do
         if player ~= localPlayer then
             predictPlayer(player)
@@ -1903,7 +1908,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- UI Button
+-- Stylized Button (Mobile Layout)
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1925,7 +1930,8 @@ predictBtn.MouseButton1Click:Connect(function()
 end)
 
 contentY += 44
-		
+
+	
 end
 
 -----------------------
