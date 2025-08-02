@@ -1753,14 +1753,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
-
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-
--- VariablesService = game:GetService("SoundService")
-
 -- Variables
 local localPlayer = Players.LocalPlayer
 local predictionEnabled = false
@@ -1768,24 +1760,13 @@ local ghostFolder = Instance.new("Folder", workspace)
 ghostFolder.Name = "PredictionGhosts"
 local behaviorLog = {}
 
--- Neon Eye Feedback
-local function triggerEyeGlow(characterLog = {}
-
--- Neon Eye Feedback
+-- Neon Eye Feedback (no sound)
 local function triggerEyeGlow(character)
-    local eyes)
     local eyes = character:FindFirstChild("Eyes")
     if eyes and eyes:IsA("BasePart") then
         eyes.Material = Enum.Material.Neon
         eyes.Color = Color3.fromRGB(255, 0, 0)
         eyes.Transparency = 0.2
-        fail = character:FindFirstChild("Eyes")
-    if eyes and eyes:IsA("BasePart") then
-        eyes.Material = Enum.Material.Neon
-        eyes.Color = Color3.fromRGB(255, 0, 0)
-        eyes.Transparency = 0.2
-        failSound:Play()
-       Sound:Play()
         task.delay(3, function()
             eyes.Color = Color3.fromRGB(255, 255, 255)
             eyes.Transparency = 0.5
@@ -1794,21 +1775,7 @@ local function triggerEyeGlow(character)
 end
 
 -- Behavior Logging
-local function logBehavior(player, action, confidence task.delay(3, function()
-            eyes.Color = Color3.fromRGB(255, 255, 255)
-            eyes.Transparency = 0.5
-        end)
-    end
-end
-
--- Behavior Logging
-local function logBehavior(player)
-    behaviorLog[player.UserId] = behaviorLog[player.UserId] or {}
-    table.insert(behaviorLog[player.UserId], {
-        time = os.time(),
-        action = action,
-        confidence = confidence
-   , action, confidence)
+local function logBehavior(player, action, confidence)
     behaviorLog[player.UserId] = behaviorLog[player.UserId] or {}
     table.insert(behaviorLog[player.UserId], {
         time = os.time(),
@@ -1817,23 +1784,13 @@ local function logBehavior(player)
     })
 end
 
--- Prediction })
-end
-
 -- Prediction Text UI
 local function renderPredictionText(player, action, confidence)
     local gui = player:FindFirstChild("PlayerGui")
     if not gui then return end
 
     local screenGui = gui:FindFirstChild("PredictionGui")
-    if not Text UI
-local function renderPredictionText(player, action, confidence)
-    local gui = player:FindFirstChild("PlayerGui")
-    if not gui then return end
-
-    local screenGui = gui:FindFirstChild("PredictionGui")
     if not screenGui then
-        screenGui screenGui then
         screenGui = Instance.new("ScreenGui", gui)
         screenGui.Name = "PredictionGui"
     end
@@ -1842,83 +1799,37 @@ local function renderPredictionText(player, action, confidence)
     if not label then
         label = Instance.new("TextLabel", screenGui)
         label.Name = "PredictionLabel"
-        label = Instance.new("ScreenGui", gui)
-        screenGui.Name = "PredictionGui"
-    end
-
-    local label = screenGui:FindFirstChild("PredictionLabel")
-    if not label then
-        label = Instance.new("TextLabel", screenGui)
-        label.Name = "Prediction.Size = UDim2.new(0, 180, 0, 40)
-        label.Position = UDim2.new(0, 40, 0, 20)
-        label.BackgroundTransparency = 1
-        label.TextScaled = true
-       Label"
         label.Size = UDim2.new(0, 180, 0, 40)
         label.Position = UDim2.new(0, 40, 0, 20)
         label.BackgroundTransparency = 1
-        label.Text label.Font = Enum.Font.GothamBold
-        label.TextStrokeTransparency = 0.4
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-
-    label.Text =Scaled = true
+        label.TextScaled = true
         label.Font = Enum.Font.GothamBold
         label.TextStrokeTransparency = 0.4
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
 
- string.format("Action: %s\nConfidence: %.1f%%", action, confidence * 100)
-end
-
--- Ghost +    label.Text = string.format("Action: %s\nConfidence: %.1f%%", action, confidence * 100)
+    label.Text = string.format("Action: %s\nConfidence: %.1f%%", action, confidence * 100)
 end
 
 -- Ghost + Beam
-local function Beam
 local function spawnGhostWithBeam(player, position, transparency)
     local ghost = Instance.new("Part")
     ghost.Size = Vector3.new(2, 3, 1)
     ghost.Position = position
     ghost.Anchored = true
-    ghost.CanCollide = false spawnGhostWithBeam(player, position, transparency)
-    local ghost = Instance.new("Part")
-    ghost.Size = Vector3.new(2, 3, 1)
-    ghost.Position = position
-    ghost.Anchored = true
-    ghost
+    ghost.CanCollide = false
     ghost.Transparency = transparency
     ghost.Material = Enum.Material.ForceField
     ghost.Color = Color3.fromRGB(255, 255, 255)
     ghost.Parent = ghostFolder
 
-    local fade = TweenService:Create.CanCollide = false
-    ghost.Transparency = transparency
-    ghost.Material = Enum.Material.ForceField
-    ghost.Color = Color3.fromRGB(255, 255, 255)
-    ghost.Parent = ghostFolder
-
-    local fade = TweenService:Create(ghost, TweenInfo(ghost, TweenInfo.new(1), {Transparency = 1})
+    local fade = TweenService:Create(ghost, TweenInfo.new(1), {Transparency = 1})
     fade:Play()
     fade.Completed:Connect(function()
         ghost:Destroy()
     end)
 
-    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart.new(1), {Transparency = 1})
-    fade:Play()
-    fade.Completed:Connect(function()
-        ghost:Destroy()
-    end)
-
-    local root = player.Character and player.Character:FindFirstChild("")
-    if root then
-        local a0 = Instance.new("Attachment", root)
-        local a1 = Instance.new("Attachment", ghost)
-
-        local beam = Instance.new("Beam")
-        beam.Attachment0 = a0
-        beam.Attachment1 = a1
-        beam.WidthHumanoidRootPart")
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if root then
         local a0 = Instance.new("Attachment", root)
         local a1 = Instance.new("Attachment", ghost)
@@ -1927,15 +1838,7 @@ local function spawnGhostWithBeam(player, position, transparency)
         beam.Attachment0 = a0
         beam.Attachment1 = a1
         beam.Width0 = 0.2
-        beam0 = 0.2
         beam.Width1 = 0.2
-        beam.Color = ColorSequence.new(Color3.fromRGB(0, 255, 255))
-        beam.Transparency = NumberSequence.new(transparency)
-        beam.FaceCamera = true
-        beam.LightInfluence = 0
-        beam.Parent = ghost
-
-       .Width1 = 0.2
         beam.Color = ColorSequence.new(Color3.fromRGB(0, 255, 255))
         beam.Transparency = NumberSequence.new(transparency)
         beam.FaceCamera = true
@@ -1999,12 +1902,10 @@ local function createPredictionButton(universalTab)
         predictionEnabled = not predictionEnabled
         button.Text = predictionEnabled and "Prediction: ON" or "Prediction: OFF"
         button.BackgroundColor3 = predictionEnabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(100, 100, 100)
-    createPredictionButton(tabframes["Universal"]) 
-									
     end)
 end
 
--- if ts don't work use ts ↓
+-- Call this with your actual Universal tab frame
 -- createPredictionButton(tabFrames["Universal"])
 
 -- Stack placement
