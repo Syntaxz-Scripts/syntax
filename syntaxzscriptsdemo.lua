@@ -1922,7 +1922,7 @@ contentY += 44
 -- Update scroll size (if you're using ScrollingFrame)
 if isMobile() and scroll then
     scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
-end	
+end
 	
 end
 
