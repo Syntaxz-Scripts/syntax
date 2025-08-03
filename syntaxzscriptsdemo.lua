@@ -693,7 +693,7 @@ end
 -----------------------
 do
     local tf = tabFrames["Universal"]
-    local universalVars = {fullbright = false, acBypass = false, infHealth = false, predict = false}
+    local universalVars = {fullbright = false, acBypass = false, infHealth = false, prediction = false}
     local jitterVars = {enabled = false, connection = nil, origPos = nil, jitterTime = 0}
 
     local function styledBtn(parent, x, y, w, text, col)
@@ -1854,10 +1854,10 @@ local function runPrediction()
     end
 end
 
--- Toggle state
+-- Button Function
 universalVars.prediction = universalVars.prediction or false
 
--- Create styled Prediction button
+-- Create stylized Prediction button
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1869,37 +1869,11 @@ predictBtn.Text = "Prediction: OFF"
 predictBtn.AutoButtonColor = true
 predictBtn.BackgroundTransparency = 0.18
 
--- Style Helpers
-local function roundify(inst, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 11)
-    corner.Parent = inst
-end
-
-local function strokify(inst, thickness, color, transparency)
-    local stroke = Instance.new("UIStroke")
-    stroke.Thickness = thickness or 1.1
-    stroke.Color = color or Color3.fromRGB(120, 200, 240)
-    stroke.Transparency = transparency or 0.34
-    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    stroke.Parent = inst
-end
-
+-- Apply your shared styling
 roundify(predictBtn, 11)
 strokify(predictBtn, 1.1, Color3.fromRGB(120, 200, 240), 0.34)
 
--- Hover Effects
-predictBtn.MouseEnter:Connect(function()
-    predictBtn.BackgroundColor3 = Color3.fromRGB(80, 120, 180)
-end)
-
-predictBtn.MouseLeave:Connect(function()
-    predictBtn.BackgroundColor3 = universalVars.prediction
-        and Color3.fromRGB(0, 170, 80)
-        or Color3.fromRGB(60, 90, 140)
-end)
-
--- Toggle functionality
+-- Toggle behavior
 predictBtn.MouseButton1Click:Connect(function()
     universalVars.prediction = not universalVars.prediction
     predictBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
@@ -1907,6 +1881,7 @@ predictBtn.MouseButton1Click:Connect(function()
         and Color3.fromRGB(0, 170, 80)
         or Color3.fromRGB(60, 90, 140)
 
+    -- Optional hooks
     if universalVars.prediction then
         notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150))
         if Prediction and Prediction.Enable then Prediction:Enable() end
@@ -1916,10 +1891,10 @@ predictBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Stack placement
+-- Advance layout stack
 contentY += 44
 
--- Update scroll size (if you're using ScrollingFrame)
+-- Update scrolling area on mobile
 if isMobile() and scroll then
     scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
 end
