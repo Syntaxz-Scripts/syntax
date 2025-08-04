@@ -1754,7 +1754,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 -- UI Reference
-local universalTab = script.Parent.Parent:WaitForChild("UniversalTab")
+local universalTab = contentParent
 local predictBtn = universalTab:WaitForChild("PredictGhostsBtn") -- stylized button
 
 -- Assets
