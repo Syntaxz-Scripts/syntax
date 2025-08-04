@@ -1857,7 +1857,6 @@ end
 -- Button Function
 universalVars.prediction = universalVars.prediction or false
 
--- Create stylized Prediction button
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1869,11 +1868,9 @@ predictBtn.Text = "Prediction: OFF"
 predictBtn.AutoButtonColor = true
 predictBtn.BackgroundTransparency = 0.18
 
--- Apply your shared styling
 roundify(predictBtn, 11)
 strokify(predictBtn, 1.1, Color3.fromRGB(120, 200, 240), 0.34)
 
--- Toggle behavior
 predictBtn.MouseButton1Click:Connect(function()
     universalVars.prediction = not universalVars.prediction
     predictBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
@@ -1881,7 +1878,6 @@ predictBtn.MouseButton1Click:Connect(function()
         and Color3.fromRGB(0, 170, 80)
         or Color3.fromRGB(60, 90, 140)
 
-    -- Optional hooks
     if universalVars.prediction then
         notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150))
         if Prediction and Prediction.Enable then Prediction:Enable() end
@@ -1891,10 +1887,7 @@ predictBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Advance layout stack
 contentY += 44
-
--- Update scrolling area on mobile
 if isMobile() and scroll then
     scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
 end
