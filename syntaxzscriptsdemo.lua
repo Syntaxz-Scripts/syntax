@@ -1746,7 +1746,7 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== AI Prediction System ==--
+--== Universal Tab: AI Prediction System ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -1755,15 +1755,16 @@ local player = Players.LocalPlayer
 -- Ensure GhostTemplate and GhostBeams exist in workspace
 local ghostTemplate = workspace:FindFirstChild("GhostTemplate")
 if not ghostTemplate then
-    ghostTemplate = Instance.new("Part")
-    ghostTemplate.Name = "GhostTemplate"
-    ghostTemplate.Size = Vector3.new(1, 1, 1)
-    ghostTemplate.Anchored = true
-    ghostTemplate.CanCollide = false
-    ghostTemplate.Material = Enum.Material.Neon
-    ghostTemplate.Color = Color3.fromRGB(0, 255, 255)
-    ghostTemplate.Transparency = 0.3
-    ghostTemplate.Parent = workspace
+    local part = Instance.new("Part")
+    part.Name = "GhostTemplate"
+    part.Size = Vector3.new(1, 1, 1)
+    part.Anchored = true
+    part.CanCollide = false
+    part.Material = Enum.Material.Neon
+    part.Color = Color3.fromRGB(0, 255, 255)
+    part.Transparency = 0.3
+    part.Parent = workspace
+    ghostTemplate = part
 end
 local beamFolder = workspace:FindFirstChild("GhostBeams")
 if not beamFolder then
@@ -1777,7 +1778,7 @@ local universalVars = universalVars or {}
 universalVars.prediction = false
 local behaviourLog = {} -- [userid]={ {time,position,velocity}, ... }
 
--- Button UI
+-- Button UI (make sure contentParent, contentY, roundify, strokify, notify exist in your UI)
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1831,13 +1832,11 @@ local function analyzeBehaviour(uid)
     local log = behaviourLog[uid]
     if not log or #log < 2 then return "Idle", 0.2 end
 
-    -- Calculate average speed/variance for basic behavior guess
     local speeds, headings = {}, {}
     for i = 2, #log do
         local v1 = log[i-1].vel
         local v2 = log[i].vel
         local speed = v2.Magnitude
-        local delta = (log[i].pos - log[i-1].pos).Magnitude
         table.insert(speeds, speed)
         if v2.Magnitude > 0 and v1.Magnitude > 0 then
             table.insert(headings, v1.Unit:Dot(v2.Unit))
@@ -1851,7 +1850,6 @@ local function analyzeBehaviour(uid)
     for _, h in ipairs(headings) do avgHeading += h end
     avgHeading = #headings > 0 and avgHeading/#headings or 0
 
-    -- Heuristic: If moving fast and straight, "Chase", if moving fast and erratic, "Zigzag", else "Idle"/"Roam"
     if avgSpeed < 3 then
         return "Idle", 0.2
     elseif avgHeading > 0.96 and avgSpeed > 10 then
@@ -1875,10 +1873,9 @@ local function predictMovement(target)
     local behaviour, behaviourConf = analyzeBehaviour(target.UserId)
     local speed = velocity.Magnitude
     local direction = speed > 0 and velocity.Unit or Vector3.new(0,0,0)
-    -- Confidence increases with speed and behaviour certainty
     local confidence = math.clamp((behaviourConf + (speed/60))/2, 0, 1)
-    -- Predict time ahead scales with confidence and speed
-    local predictTime = 0.15 + confidence*0.35
+    -- Predict farther into the future (larger time window)
+    local predictTime = 0.35 + confidence*1.1 -- up to 1.45 seconds
     local predictedPosition = position + direction * speed * predictTime
     return {
         behaviour = behaviour,
@@ -1922,7 +1919,6 @@ local function createConfidenceMeter(confidence, position)
     txt.Text = ("%.0f%%"):format(confidence*100)
     txt.Parent = meter
 
-    -- Cleanup
     delay(1.5, function()
         meter:Destroy()
         part:Destroy()
@@ -1943,7 +1939,7 @@ local function spawnBeam(startPos, endPos, color)
     part.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0,0,-dist/2)
     part.Parent = beamFolder
     TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
-    task.delay(1.3, function() if part then part:Destroy() end end)
+    delay(1.3, function() if part then part:Destroy() end end)
 end
 
 -- Helper: Spawn ghost
@@ -1966,32 +1962,30 @@ local function spawnGhost(position, confidence, behaviour)
     label.TextColor3 = Color3.fromRGB(255, 255, 0)
     label.Text = string.format("%s | %.0f%%", behaviour or "?", confidence*100)
     TweenService:Create(ghost, TweenInfo.new(1.2), {Transparency = 1}):Play()
-    task.delay(1.3, function() if ghost then ghost:Destroy() end end)
+    delay(1.3, function() if ghost then ghost:Destroy() end end)
 end
 
 -- Main prediction loop
 RunService.RenderStepped:Connect(function()
     if not universalVars.prediction then return end
     clearVisuals()
-    local myChar = player.Character
-    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             local info = predictMovement(target)
             if info then
-                -- Ghosts: ahead, mid, predicted, confidence meter on predicted
-                local ghost1 = info.origin + info.direction * 3
-                local ghost2 = info.origin + info.direction * 6
+                -- Ghosts: ahead, midpoint, predicted
+                local ghost1 = info.origin + info.direction * 6
+                local ghost2 = info.origin + info.direction * ((info.predicted - info.origin).Magnitude/2)
                 local ghost3 = info.predicted
                 spawnGhost(ghost1, info.confidence*0.6, info.behaviour)
                 spawnGhost(ghost2, info.confidence*0.8, info.behaviour)
                 spawnGhost(ghost3, info.confidence, info.behaviour)
                 createConfidenceMeter(info.confidence, ghost3)
-                -- Beams: from HRP to each ghost
-                spawnBeam(myRoot.Position, ghost1, Color3.fromRGB(180,180,0))
-                spawnBeam(myRoot.Position, ghost2, Color3.fromRGB(255,190,0))
-                spawnBeam(myRoot.Position, ghost3, Color3.fromRGB(0,255,0))
+                -- Beams: FROM target's HRP TO each ghost
+                local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+                spawnBeam(hrp.Position, ghost1, Color3.fromRGB(180,180,0))
+                spawnBeam(hrp.Position, ghost2, Color3.fromRGB(255,190,0))
+                spawnBeam(hrp.Position, ghost3, Color3.fromRGB(0,255,0))
             end
         end
     end
