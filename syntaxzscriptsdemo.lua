@@ -1748,18 +1748,6 @@ end)
 
 --== Enhanced Prediction System ==--
 
--- Services
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-
--- UI Reference
-local universalTab = contentParent
-
--- Assets
-local ghostTemplate = workspace:WaitForChild("GhostTemplate")
-local beamFolder = workspace:WaitForChild("GhostBeams")
-
 -- Parameters
 local ghostCount = 3
 local beamFadeTime = 1
@@ -1770,8 +1758,27 @@ local behaviorThresholds = {
     Roam = 0.9
 }
 
--- Spawn Ghost w/ Confidence Label
+-- Assets (make sure these exist in workspace)
+local ghostTemplate = workspace:FindFirstChild("GhostTemplate")
+local beamFolder = workspace:FindFirstChild("GhostBeams")
+
+-- Behavior Logger
+local function getBehavior(confidence)
+    if confidence <= behaviorThresholds.Idle then return "Idle" end
+    if confidence <= behaviorThresholds.Chase then return "Chase" end
+    if confidence <= behaviorThresholds.Zigzag then return "Zigzag" end
+    if confidence <= behaviorThresholds.Roam then return "Roam" end
+    return "Unknown"
+end
+
+local function logBehavior(confidence)
+    local behavior = getBehavior(confidence)
+    print("Predicted Behavior:", behavior)
+end
+
+-- Spawn Ghost
 local function spawnGhost(position, confidence)
+    if not ghostTemplate then return end
     local ghost = ghostTemplate:Clone()
     ghost.Position = position
     ghost.Transparency = 0.5
@@ -1795,6 +1802,7 @@ end
 
 -- Spawn Beam
 local function spawnBeam(startPos, endPos)
+    if not beamFolder then return end
     local part = Instance.new("Part")
     part.Anchored = true
     part.CanCollide = false
@@ -1809,29 +1817,20 @@ local function spawnBeam(startPos, endPos)
     task.delay(beamFadeTime + 0.2, function() part:Destroy() end)
 end
 
--- Behavior Logger
-local function getBehavior(confidence)
-    if confidence <= behaviorThresholds.Idle then return "Idle" end
-    if confidence <= behaviorThresholds.Chase then return "Chase" end
-    if confidence <= behaviorThresholds.Zigzag then return "Zigzag" end
-    if confidence <= behaviorThresholds.Roam then return "Roam" end
-    return "Unknown"
-end
-
-local function logBehavior(confidence)
-    local behavior = getBehavior(confidence)
-    print("Predicted Behavior: " .. behavior)
-end
-
--- Core Prediction Handler
+-- Prediction Logic
 local function runPrediction()
     local player = Players.LocalPlayer
     local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
-    local predictions = {} -- Populate from your prediction model
-    -- Example structure:
-    -- table.insert(predictions, {position = Vector3.new(...), direction = Vector3.new(...), confidence = 0.87})
+    local predictions = {
+        -- Example prediction
+        {
+            position = root.Position + Vector3.new(0, 0, 5),
+            direction = Vector3.new(0, 0, 1),
+            confidence = 0.85
+        }
+    }
 
     local bestPrediction
     local highestConfidence = 0
@@ -1853,43 +1852,27 @@ local function runPrediction()
     end
 end
 
--- Button Function
-universalVars.prediction = universalVars.prediction or false
-
+-- Prediction Button
 local predictBtn = Instance.new("TextButton", contentParent)
+predictBtn.Name = "PredictGhostsBtn"
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
 predictBtn.BackgroundColor3 = Color3.fromRGB(60, 90, 140)
 predictBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 predictBtn.Font = Enum.Font.GothamBold
 predictBtn.TextSize = 16
-predictBtn.Text = "Prediction: OFF"
+predictBtn.Text = "Run Prediction"
 predictBtn.AutoButtonColor = true
 predictBtn.BackgroundTransparency = 0.18
-
 roundify(predictBtn, 11)
 strokify(predictBtn, 1.1, Color3.fromRGB(120, 200, 240), 0.34)
 
 predictBtn.MouseButton1Click:Connect(function()
-    universalVars.prediction = not universalVars.prediction
-    predictBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
-    predictBtn.BackgroundColor3 = universalVars.prediction
-        and Color3.fromRGB(0, 170, 80)
-        or Color3.fromRGB(60, 90, 140)
-
-    if universalVars.prediction then
-        notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150))
-        if Prediction and Prediction.Enable then Prediction:Enable() end
-    else
-        notify("Prediction Disabled", Color3.fromRGB(200, 80, 80))
-        if Prediction and Prediction.Disable then Prediction:Disable() end
-    end
+    notify("Prediction system triggered!", Color3.fromRGB(100, 200, 150))
+    runPrediction()
 end)
 
 contentY += 44
-if isMobile() and scroll then
-    scroll.CanvasSize = UDim2.new(0, 0, 0, contentY + 100)
-end
 	
 end
 
