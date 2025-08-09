@@ -2,9 +2,9 @@
 --== Syntaxz Scripts ver 6.7 ==-- 
 --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
-  --/¯-------------------------¯\--
-  --| Upd: Ai Prediction System |--
-  --\_-------------------------_/--
+--/¯-------------------------¯\--
+--| Upd: Ai Prediction System |--
+--\_-------------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
