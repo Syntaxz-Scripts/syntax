@@ -1746,7 +1746,7 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Universal Tab: ClickToMove-Like Path Prediction & ESP System ==--
+--== Universal Tab: ClickToMove-Like Path Prediction & ESP Outline System ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -1776,12 +1776,12 @@ if not beamFolder then
     beamFolder.Parent = Workspace
 end
 
---== Vars and behaviour log ==--
+--== Vars ==--
 local universalVars = universalVars or {}
 universalVars.prediction = false
 local highlightTag = "UniversalESPOutline"
 
---== Prediction Toggle Button ==--
+--== Styled Toggle Button ==--
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1805,10 +1805,10 @@ predictBtn.MouseButton1Click:Connect(function()
     else
         if notify then notify("Prediction Disabled", Color3.fromRGB(200, 80, 80)) end
         for _, obj in ipairs(beamFolder:GetChildren()) do obj:Destroy() end
-        -- Clear all highlights
+        -- Remove all outline ESPs except for self
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= player and p.Character then
-                for _, v in ipairs(p.Character:GetChildren()) do
+                for _, v in ipairs(p.Character:GetDescendants()) do
                     if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
                 end
             end
@@ -1905,7 +1905,7 @@ end
 
 --== Outline-only ESP for all players except me, always re-applies after respawn ==--
 local function outlineChar(char)
-    for _,v in ipairs(char:GetChildren()) do
+    for _,v in ipairs(char:GetDescendants()) do
         if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
     end
     for _, v in ipairs(char:GetChildren()) do
@@ -1934,6 +1934,7 @@ local function setupCharOutlineFor(p)
         outlineChar(char)
         char.ChildAdded:Connect(function(obj)
             if obj:IsA("BasePart") then
+                -- Remove previous outline if any
                 for _,v in ipairs(obj:GetChildren()) do
                     if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
                 end
@@ -1954,7 +1955,7 @@ end
 Players.PlayerAdded:Connect(setupCharOutlineFor)
 Players.PlayerRemoving:Connect(function(p)
     if p.Character then
-        for _,v in ipairs(p.Character:GetChildren()) do
+        for _,v in ipairs(p.Character:GetDescendants()) do
             if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
         end
     end
@@ -1982,7 +1983,7 @@ local function predictClickToMove(target)
     if not hrp then return end
 
     -- Guess goal: Raycast ahead in movement direction, or a fixed distance ahead
-    local moveDirection = hrp.Velocity.Magnitude > 0 and hrp.Velocity.Unit or char.PrimaryPart and char.PrimaryPart.CFrame.LookVector or Vector3.new(0,0,1)
+    local moveDirection = hrp.Velocity.Magnitude > 0 and hrp.Velocity.Unit or (char.PrimaryPart and char.PrimaryPart.CFrame.LookVector) or Vector3.new(0,0,1)
     local speed = hrp.Velocity.Magnitude
     -- Longer guess distance for high speeds
     local guessDist = 18 + math.clamp(speed*0.5, 0, 48)
@@ -2003,7 +2004,6 @@ local function predictClickToMove(target)
         for i = 2, math.min(#waypoints, 4) do
             spawnGhost(waypoints[i].Position, 1, "Path")
             if waypoints[i-1] and waypoints[i] then
-                -- Beam is from previous waypoint to next
                 smartSpawnBeam(waypoints[i-1].Position, waypoints[i].Position)
             end
         end
@@ -2012,7 +2012,7 @@ local function predictClickToMove(target)
     end
 end
 
---== Main prediction + highlight loop ==--
+--== Main prediction + outline loop ==--
 RunService.RenderStepped:Connect(function()
     if not universalVars.prediction then return end
     clearVisuals()
@@ -2022,7 +2022,7 @@ RunService.RenderStepped:Connect(function()
             predictClickToMove(target)
         end
       end
-  end) 
+   end) 
 
 end
 
