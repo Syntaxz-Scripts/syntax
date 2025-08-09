@@ -1807,9 +1807,8 @@ predictBtn.MouseButton1Click:Connect(function()
         for _, obj in ipairs(beamFolder:GetChildren()) do obj:Destroy() end
         -- Clear all highlights
         for _, p in ipairs(Players:GetPlayers()) do
-            local char = p.Character
-            if char then
-                for _, v in ipairs(char:GetDescendants()) do
+            if p ~= player and p.Character then
+                for _, v in ipairs(p.Character:GetChildren()) do
                     if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
                 end
             end
@@ -1898,41 +1897,42 @@ local function predictMovement(target)
     }
 end
 
---== Helper: Confidence Meter ==--
-local function createConfidenceMeter(confidence, position)
-    local part = Instance.new("Part")
-    part.Anchored = true
-    part.CanCollide = false
-    part.Transparency = 1
-    part.Position = position
-    part.Size = Vector3.new(0.1,0.1,0.1)
-    part.Parent = beamFolder
+--== Helper: Small Confidence Meter UI on player ==--
+local function attachConfidenceMeter(target, confidence)
+    if target == player then return end
+    local char = target.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    -- Remove old
+    for _,v in ipairs(hrp:GetChildren()) do
+        if v:IsA("BillboardGui") and v.Name == "ConfMeter" then v:Destroy() end
+    end
 
     local meter = Instance.new("BillboardGui")
-    meter.Size = UDim2.new(0, 110, 0, 20)
+    meter.Name = "ConfMeter"
+    meter.Size = UDim2.new(0, 42, 0, 10)
     meter.AlwaysOnTop = true
-    meter.StudsOffset = Vector3.new(0, 2, 0)
-    meter.Adornee = part
-    meter.Parent = part
+    meter.StudsOffset = Vector3.new(0, 2.8, 0)
+    meter.Adornee = hrp
+    meter.Parent = hrp
 
-    local bar = Instance.new("Frame")
+    local bar = Instance.new("Frame", meter)
     bar.Size = UDim2.new(math.clamp(confidence,0,1), 0, 1, 0)
     bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
     bar.BorderSizePixel = 0
-    bar.Parent = meter
 
-    local txt = Instance.new("TextLabel")
+    local txt = Instance.new("TextLabel", meter)
     txt.Size = UDim2.new(1, 0, 1, 0)
     txt.BackgroundTransparency = 1
     txt.TextColor3 = Color3.fromRGB(255,255,100)
-    txt.Font = Enum.Font.GothamBold
-    txt.TextSize = 14
+    txt.Font = Enum.Font.Gotham
+    txt.TextScaled = true
     txt.Text = ("%.0f%%"):format(confidence*100)
-    txt.Parent = meter
 
+    -- Cleanup after fade
     delay(1.5, function()
-        meter:Destroy()
-        part:Destroy()
+        if meter then meter:Destroy() end
     end)
 end
 
@@ -1985,10 +1985,10 @@ local function spawnGhost(position, confidence, behaviour)
     ghost.Transparency = 0.3
 
     local gui = Instance.new("BillboardGui", ghost)
-    gui.Size = UDim2.new(0, 130, 0, 26)
+    gui.Size = UDim2.new(0, 90, 0, 16)
     gui.AlwaysOnTop = true
     gui.LightInfluence = 0
-    gui.StudsOffset = Vector3.new(0, 2, 0)
+    gui.StudsOffset = Vector3.new(0, 1.8, 0)
     local label = Instance.new("TextLabel", gui)
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
@@ -2000,33 +2000,71 @@ local function spawnGhost(position, confidence, behaviour)
     task.delay(1.3, function() if ghost then ghost:Destroy() end end)
 end
 
---== Highlight all players green (universal, refreshes each frame) ==--
+--== Highlight all players green (universal, works for all except me, even after respawn) ==--
+local function highlightChar(char)
+    for _,v in ipairs(char:GetChildren()) do
+        if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
+    end
+    for _, v in ipairs(char:GetChildren()) do
+        if v:IsA("BasePart") and not v:FindFirstChild(highlightTag) then
+            local hl = Instance.new("Highlight")
+            hl.Name = highlightTag
+            hl.FillColor = Color3.fromRGB(0,255,0)
+            hl.OutlineColor = Color3.fromRGB(0,90,0)
+            hl.FillTransparency = 0.33
+            hl.OutlineTransparency = 0.15
+            hl.Parent = v
+        end
+    end
+end
 local function highlightAllPlayers()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
-            for _, v in ipairs(p.Character:GetChildren()) do
-                if v:IsA("BasePart") and not v:FindFirstChild(highlightTag) then
+            highlightChar(p.Character)
+        end
+    end
+end
+-- Always highlight on spawn for all except me
+local function setupCharHighlightFor(p)
+    if p == player then return end
+    p.CharacterAdded:Connect(function(char)
+        highlightChar(char)
+        char.ChildAdded:Connect(function(obj)
+            if obj:IsA("BasePart") then
+                for _,v in ipairs(obj:GetChildren()) do
+                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
+                end
+                if not obj:FindFirstChild(highlightTag) then
                     local hl = Instance.new("Highlight")
                     hl.Name = highlightTag
                     hl.FillColor = Color3.fromRGB(0,255,0)
                     hl.OutlineColor = Color3.fromRGB(0,90,0)
                     hl.FillTransparency = 0.33
                     hl.OutlineTransparency = 0.15
-                    hl.Parent = v
+                    hl.Parent = obj
                 end
             end
+        end)
+    end)
+end
+for _,p in ipairs(Players:GetPlayers()) do
+    setupCharHighlightFor(p)
+end
+Players.PlayerAdded:Connect(setupCharHighlightFor)
+Players.PlayerRemoving:Connect(function(p)
+    -- Clean up highlights for leaving player
+    if p.Character then
+        for _,v in ipairs(p.Character:GetChildren()) do
+            if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
         end
     end
-end
+end)
 
 --== Main prediction + highlight loop ==--
 RunService.RenderStepped:Connect(function()
     if not universalVars.prediction then return end
     clearVisuals()
     highlightAllPlayers()
-    local myChar = player.Character
-    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             local info = predictMovement(target)
@@ -2037,31 +2075,12 @@ RunService.RenderStepped:Connect(function()
                 spawnGhost(ghost1, info.confidence*0.6, info.behaviour)
                 spawnGhost(ghost2, info.confidence*0.8, info.behaviour)
                 spawnGhost(ghost3, info.confidence, info.behaviour)
-                createConfidenceMeter(info.confidence, ghost3)
-                smartSpawnBeam(myRoot.Position, ghost1, info.velocity)
-                smartSpawnBeam(myRoot.Position, ghost2, info.velocity)
-                smartSpawnBeam(myRoot.Position, ghost3, info.velocity)
+                attachConfidenceMeter(target, info.confidence)
+                smartSpawnBeam(info.origin, ghost3, info.velocity)
             end
         end
     end
-end)
-
---== Character highlight cleanup on respawn ==--
-Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function(char)
-        char.ChildAdded:Connect(function(obj)
-            if obj:IsA("BasePart") and universalVars.prediction then
-                local hl = Instance.new("Highlight")
-                hl.Name = highlightTag
-                hl.FillColor = Color3.fromRGB(0,255,0)
-                hl.OutlineColor = Color3.fromRGB(0,90,0)
-                hl.FillTransparency = 0.33
-                hl.OutlineTransparency = 0.15
-                hl.Parent = obj
-            end
-        end)
-     end)
-  end)
+  end) 
 end
 
 -----------------------
