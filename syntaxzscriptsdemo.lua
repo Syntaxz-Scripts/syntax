@@ -1755,7 +1755,6 @@ local RunService = game:GetService("RunService")
 
 -- UI Reference
 local universalTab = contentParent
-local predictBtn = universalTab:WaitForChild("PredictGhostsBtn") -- stylized button
 
 -- Assets
 local ghostTemplate = workspace:WaitForChild("GhostTemplate")
