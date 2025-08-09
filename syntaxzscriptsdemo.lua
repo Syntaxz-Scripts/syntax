@@ -1746,7 +1746,7 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Universal Tab: ClickToMove-Like Path Prediction & ESP Outline System ==--
+--== Universal Tab: AI Prediction & Pathfinding & Simple Outline ESP (Fixed) ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -1776,12 +1776,13 @@ if not beamFolder then
     beamFolder.Parent = Workspace
 end
 
---== Vars ==--
+--== Vars and behaviour log ==--
 local universalVars = universalVars or {}
 universalVars.prediction = false
+local behaviourLog = {} -- [userid]={ {time,pos,vel}, ... }
 local highlightTag = "UniversalESPOutline"
 
---== Styled Toggle Button ==--
+--== Prediction Toggle Button ==--
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1804,15 +1805,8 @@ predictBtn.MouseButton1Click:Connect(function()
         if notify then notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150)) end
     else
         if notify then notify("Prediction Disabled", Color3.fromRGB(200, 80, 80)) end
+        -- Remove all prediction visuals instantly
         for _, obj in ipairs(beamFolder:GetChildren()) do obj:Destroy() end
-        -- Remove all outline ESPs except for self
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character then
-                for _, v in ipairs(p.Character:GetDescendants()) do
-                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
-                end
-            end
-        end
     end
 end)
 
@@ -1823,96 +1817,171 @@ local function clearVisuals()
     end
 end
 
---== Helper: Smart Beam (draws a neon part line) ==--
-local function smartSpawnBeam(startPos, endPos)
+--== Helper: Log player behaviour (last N entries, per player) ==--
+local MAX_LOG = 30
+local function logBehaviour(target, position, velocity)
+    local uid = target.UserId
+    behaviourLog[uid] = behaviourLog[uid] or {}
+    table.insert(behaviourLog[uid], {
+        time = tick(),
+        pos = position,
+        vel = velocity
+    })
+    if #behaviourLog[uid] > MAX_LOG then
+        table.remove(behaviourLog[uid], 1)
+    end
+end
+
+--== Helper: Estimate movement pattern & confidence ==--
+local function analyzeBehaviour(uid)
+    local log = behaviourLog[uid]
+    if not log or #log < 2 then return "Idle", 0.2 end
+
+    local speeds, headings = {}, {}
+    for i = 2, #log do
+        local v1 = log[i-1].vel
+        local v2 = log[i].vel
+        local speed = v2.Magnitude
+        table.insert(speeds, speed)
+        if v2.Magnitude > 0 and v1.Magnitude > 0 then
+            table.insert(headings, v1.Unit:Dot(v2.Unit))
+        end
+    end
+    local avgSpeed = 0
+    for _, s in ipairs(speeds) do avgSpeed += s end
+    avgSpeed = #speeds > 0 and avgSpeed/#speeds or 0
+
+    local avgHeading = 0
+    for _, h in ipairs(headings) do avgHeading += h end
+    avgHeading = #headings > 0 and avgHeading/#headings or 0
+
+    if avgSpeed < 3 then
+        return "Idle", 0.2
+    elseif avgHeading > 0.96 and avgSpeed > 10 then
+        return "Chase", 0.8
+    elseif avgHeading < 0.6 and avgSpeed > 7 then
+        return "Zigzag", 0.6
+    elseif avgSpeed > 3 then
+        return "Roam", 0.4
+    end
+    return "Idle", 0.2
+end
+
+--== Pathfinding Helper (FIXED!) ==--
+local function getPath(startPos, goalPos)
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentJumpHeight = 7,
+        AgentMaxSlope = 40,
+    })
+    path:ComputeAsync(startPos, goalPos)
+    if path.Status == Enum.PathStatus.Success then
+        return path:GetWaypoints()
+    end
+    return nil
+end
+
+--== Helper: Predict movement (with pathfinding option) ==--
+local function predictMovement(target)
+    local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    local position = hrp.Position
+    local velocity = hrp.Velocity
+    logBehaviour(target, position, velocity)
+
+    local behaviour, behaviourConf = analyzeBehaviour(target.UserId)
+    local speed = velocity.Magnitude
+    local direction = speed > 0 and velocity.Unit or Vector3.new(0,0,0)
+    local confidence = math.clamp((behaviourConf + (speed/60))/2, 0, 1)
+    local predictTime = 0.15 + confidence*0.35
+    if speed > 18 then
+        predictTime = predictTime + math.clamp((speed-18)*0.04,0,1.3)
+    end
+    local predictedPosition = position + direction * speed * predictTime
+
+    -- Use pathfinding if high confidence and moving
+    local waypoints
+    if speed > 2 and confidence > 0.4 then
+        waypoints = getPath(position, predictedPosition)
+    end
+
+    return {
+        behaviour = behaviour,
+        confidence = confidence,
+        origin = position,
+        direction = direction,
+        velocity = velocity,
+        predicted = predictedPosition,
+        waypoints = waypoints
+    }
+end
+
+--== Helper: Smart Beam (jump/fall/floor stop/normal) ==--
+local function smartSpawnBeam(startPos, predictedPos, velocity)
     local color = Color3.fromRGB(255,255,0)
-    local dist = (startPos-endPos).Magnitude
+    local yVel = velocity.Y
+    local floorStop = false
+    local beamEnd = predictedPos
+
+    -- If jumping up
+    if yVel > 3 then
+        beamEnd = Vector3.new(predictedPos.X, predictedPos.Y + math.clamp(yVel * 0.14, 2, 8), predictedPos.Z)
+    -- If falling down
+    elseif yVel < -3 then
+        local rayOrigin = predictedPos
+        local rayDir = Vector3.new(0, -32, 0)
+        local rayParams = RaycastParams.new()
+        rayParams.FilterDescendantsInstances = {Workspace:FindFirstChild("GhostBeams")}
+        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+        local result = Workspace:Raycast(rayOrigin, rayDir, rayParams)
+        if result then
+            beamEnd = Vector3.new(predictedPos.X, result.Position.Y + 1, predictedPos.Z)
+            floorStop = true
+        else
+            beamEnd = Vector3.new(predictedPos.X, predictedPos.Y - math.clamp(-yVel * 0.10, 2, 12), predictedPos.Z)
+        end
+    end
+
+    local dist = (startPos-beamEnd).Magnitude
     if dist < 0.25 then return end
     local part = Instance.new("Part")
     part.Anchored = true
     part.CanCollide = false
     part.Material = Enum.Material.Neon
-    part.Color = color
+    part.Color = floorStop and Color3.fromRGB(0,255,0) or color
     part.Transparency = 0.09
     part.Size = Vector3.new(0.15, 0.15, dist)
-    part.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0,0,-dist/2)
+    part.CFrame = CFrame.new(startPos, beamEnd) * CFrame.new(0,0,-dist/2)
     part.Parent = beamFolder
     TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
     task.delay(1.3, function() if part then part:Destroy() end end)
 end
 
---== Helper: Spawn ghost ==--
-local function spawnGhost(position, confidence, behaviour)
+--== Helper: Spawn ghost (NO % text) ==--
+local function spawnGhost(position, colour)
     local ghost = ghostTemplate:Clone()
     ghost.Position = position
     ghost.Parent = beamFolder
     ghost.Transparency = 0.3
-
-    local gui = Instance.new("BillboardGui", ghost)
-    gui.Size = UDim2.new(0, 90, 0, 16)
-    gui.AlwaysOnTop = true
-    gui.LightInfluence = 0
-    gui.StudsOffset = Vector3.new(0, 1.8, 0)
-    local label = Instance.new("TextLabel", gui)
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextScaled = true
-    label.Font = Enum.Font.GothamBold
-    label.TextColor3 = Color3.fromRGB(255, 255, 0)
-    label.Text = string.format("%s | %.0f%%", behaviour or "Path", confidence*100)
+    if colour then ghost.Color = colour end
     TweenService:Create(ghost, TweenInfo.new(1.2), {Transparency = 1}):Play()
     task.delay(1.3, function() if ghost then ghost:Destroy() end end)
 end
 
---== Helper: Small Confidence Meter UI on player ==--
-local function attachConfidenceMeter(target, confidence)
-    if target == player then return end
-    local char = target.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    -- Remove old
-    for _,v in ipairs(hrp:GetChildren()) do
-        if v:IsA("BillboardGui") and v.Name == "ConfMeter" then v:Destroy() end
-    end
-
-    local meter = Instance.new("BillboardGui")
-    meter.Name = "ConfMeter"
-    meter.Size = UDim2.new(0, 42, 0, 10)
-    meter.AlwaysOnTop = true
-    meter.StudsOffset = Vector3.new(0, 2.8, 0)
-    meter.Adornee = hrp
-    meter.Parent = hrp
-
-    local bar = Instance.new("Frame", meter)
-    bar.Size = UDim2.new(math.clamp(confidence,0,1), 0, 1, 0)
-    bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    bar.BorderSizePixel = 0
-
-    local txt = Instance.new("TextLabel", meter)
-    txt.Size = UDim2.new(1, 0, 1, 0)
-    txt.BackgroundTransparency = 1
-    txt.TextColor3 = Color3.fromRGB(255,255,100)
-    txt.Font = Enum.Font.Gotham
-    txt.TextScaled = true
-    txt.Text = ("%.0f%%"):format(confidence*100)
-
-    -- Cleanup after fade
-    delay(1.5, function()
-        if meter then meter:Destroy() end
-    end)
-end
-
---== Outline-only ESP for all players except me, always re-applies after respawn ==--
+--== Simple Outline ESP ONLY (replacing the original highlight logic) ==--
 local function outlineChar(char)
+    -- Remove previous
     for _,v in ipairs(char:GetDescendants()) do
         if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
     end
+    -- Add outline to all BaseParts
     for _, v in ipairs(char:GetChildren()) do
         if v:IsA("BasePart") then
             local hl = Instance.new("Highlight")
             hl.Name = highlightTag
-            hl.FillTransparency = 1 -- Outline only!
+            hl.FillTransparency = 1 -- Only outline
             hl.OutlineColor = Color3.fromRGB(0,255,0)
             hl.OutlineTransparency = 0.15
             hl.Parent = v
@@ -1934,7 +2003,6 @@ local function setupCharOutlineFor(p)
         outlineChar(char)
         char.ChildAdded:Connect(function(obj)
             if obj:IsA("BasePart") then
-                -- Remove previous outline if any
                 for _,v in ipairs(obj:GetChildren()) do
                     if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
                 end
@@ -1961,69 +2029,40 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
---== Pathfinding-based ClickToMove Style Prediction ==--
-local function getPath(startPos, goalPos)
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentJumpHeight = 7,
-        AgentMaxSlope = 40,
-    })
-    path:ComputeAsync(startPos, goalPos)
-    if path.Status == Enum.PathStatus.Success then
-        return path:GetWaypoints()
-    end
-    return nil
-end
-
-local function predictClickToMove(target)
-    local char = target.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    -- Guess goal: Raycast ahead in movement direction, or a fixed distance ahead
-    local moveDirection = hrp.Velocity.Magnitude > 0 and hrp.Velocity.Unit or (char.PrimaryPart and char.PrimaryPart.CFrame.LookVector) or Vector3.new(0,0,1)
-    local speed = hrp.Velocity.Magnitude
-    -- Longer guess distance for high speeds
-    local guessDist = 18 + math.clamp(speed*0.5, 0, 48)
-    local predictedGoal = hrp.Position + moveDirection * guessDist
-
-    -- Raycast for floor at that spot
-    local rayOrigin = predictedGoal + Vector3.new(0, 10, 0)
-    local rayDir = Vector3.new(0, -24, 0)
-    local rayParams = RaycastParams.new()
-    rayParams.FilterDescendantsInstances = {char}
-    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-    local result = Workspace:Raycast(rayOrigin, rayDir, rayParams)
-    if result then predictedGoal = Vector3.new(predictedGoal.X, result.Position.Y + 2, predictedGoal.Z) end
-
-    local waypoints = getPath(hrp.Position, predictedGoal)
-    if waypoints and #waypoints > 1 then
-        -- Visualize path: spawn a ghost at each of the next 3 waypoints
-        for i = 2, math.min(#waypoints, 4) do
-            spawnGhost(waypoints[i].Position, 1, "Path")
-            if waypoints[i-1] and waypoints[i] then
-                smartSpawnBeam(waypoints[i-1].Position, waypoints[i].Position)
-            end
-        end
-        -- Attach a confidence meter at the final predicted pos
-        attachConfidenceMeter(target, 1)
-    end
-end
-
---== Main prediction + outline loop ==--
+--== Main prediction + simple outline ESP loop ==--
 RunService.RenderStepped:Connect(function()
-    if not universalVars.prediction then return end
+    if not universalVars.prediction then
+        clearVisuals()
+        outlineAllPlayers()
+        return
+    end
     clearVisuals()
     outlineAllPlayers()
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            predictClickToMove(target)
-        end
-      end
+            local info = predictMovement(target)
+            if info then
+                -- Pathfinding prediction (shows up if available, else standard ghosts)
+                if info.waypoints and #info.waypoints > 1 then
+                    for i = 2, math.min(#info.waypoints, 4) do
+                        spawnGhost(info.waypoints[i].Position)
+                        if info.waypoints[i-1] and info.waypoints[i] then
+                            smartSpawnBeam(info.waypoints[i-1].Position, info.waypoints[i].Position, info.velocity)
+                        end
+                    end
+                else
+                    local ghost1 = info.origin + info.direction * 3
+                    local ghost2 = info.origin + info.direction * 6
+                    local ghost3 = info.predicted
+                    spawnGhost(ghost1)
+                    spawnGhost(ghost2)
+                    spawnGhost(ghost3)
+                    smartSpawnBeam(info.origin, ghost3, info.velocity)
+                   end
+               end
+           end
+       end
    end) 
-
 end
 
 -----------------------
