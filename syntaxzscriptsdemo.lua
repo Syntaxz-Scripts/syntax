@@ -1746,24 +1746,13 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Enhanced Prediction System ==--
--- Services
+--== AI Prediction System ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- Variables
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local root = character:WaitForChild("HumanoidRootPart")
 
--- Universal toggle
-local universalVars = {
-    prediction = true
-}
-
--- Ensure GhostTemplate exists
+-- Ensure GhostTemplate and GhostBeams exist in workspace
 local ghostTemplate = workspace:FindFirstChild("GhostTemplate")
 if not ghostTemplate then
     ghostTemplate = Instance.new("Part")
@@ -1776,8 +1765,6 @@ if not ghostTemplate then
     ghostTemplate.Transparency = 0.3
     ghostTemplate.Parent = workspace
 end
-
--- Ensure GhostBeams folder exists
 local beamFolder = workspace:FindFirstChild("GhostBeams")
 if not beamFolder then
     beamFolder = Instance.new("Folder")
@@ -1785,194 +1772,230 @@ if not beamFolder then
     beamFolder.Parent = workspace
 end
 
--- Behavior log
-local behaviorLog = {}
+-- Vars and behaviour log
+local universalVars = universalVars or {}
+universalVars.prediction = false
+local behaviourLog = {} -- [userid]={ {time,position,velocity}, ... }
 
--- Clear visuals
+-- Button UI
+local predictBtn = Instance.new("TextButton", contentParent)
+predictBtn.Size = UDim2.new(0, 180, 0, 34)
+predictBtn.Position = UDim2.new(0, 14, 0, contentY)
+predictBtn.BackgroundColor3 = Color3.fromRGB(60, 90, 140)
+predictBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+predictBtn.Font = Enum.Font.GothamBold
+predictBtn.TextSize = 16
+predictBtn.Text = "Prediction: OFF"
+predictBtn.AutoButtonColor = true
+predictBtn.BackgroundTransparency = 0.18
+if typeof(roundify)=="function" then roundify(predictBtn, 11) end
+if typeof(strokify)=="function" then strokify(predictBtn, 1.1, Color3.fromRGB(120, 200, 240), 0.34) end
+contentY = contentY + 44
+
+predictBtn.MouseButton1Click:Connect(function()
+    universalVars.prediction = not universalVars.prediction
+    predictBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
+    predictBtn.BackgroundColor3 = universalVars.prediction and Color3.fromRGB(0, 170, 80) or Color3.fromRGB(60, 90, 140)
+    if universalVars.prediction then
+        if notify then notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150)) end
+    else
+        if notify then notify("Prediction Disabled", Color3.fromRGB(200, 80, 80)) end
+        for _, obj in ipairs(beamFolder:GetChildren()) do obj:Destroy() end
+    end
+end)
+
+-- Helper: Clear visuals
 local function clearVisuals()
     for _, obj in ipairs(beamFolder:GetChildren()) do
         obj:Destroy()
     end
 end
 
--- Predict movement based on velocity and log behavior
+-- Helper: Log player behaviour (last N entries, per player)
+local MAX_LOG = 30
+local function logBehaviour(target, position, velocity)
+    local uid = target.UserId
+    behaviourLog[uid] = behaviourLog[uid] or {}
+    table.insert(behaviourLog[uid], {
+        time = tick(),
+        pos = position,
+        vel = velocity
+    })
+    if #behaviourLog[uid] > MAX_LOG then
+        table.remove(behaviourLog[uid], 1)
+    end
+end
+
+-- Helper: Estimate movement pattern & confidence
+local function analyzeBehaviour(uid)
+    local log = behaviourLog[uid]
+    if not log or #log < 2 then return "Idle", 0.2 end
+
+    -- Calculate average speed/variance for basic behavior guess
+    local speeds, headings = {}, {}
+    for i = 2, #log do
+        local v1 = log[i-1].vel
+        local v2 = log[i].vel
+        local speed = v2.Magnitude
+        local delta = (log[i].pos - log[i-1].pos).Magnitude
+        table.insert(speeds, speed)
+        if v2.Magnitude > 0 and v1.Magnitude > 0 then
+            table.insert(headings, v1.Unit:Dot(v2.Unit))
+        end
+    end
+    local avgSpeed = 0
+    for _, s in ipairs(speeds) do avgSpeed += s end
+    avgSpeed = #speeds > 0 and avgSpeed/#speeds or 0
+
+    local avgHeading = 0
+    for _, h in ipairs(headings) do avgHeading += h end
+    avgHeading = #headings > 0 and avgHeading/#headings or 0
+
+    -- Heuristic: If moving fast and straight, "Chase", if moving fast and erratic, "Zigzag", else "Idle"/"Roam"
+    if avgSpeed < 3 then
+        return "Idle", 0.2
+    elseif avgHeading > 0.96 and avgSpeed > 10 then
+        return "Chase", 0.8
+    elseif avgHeading < 0.6 and avgSpeed > 7 then
+        return "Zigzag", 0.6
+    elseif avgSpeed > 3 then
+        return "Roam", 0.4
+    end
+    return "Idle", 0.2
+end
+
+-- Helper: Predict movement
 local function predictMovement(target)
     local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
-
-    local velocity = hrp.Velocity
     local position = hrp.Position
-    local direction = velocity.Unit
+    local velocity = hrp.Velocity
+    logBehaviour(target, position, velocity)
+
+    local behaviour, behaviourConf = analyzeBehaviour(target.UserId)
     local speed = velocity.Magnitude
-
-    -- Log behavior
-    behaviorLog[target.UserId] = behaviorLog[target.UserId] or {}
-    table.insert(behaviorLog[target.UserId], {
-        time = tick(),
-        position = position,
-        velocity = velocity
-    })
-
-    -- Simulate confidence based on speed and consistency
-    local confidence = math.clamp(speed / 50, 0, 1)
-
-    -- Predicted position
-    local predictedPosition = position + direction * (confidence * 10)
-
+    local direction = speed > 0 and velocity.Unit or Vector3.new(0,0,0)
+    -- Confidence increases with speed and behaviour certainty
+    local confidence = math.clamp((behaviourConf + (speed/60))/2, 0, 1)
+    -- Predict time ahead scales with confidence and speed
+    local predictTime = 0.15 + confidence*0.35
+    local predictedPosition = position + direction * speed * predictTime
     return {
-        position = predictedPosition,
-        direction = direction,
+        behaviour = behaviour,
         confidence = confidence,
-        origin = position
+        origin = position,
+        direction = direction,
+        velocity = velocity,
+        predicted = predictedPosition
     }
 end
 
--- Create confidence meter
+-- Helper: Confidence Meter
 local function createConfidenceMeter(confidence, position)
-    local meter = Instance.new("BillboardGui")
-    meter.Size = UDim2.new(0, 100, 0, 20)
-    meter.Adornee = nil
-    meter.AlwaysOnTop = true
-    meter.StudsOffset = Vector3.new(0, 2, 0)
-
-    local bar = Instance.new("Frame")
-    bar.Size = UDim2.new(confidence, 0, 1, 0)
-    bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    bar.BorderSizePixel = 0
-    bar.Parent = meter
-
     local part = Instance.new("Part")
     part.Anchored = true
     part.CanCollide = false
     part.Transparency = 1
     part.Position = position
+    part.Size = Vector3.new(0.1,0.1,0.1)
     part.Parent = beamFolder
 
+    local meter = Instance.new("BillboardGui")
+    meter.Size = UDim2.new(0, 110, 0, 20)
+    meter.AlwaysOnTop = true
+    meter.StudsOffset = Vector3.new(0, 2, 0)
     meter.Adornee = part
     meter.Parent = part
-end
 
--- Visualize prediction
-local function visualizePrediction(data, target)
-    local origin = data.origin
-    local direction = data.direction
-    local predicted = data.position
-    local confidence = data.confidence
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(math.clamp(confidence,0,1), 0, 1, 0)
+    bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    bar.BorderSizePixel = 0
+    bar.Parent = meter
 
-    -- Ghost positions
-    local ghost1 = origin + direction * 3
-    local ghost2 = origin + direction * 6
-    local ghost3 = predicted
-
-    local ghosts = {ghost1, ghost2, ghost3}
-
-    for _, pos in ipairs(ghosts) do
-        local ghost = ghostTemplate:Clone()
-        ghost.Position = pos
-        ghost.Parent = beamFolder
-
-        local tween = TweenService:Create(ghost, TweenInfo.new(1), {Transparency = 1})
-        tween:Play()
-        tween.Completed:Connect(function()
-            ghost:Destroy()
-        end)
-    end
-
-    -- Beam line
-    local attachment0 = Instance.new("Attachment")
-    attachment0.Position = Vector3.new(0, 0, 0)
-    attachment0.Parent = target.Character:FindFirstChild("HumanoidRootPart")
-
-    local ghostPart = Instance.new("Part")
-    ghostPart.Anchored = true
-    ghostPart.CanCollide = false
-    ghostPart.Transparency = 1
-    ghostPart.Position = predicted
-    ghostPart.Parent = beamFolder
-
-    local attachment1 = Instance.new("Attachment")
-    attachment1.Parent = ghostPart
-
-    local beam = Instance.new("Beam")
-    beam.Attachment0 = attachment0
-    beam.Attachment1 = attachment1
-    beam.Width0 = 0.2
-    beam.Width1 = 0.2
-    beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
-    beam.Transparency = NumberSequence.new(0.2)
-    beam.FaceCamera = true
-    beam.Parent = beamFolder
-
-    -- Confidence meter
-    createConfidenceMeter(confidence, predicted)
+    local txt = Instance.new("TextLabel")
+    txt.Size = UDim2.new(1, 0, 1, 0)
+    txt.BackgroundTransparency = 1
+    txt.TextColor3 = Color3.fromRGB(255,255,100)
+    txt.Font = Enum.Font.GothamBold
+    txt.TextSize = 14
+    txt.Text = ("%.0f%%"):format(confidence*100)
+    txt.Parent = meter
 
     -- Cleanup
-    delay(2, function()
-        attachment0:Destroy()
-        attachment1:Destroy()
-        beam:Destroy()
-        ghostPart:Destroy()
+    delay(1.5, function()
+        meter:Destroy()
+        part:Destroy()
     end)
 end
 
--- Run prediction system
-local function runPrediction()
+-- Helper: Draw beam (part-based line)
+local function spawnBeam(startPos, endPos, color)
+    local dist = (startPos-endPos).Magnitude
+    if dist < 0.25 then return end
+    local part = Instance.new("Part")
+    part.Anchored = true
+    part.CanCollide = false
+    part.Material = Enum.Material.Neon
+    part.Color = color or Color3.fromRGB(255,255,0)
+    part.Transparency = 0.09
+    part.Size = Vector3.new(0.15, 0.15, dist)
+    part.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0,0,-dist/2)
+    part.Parent = beamFolder
+    TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
+    task.delay(1.3, function() if part then part:Destroy() end end)
+end
+
+-- Helper: Spawn ghost
+local function spawnGhost(position, confidence, behaviour)
+    local ghost = ghostTemplate:Clone()
+    ghost.Position = position
+    ghost.Parent = beamFolder
+    ghost.Transparency = 0.3
+
+    local gui = Instance.new("BillboardGui", ghost)
+    gui.Size = UDim2.new(0, 130, 0, 26)
+    gui.AlwaysOnTop = true
+    gui.LightInfluence = 0
+    gui.StudsOffset = Vector3.new(0, 2, 0)
+    local label = Instance.new("TextLabel", gui)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.Text = string.format("%s | %.0f%%", behaviour or "?", confidence*100)
+    TweenService:Create(ghost, TweenInfo.new(1.2), {Transparency = 1}):Play()
+    task.delay(1.3, function() if ghost then ghost:Destroy() end end)
+end
+
+-- Main prediction loop
+RunService.RenderStepped:Connect(function()
     if not universalVars.prediction then return end
     clearVisuals()
-
+    local myChar = player.Character
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local prediction = predictMovement(target)
-            if prediction then
-                visualizePrediction(prediction, target)
+            local info = predictMovement(target)
+            if info then
+                -- Ghosts: ahead, mid, predicted, confidence meter on predicted
+                local ghost1 = info.origin + info.direction * 3
+                local ghost2 = info.origin + info.direction * 6
+                local ghost3 = info.predicted
+                spawnGhost(ghost1, info.confidence*0.6, info.behaviour)
+                spawnGhost(ghost2, info.confidence*0.8, info.behaviour)
+                spawnGhost(ghost3, info.confidence, info.behaviour)
+                createConfidenceMeter(info.confidence, ghost3)
+                -- Beams: from HRP to each ghost
+                spawnBeam(myRoot.Position, ghost1, Color3.fromRGB(180,180,0))
+                spawnBeam(myRoot.Position, ghost2, Color3.fromRGB(255,190,0))
+                spawnBeam(myRoot.Position, ghost3, Color3.fromRGB(0,255,0))
             end
         end
     end
-end
-
--- Hook to universal tab button logic
-local function setupButton()
-    local button = ReplicatedStorage:WaitForChild("PredictionToggleButton") -- Replace with your actual button reference
-    button.OnClientEvent:Connect(function(state)
-        universalVars.prediction = state
-    end)
-end
-
-setupButton()
-
--- Run prediction every few frames
-RunService.RenderStepped:Connect(function()
-    runPrediction()
 end)
-
---  Universal Tab Button Logic
-local predictionBtn = styledBtn(contentParent, 14, contentY, 180, "Prediction: OFF", Color3.fromRGB(60, 90, 140))
-predictionBtn.Name = "PredictionToggleButton"
-
--- Toggle state stored in universalVars
-universalVars.prediction = universalVars.prediction or false
-
--- Button click logic
-predictionBtn.MouseButton1Click:Connect(function()
-    universalVars.prediction = not universalVars.prediction
-    predictionBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
-    predictionBtn.BackgroundColor3 = universalVars.prediction
-        and Color3.fromRGB(0, 170, 80)
-        or Color3.fromRGB(60, 90, 140)
-
-    if universalVars.prediction then
-        notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150))
-        -- Calls Enable Func
-        if Prediction and Prediction.Enable then Prediction:Enable() end
-    else
-        notify("Prediction Disabled", Color3.fromRGB(200, 80, 80))
-        -- Calls Disable Func
-        if Prediction and Prediction.Disable then Prediction:Disable() end
-    end
-end)
-
--- Advance contentY for next button placement
-contentY += 44
 
 end
 
