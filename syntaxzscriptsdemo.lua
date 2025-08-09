@@ -2,9 +2,9 @@
 --== Syntaxz Scripts ver 6.7 ==-- 
 --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
-  --/¯----------------------¯\--
-  --| Upd: Prediction System |--
-  --\_----------------------_/--
+  --/¯-------------------------¯\--
+  --| Upd: Ai Prediction System |--
+  --\_-------------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1779,7 +1779,7 @@ end
 local universalVars = universalVars or {}
 universalVars.prediction = false
 local behaviourLog = {} -- [userid]={ {time,pos,vel}, ... }
-local highlightTag = "UniversalESPHighlight"
+local highlightTag = "UniversalESPOutline"
 
 --== Prediction Toggle Button ==--
 local predictBtn = Instance.new("TextButton", contentParent)
@@ -1873,7 +1873,7 @@ local function analyzeBehaviour(uid)
     return "Idle", 0.2
 end
 
---== Helper: Predict movement ==--
+--== Helper: Predict movement (with further prediction for high speed) ==--
 local function predictMovement(target)
     local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
@@ -1885,7 +1885,12 @@ local function predictMovement(target)
     local speed = velocity.Magnitude
     local direction = speed > 0 and velocity.Unit or Vector3.new(0,0,0)
     local confidence = math.clamp((behaviourConf + (speed/60))/2, 0, 1)
+
+    -- If the player is moving very fast (above 18), increase prediction time/distance
     local predictTime = 0.15 + confidence*0.35
+    if speed > 18 then
+        predictTime = predictTime + math.clamp((speed-18)*0.04,0,1.3)
+    end
     local predictedPosition = position + direction * speed * predictTime
     return {
         behaviour = behaviour,
@@ -2000,59 +2005,56 @@ local function spawnGhost(position, confidence, behaviour)
     task.delay(1.3, function() if ghost then ghost:Destroy() end end)
 end
 
---== Highlight all players green (universal, works for all except me, even after respawn) ==--
-local function highlightChar(char)
+--== Outline-only ESP for all players except me, always re-applies after respawn ==--
+local function outlineChar(char)
     for _,v in ipairs(char:GetChildren()) do
         if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
     end
     for _, v in ipairs(char:GetChildren()) do
-        if v:IsA("BasePart") and not v:FindFirstChild(highlightTag) then
+        if v:IsA("BasePart") then
             local hl = Instance.new("Highlight")
             hl.Name = highlightTag
-            hl.FillColor = Color3.fromRGB(0,255,0)
-            hl.OutlineColor = Color3.fromRGB(0,90,0)
-            hl.FillTransparency = 0.33
+            hl.FillTransparency = 1 -- Outline only!
+            hl.OutlineColor = Color3.fromRGB(0,255,0)
             hl.OutlineTransparency = 0.15
             hl.Parent = v
         end
     end
 end
-local function highlightAllPlayers()
+
+local function outlineAllPlayers()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
-            highlightChar(p.Character)
+            outlineChar(p.Character)
         end
     end
 end
--- Always highlight on spawn for all except me
-local function setupCharHighlightFor(p)
+
+local function setupCharOutlineFor(p)
     if p == player then return end
     p.CharacterAdded:Connect(function(char)
-        highlightChar(char)
+        outlineChar(char)
         char.ChildAdded:Connect(function(obj)
             if obj:IsA("BasePart") then
                 for _,v in ipairs(obj:GetChildren()) do
                     if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
                 end
-                if not obj:FindFirstChild(highlightTag) then
-                    local hl = Instance.new("Highlight")
-                    hl.Name = highlightTag
-                    hl.FillColor = Color3.fromRGB(0,255,0)
-                    hl.OutlineColor = Color3.fromRGB(0,90,0)
-                    hl.FillTransparency = 0.33
-                    hl.OutlineTransparency = 0.15
-                    hl.Parent = obj
-                end
+                local hl = Instance.new("Highlight")
+                hl.Name = highlightTag
+                hl.FillTransparency = 1
+                hl.OutlineColor = Color3.fromRGB(0,255,0)
+                hl.OutlineTransparency = 0.15
+                hl.Parent = obj
             end
         end)
     end)
 end
+
 for _,p in ipairs(Players:GetPlayers()) do
-    setupCharHighlightFor(p)
+    setupCharOutlineFor(p)
 end
-Players.PlayerAdded:Connect(setupCharHighlightFor)
+Players.PlayerAdded:Connect(setupCharOutlineFor)
 Players.PlayerRemoving:Connect(function(p)
-    -- Clean up highlights for leaving player
     if p.Character then
         for _,v in ipairs(p.Character:GetChildren()) do
             if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
@@ -2064,7 +2066,7 @@ end)
 RunService.RenderStepped:Connect(function()
     if not universalVars.prediction then return end
     clearVisuals()
-    highlightAllPlayers()
+    outlineAllPlayers()
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             local info = predictMovement(target)
