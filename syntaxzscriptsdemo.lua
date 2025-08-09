@@ -1971,7 +1971,7 @@ local function getPath(startPos, goalPos)
         AgentMaxSlope = 40,
     })
     path:ComputeAsync(startPos, goalPos)
-    if path.Status == Enum.PathStatus.Complete then
+    if path.Status == Enum.PathStatus.Success then
         return path:GetWaypoints()
     end
     return nil
