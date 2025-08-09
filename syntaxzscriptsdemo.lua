@@ -1825,8 +1825,13 @@ roundify(predictBtn, 11)
 strokify(predictBtn, 1.1, Color3.fromRGB(120, 200, 240), 0.34)
 
 predictBtn.MouseButton1Click:Connect(function()
-    notify("Prediction system triggered!", Color3.fromRGB(100, 200, 150))
-    runPrediction()
+    local success, err = pcall(runPrediction)
+    if success then
+        notify("Prediction system triggered!", Color3.fromRGB(100, 200, 150))
+    else
+        warn("❌ Prediction error:", err)
+        notify("Prediction failed!", Color3.fromRGB(200, 80, 80))
+    end
 end)
 
 contentY += 44
