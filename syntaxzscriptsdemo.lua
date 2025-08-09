@@ -1746,68 +1746,90 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Enhanced Prediction System ==--
-
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
 
-local ghostTemplate = workspace:FindFirstChild("GhostTemplate")
-local beamTemplate = workspace:FindFirstChild("BeamTemplate")
-local activeGhosts = {}
+-- Settings
+local predictionTime = 0.3
+local confidenceThreshold = 0.5
+local ghostLifetime = 1.5
+local projectileSpeed = 100
 
---  Predict future position based on velocity
-local function getPredictedPosition(player, secondsAhead)
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
-
-    local hrp = character.HumanoidRootPart
-    local velocity = hrp.Velocity
-    local currentPos = hrp.Position
-
-    return currentPos + (velocity * secondsAhead)
+-- Utilities
+local function getTargetData(target)
+    local root = target:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    return {
+        position = root.Position,
+        velocity = root.Velocity,
+        direction = root.CFrame.LookVector
+    }
 end
 
---  Spawn ghost and assign AI target
-local function spawnGhostForPlayer(player)
-    if not ghostTemplate then return end
+local function predictPosition(data, timeAhead)
+    return data.position + data.velocity * timeAhead
+end
 
-    local ghost = ghostTemplate:Clone()
+local function calculateConfidence(data)
+    local speed = data.velocity.Magnitude
+    if speed < 1 then return 0.3
+    elseif speed < 10 then return 0.6
+    else return 0.9 end
+end
+
+local function showGhost(position)
+    local ghost = Instance.new("Part")
+    ghost.Size = Vector3.new(1, 1, 1)
+    ghost.Position = position
+    ghost.Anchored = true
+    ghost.CanCollide = false
+    ghost.Transparency = 0.5
+    ghost.BrickColor = BrickColor.new("Bright red")
+    ghost.Material = Enum.Material.Neon
+    ghost.Name = "PredictionGhost"
     ghost.Parent = workspace
-    ghost.Position = getPredictedPosition(player, 1.5) or Vector3.new(0, 5, 0)
-
-    table.insert(activeGhosts, {
-        Model = ghost,
-        TargetPlayer = player
-    })
+    Debris:AddItem(ghost, ghostLifetime)
 end
 
---  Spawn beam toward predicted position
-local function spawnBeamToPredicted(player)
-    if not beamTemplate then return end
-
-    local startPos = Vector3.new(0, 10, 0)
-    local endPos = getPredictedPosition(player, 1.2) or startPos
-
-    local beam = beamTemplate:Clone()
-    beam.Parent = workspace
-    beam.Attachment0.WorldPosition = startPos
-    beam.Attachment1.WorldPosition = endPos
+local function fireProjectile(origin, targetPos)
+    local proj = Instance.new("Part")
+    proj.Size = Vector3.new(0.4, 0.4, 0.4)
+    proj.Position = origin
+    proj.Anchored = false
+    proj.CanCollide = false
+    proj.BrickColor = BrickColor.new("Bright yellow")
+    proj.Material = Enum.Material.Neon
+    proj.Shape = Enum.PartType.Ball
+    proj.Velocity = (targetPos - origin).Unit * projectileSpeed
+    proj.Parent = workspace
+    Debris:AddItem(proj, 2)
 end
 
---  AI tracking loop
-RunService.Heartbeat:Connect(function()
-    for _, ghostData in pairs(activeGhosts) do
-        local ghost = ghostData.Model
-        local targetPlayer = ghostData.TargetPlayer
+local function runPredictionOnTarget(target)
+    local data = getTargetData(target)
+    if not data then return end
 
-        if ghost and targetPlayer then
-            local predictedPos = getPredictedPosition(targetPlayer, 1.5)
-            if predictedPos then
-                ghost.Position = ghost.Position:Lerp(predictedPos, 0.1)
-            end
+    local predictedPos = predictPosition(data, predictionTime)
+    local confidence = calculateConfidence(data)
+
+    if confidence >= confidenceThreshold then
+        showGhost(predictedPos)
+        local origin = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if origin then
+            fireProjectile(origin.Position, predictedPos)
         end
     end
-end)
+end
+
+local function runPredictionAll()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer and player.Character then
+            runPredictionOnTarget(player.Character)
+        end
+    end
+end
 
 -- Prediction Button setup
 local predictBtn = Instance.new("TextButton", contentParent)
@@ -1825,7 +1847,7 @@ roundify(predictBtn, 11)
 strokify(predictBtn, 1.1, Color3.fromRGB(120, 200, 240), 0.34)
 
 predictBtn.MouseButton1Click:Connect(function()
-    local success, err = pcall(runPrediction)
+    local success, err = pcall(runPredictionAll)
     if success then
         notify("Prediction system triggered!", Color3.fromRGB(100, 200, 150))
     else
