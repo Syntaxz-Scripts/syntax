@@ -1746,65 +1746,72 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Services
+--== Enhanced Prediction System ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Debris = game:GetService("Debris")
+local LocalPlayer = Players.LocalPlayer
+local PredictionEnabled = false
+local predictionTime = 0.5
+local confidenceThreshold = 0.3
 
--- Settings
-local predictionTime = 0.3
-local confidenceThreshold = 0.5
-local ghostLifetime = 1.5
-local projectileSpeed = 100
-
--- Utilities
 local function getTargetData(target)
-    local root = target:FindFirstChild("HumanoidRootPart")
-    if not root then return nil end
+    local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
     return {
-        position = root.Position,
-        velocity = root.Velocity,
-        direction = root.CFrame.LookVector
+        position = hrp.Position,
+        velocity = hrp.Velocity,
+        direction = hrp.CFrame.LookVector,
+        lastUpdate = tick()
     }
-end
-
-local function predictPosition(data, timeAhead)
-    return data.position + data.velocity * timeAhead
 end
 
 local function calculateConfidence(data)
     local speed = data.velocity.Magnitude
-    if speed < 1 then return 0.3
-    elseif speed < 10 then return 0.6
-    else return 0.9 end
+    local directionalFactor = data.direction.Magnitude
+    return math.clamp((speed + directionalFactor) / 100, 0, 1)
 end
 
-local function showGhost(position)
+local function getBehavior(confidence)
+    if confidence <= 0.3 then return "Idle"
+    elseif confidence <= 0.6 then return "Chase"
+    elseif confidence <= 0.75 then return "Zigzag"
+    elseif confidence <= 0.9 then return "Roam"
+    else return "Unknown" end
+end
+
+local function logBehavior(confidence, playerName)
+    local behavior = getBehavior(confidence)
+    print(" [" .. playerName .. "] Behavior: " .. behavior .. " | Confidence: " .. math.floor(confidence * 100) .. "%")
+end
+
+local function predictPosition(data, timeAhead)
+    return data.position + (data.velocity * timeAhead)
+end
+
+local function spawnGhost(position, color)
     local ghost = Instance.new("Part")
     ghost.Size = Vector3.new(1, 1, 1)
     ghost.Position = position
     ghost.Anchored = true
     ghost.CanCollide = false
     ghost.Transparency = 0.5
-    ghost.BrickColor = BrickColor.new("Bright red")
+    ghost.Color = color
     ghost.Material = Enum.Material.Neon
-    ghost.Name = "PredictionGhost"
     ghost.Parent = workspace
-    Debris:AddItem(ghost, ghostLifetime)
+    game.Debris:AddItem(ghost, 1.5)
 end
 
-local function fireProjectile(origin, targetPos)
-    local proj = Instance.new("Part")
-    proj.Size = Vector3.new(0.4, 0.4, 0.4)
-    proj.Position = origin
-    proj.Anchored = false
-    proj.CanCollide = false
-    proj.BrickColor = BrickColor.new("Bright yellow")
-    proj.Material = Enum.Material.Neon
-    proj.Shape = Enum.PartType.Ball
-    proj.Velocity = (targetPos - origin).Unit * projectileSpeed
-    proj.Parent = workspace
-    Debris:AddItem(proj, 2)
+local function drawBeam(startPos, endPos, color)
+    local beam = Instance.new("Part")
+    beam.Anchored = true
+    beam.CanCollide = false
+    beam.Material = Enum.Material.Neon
+    beam.Color = color
+    beam.Transparency = 0.3
+    beam.Size = Vector3.new(0.2, 0.2, (startPos - endPos).Magnitude)
+    beam.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -beam.Size.Z / 2)
+    beam.Parent = workspace
+    game.Debris:AddItem(beam, 1.5)
 end
 
 local function runPredictionOnTarget(target)
@@ -1814,50 +1821,60 @@ local function runPredictionOnTarget(target)
     local predictedPos = predictPosition(data, predictionTime)
     local confidence = calculateConfidence(data)
 
+    logBehavior(confidence, target.Name)
+
     if confidence >= confidenceThreshold then
-        showGhost(predictedPos)
-        local origin = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if origin then
-            fireProjectile(origin.Position, predictedPos)
+        local ahead = data.position + (data.direction * 3)
+        local midpoint = (ahead + predictedPos) / 2
+
+        spawnGhost(ahead, Color3.fromRGB(255, 255, 0))      -- Yellow
+        spawnGhost(midpoint, Color3.fromRGB(0, 255, 255))   -- Cyan
+        spawnGhost(predictedPos, Color3.fromRGB(0, 255, 0)) -- Green
+
+        drawBeam(data.position, predictedPos, Color3.fromRGB(255, 0, 0)) -- Red beam
+
+        -- Optional: Display confidence meter
+        print(" Confidence for " .. target.Name .. ": " .. math.floor(confidence * 100) .. "%")
+    end
+end
+
+local function runPredictionSystem()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            runPredictionOnTarget(player)
         end
     end
 end
 
-local function runPredictionAll()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer and player.Character then
-            runPredictionOnTarget(player.Character)
-        end
-    end
-end
+--  Universal Tab Button Logic
+local predictionBtn = styledBtn(contentParent, 14, contentY, 180, "Prediction: OFF", Color3.fromRGB(60, 90, 140))
+predictionBtn.Name = "PredictionToggleButton"
 
--- Prediction Button setup
-local predictBtn = Instance.new("TextButton", contentParent)
-predictBtn.Name = "PredictGhostsBtn"
-predictBtn.Size = UDim2.new(0, 180, 0, 34)
-predictBtn.Position = UDim2.new(0, 14, 0, contentY)
-predictBtn.BackgroundColor3 = Color3.fromRGB(60, 90, 140)
-predictBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-predictBtn.Font = Enum.Font.GothamBold
-predictBtn.TextSize = 16
-predictBtn.Text = "Run Prediction"
-predictBtn.AutoButtonColor = true
-predictBtn.BackgroundTransparency = 0.18
-roundify(predictBtn, 11)
-strokify(predictBtn, 1.1, Color3.fromRGB(120, 200, 240), 0.34)
+-- Toggle state stored in universalVars
+universalVars.prediction = universalVars.prediction or false
 
-predictBtn.MouseButton1Click:Connect(function()
-    local success, err = pcall(runPredictionAll)
-    if success then
-        notify("Prediction system triggered!", Color3.fromRGB(100, 200, 150))
+-- Button click logic
+predictionBtn.MouseButton1Click:Connect(function()
+    universalVars.prediction = not universalVars.prediction
+    predictionBtn.Text = "Prediction: " .. (universalVars.prediction and "ON" or "OFF")
+    predictionBtn.BackgroundColor3 = universalVars.prediction
+        and Color3.fromRGB(0, 170, 80)
+        or Color3.fromRGB(60, 90, 140)
+
+    if universalVars.prediction then
+        notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150))
+        -- Calls Enable Func
+        if Prediction and Prediction.Enable then Prediction:Enable() end
     else
-        warn("❌ Prediction error:", err)
-        notify("Prediction failed!", Color3.fromRGB(200, 80, 80))
+        notify("Prediction Disabled", Color3.fromRGB(200, 80, 80))
+        -- Calls Disable Func
+        if Prediction and Prediction.Disable then Prediction:Disable() end
     end
 end)
 
+-- Advance contentY for next button placement
 contentY += 44
-	
+
 end
 
 -----------------------
