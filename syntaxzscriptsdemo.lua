@@ -1746,7 +1746,7 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Universal Tab: AI Prediction System (Player-Attached, Sharp Turn) ==--
+--== Universal Tab: AI Prediction System with Bending Beams ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -1832,17 +1832,15 @@ local function logBehaviour(target, position, velocity)
     end
 end
 
--- Helper: Sharp turn detection using last N velocities (returns curve direction if applicable)
+-- Sharp turn detection using last N velocities (returns curve direction if applicable)
 local function getCurveVector(uid)
     local log = behaviourLog[uid]
     if not log or #log < 4 then return nil end
-    -- Compare the angle between current velocity and previous ones
     local vnow = log[#log].vel
     local vold = log[#log-2].vel
     if vnow.Magnitude > 0.5 and vold.Magnitude > 0.5 then
         local angle = math.acos(math.clamp(vnow.Unit:Dot(vold.Unit),-1,1))
-        if angle > math.rad(25) then -- sharp turn threshold
-            -- Find which way the player is turning (cross product up.y sign)
+        if angle > math.rad(25) then
             local cross = vold.Unit:Cross(vnow.Unit)
             if math.abs(cross.Y) > 0.2 then
                 return cross.Y > 0 and "left" or "right"
@@ -1852,11 +1850,10 @@ local function getCurveVector(uid)
     return nil
 end
 
--- Helper: Estimate movement pattern & confidence
+-- Movement pattern & confidence
 local function analyzeBehaviour(uid)
     local log = behaviourLog[uid]
     if not log or #log < 2 then return "Idle", 0.2 end
-
     local speeds, headings = {}, {}
     for i = 2, #log do
         local v1 = log[i-1].vel
@@ -1870,11 +1867,9 @@ local function analyzeBehaviour(uid)
     local avgSpeed = 0
     for _, s in ipairs(speeds) do avgSpeed += s end
     avgSpeed = #speeds > 0 and avgSpeed/#speeds or 0
-
     local avgHeading = 0
     for _, h in ipairs(headings) do avgHeading += h end
     avgHeading = #headings > 0 and avgHeading/#headings or 0
-
     if avgSpeed < 3 then
         return "Idle", 0.2
     elseif avgHeading > 0.96 and avgSpeed > 10 then
@@ -1887,43 +1882,41 @@ local function analyzeBehaviour(uid)
     return "Idle", 0.2
 end
 
--- Helper: Predict movement (with sharper turn prediction)
-local function predictMovement(target)
+-- Predict movement with sharp turns and vertical movement
+local function predictPathPoints(target, steps, dt)
     local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
-    local position = hrp.Position
-    local velocity = hrp.Velocity
-    logBehaviour(target, position, velocity)
+    local pos = hrp.Position
+    local vel = hrp.Velocity
+    local uid = target.UserId
+    logBehaviour(target, pos, vel)
 
-    local behaviour, behaviourConf = analyzeBehaviour(target.UserId)
-    local speed = velocity.Magnitude
-    local direction = speed > 0 and velocity.Unit or Vector3.new(0,0,0)
+    local behaviour, behaviourConf = analyzeBehaviour(uid)
+    local speed = vel.Magnitude
+    local direction = speed > 0 and vel.Unit or Vector3.new(0,0,0)
     local confidence = math.clamp((behaviourConf + (speed/60))/2, 0, 1)
-    -- Predict farther into the future (larger time window)
-    local predictTime = 0.35 + confidence*1.1 -- up to ~1.45 seconds
+    local curve = getCurveVector(uid)
 
-    -- Sharp turn curve
-    local curve = getCurveVector(target.UserId)
-    local predictedPosition = position + direction * speed * predictTime
-    if curve and speed > 7 then
-        -- Project a curve (use right vector and sign)
-        local hrpCF = hrp.CFrame
-        local right = hrpCF.RightVector
-        local curveAmount = (predictTime * 0.45) * (curve=="left" and -1 or 1)
-        predictedPosition = predictedPosition + right * curveAmount * speed * 0.15
+    local points = {pos}
+    local lastVel = vel
+    for i = 1, steps do
+        -- simulate gravity for vertical axis
+        local gravity = Vector3.new(0, workspace.Gravity * -dt, 0)
+        lastVel = lastVel + gravity
+        local nextPos = points[#points] + lastVel * dt
+        -- curve if sharp turn detected
+        if curve and speed > 7 then
+            local hrpCF = hrp.CFrame
+            local right = hrpCF.RightVector
+            local curveAmount = ((i/steps)^1.5) * (curve=="left" and -1 or 1)
+            nextPos = nextPos + right * curveAmount * speed * 0.08
+        end
+        table.insert(points, nextPos)
     end
-
-    return {
-        behaviour = behaviour,
-        confidence = confidence,
-        origin = position,
-        direction = direction,
-        velocity = velocity,
-        predicted = predictedPosition
-    }
+    return points, confidence, behaviour
 end
 
--- Helper: Confidence Meter (player-attached)
+-- Confidence Meter (player-attached)
 local function createConfidenceMeter(confidence, position, parent)
     local part = Instance.new("Part")
     part.Anchored = true
@@ -1958,24 +1951,30 @@ local function createConfidenceMeter(confidence, position, parent)
     return part
 end
 
--- Helper: Draw beam (part-based line, parented to target)
-local function spawnBeam(startPos, endPos, color, parent)
-    local dist = (startPos-endPos).Magnitude
-    if dist < 0.25 then return nil end
-    local part = Instance.new("Part")
-    part.Anchored = true
-    part.CanCollide = false
-    part.Material = Enum.Material.Neon
-    part.Color = color or Color3.fromRGB(255,255,0)
-    part.Transparency = 0.09
-    part.Size = Vector3.new(0.15, 0.15, dist)
-    part.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0,0,-dist/2)
-    part.Parent = parent
-    TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
-    return part
+-- Draw segmented, bending prediction beam
+local function spawnBentBeam(points, color, parent)
+    local beamParts = {}
+    for i = 1, #points-1 do
+        local a, b = points[i], points[i+1]
+        local dist = (a-b).Magnitude
+        if dist > 0.1 then
+            local part = Instance.new("Part")
+            part.Anchored = true
+            part.CanCollide = false
+            part.Material = Enum.Material.Neon
+            part.Color = color or Color3.fromRGB(255,255,0)
+            part.Transparency = 0.09
+            part.Size = Vector3.new(0.15, 0.15, dist)
+            part.CFrame = CFrame.new(a, b) * CFrame.new(0,0,-dist/2)
+            part.Parent = parent
+            TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
+            table.insert(beamParts, part)
+        end
+    end
+    return beamParts
 end
 
--- Helper: Spawn ghost (player-attached)
+-- Spawn ghost (player-attached)
 local function spawnGhost(position, confidence, behaviour, parent)
     local ghost = ghostTemplate:Clone()
     ghost.Position = position
@@ -2015,38 +2014,39 @@ RunService.RenderStepped:Connect(function()
     if not universalVars.prediction then return end
     for _, target in ipairs(Players:GetPlayers()) do
         if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            -- Clean visuals for this player
             clearPlayerVisuals(target)
             setupCleanup(target)
-            local info = predictMovement(target)
-            if info then
-                -- Attach ghosts/beams to target's character for proper following
-                local char = target.Character
-                visuals[target.UserId] = visuals[target.UserId] or {ghosts={},beams={},meter=nil}
-                local v = visuals[target.UserId]
-                v.ghosts = {}
-                v.beams = {}
+            local char = target.Character
+            visuals[target.UserId] = visuals[target.UserId] or {ghosts={},beams={},meter=nil}
+            local v = visuals[target.UserId]
+            v.ghosts = {}
+            v.beams = {}
 
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if not hrp then continue end
+            -- Predict path points (bends for jumps/turns)
+            local steps = 12
+            local totalTime = 1.2
+            local dt = totalTime/steps
+            local points, confidence, behaviour = predictPathPoints(target, steps, dt)
+            if not points then continue end
 
-                -- Ghosts: ahead, midpoint, predicted, all parented to char
-                local ghost1 = spawnGhost(info.origin + info.direction * 6, info.confidence*0.6, info.behaviour, char)
-                local midVec = (info.predicted - info.origin) * 0.5
-                local ghost2 = spawnGhost(info.origin + midVec, info.confidence*0.8, info.behaviour, char)
-                local ghost3 = spawnGhost(info.predicted, info.confidence, info.behaviour, char)
-                table.insert(v.ghosts, ghost1)
-                table.insert(v.ghosts, ghost2)
-                table.insert(v.ghosts, ghost3)
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp then continue end
 
-                -- Beams: FROM target's HRP TO each ghost, parented to char
-                table.insert(v.beams, spawnBeam(hrp.Position, ghost1.Position, Color3.fromRGB(180,180,0), char))
-                table.insert(v.beams, spawnBeam(hrp.Position, ghost2.Position, Color3.fromRGB(255,190,0), char))
-                table.insert(v.beams, spawnBeam(hrp.Position, ghost3.Position, Color3.fromRGB(0,255,0), char))
+            -- Ghosts at [ahead], [mid], [end]
+            local ghost1 = spawnGhost(points[1 + math.floor(steps/4)], confidence*0.6, behaviour, char)
+            local ghost2 = spawnGhost(points[1 + math.floor(steps/2)], confidence*0.8, behaviour, char)
+            local ghost3 = spawnGhost(points[#points], confidence, behaviour, char)
+            table.insert(v.ghosts, ghost1)
+            table.insert(v.ghosts, ghost2)
+            table.insert(v.ghosts, ghost3)
 
-                -- Confidence meter on predicted ghost
-                v.meter = createConfidenceMeter(info.confidence, ghost3.Position, char)
-            end
+            -- Bending beam from HRP through all predicted points
+            local color = Color3.fromRGB(0,255,0)
+            local beamParts = spawnBentBeam(points, color, char)
+            for _, b in ipairs(beamParts) do table.insert(v.beams, b) end
+
+            -- Confidence meter at predicted (end) ghost
+            v.meter = createConfidenceMeter(confidence, points[#points], char)
         else
             clearPlayerVisuals(target)
         end
