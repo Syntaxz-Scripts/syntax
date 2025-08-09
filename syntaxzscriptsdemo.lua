@@ -1746,34 +1746,42 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Universal Tab: AI Prediction System with Bending Beams ==--
+--== Universal Tab: AI Prediction & ESP System ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
--- Ensure GhostTemplate exists in workspace
-local ghostTemplate = workspace:FindFirstChild("GhostTemplate")
+--== UI / Styling Helpers (assume roundify, strokify, notify, contentParent, contentY are defined in your main UI) ==--
+
+--== Ensure GhostTemplate and GhostBeams exist ==--
+local ghostTemplate = Workspace:FindFirstChild("GhostTemplate")
 if not ghostTemplate then
-    local part = Instance.new("Part")
-    part.Name = "GhostTemplate"
-    part.Size = Vector3.new(1, 1, 1)
-    part.Anchored = true
-    part.CanCollide = false
-    part.Material = Enum.Material.Neon
-    part.Color = Color3.fromRGB(0, 255, 255)
-    part.Transparency = 0.3
-    part.Parent = workspace
-    ghostTemplate = part
+    ghostTemplate = Instance.new("Part")
+    ghostTemplate.Name = "GhostTemplate"
+    ghostTemplate.Size = Vector3.new(1, 1, 1)
+    ghostTemplate.Anchored = true
+    ghostTemplate.CanCollide = false
+    ghostTemplate.Material = Enum.Material.Neon
+    ghostTemplate.Color = Color3.fromRGB(0, 255, 255)
+    ghostTemplate.Transparency = 0.3
+    ghostTemplate.Parent = Workspace
+end
+local beamFolder = Workspace:FindFirstChild("GhostBeams")
+if not beamFolder then
+    beamFolder = Instance.new("Folder")
+    beamFolder.Name = "GhostBeams"
+    beamFolder.Parent = Workspace
 end
 
--- Vars and behaviour log
+--== Vars and behaviour log ==--
 local universalVars = universalVars or {}
 universalVars.prediction = false
-local behaviourLog = {} -- [userid]={ {time,position,velocity}, ... }
-local visuals = {} -- [userId]={ghosts={},beams={},meter=nil}
+local behaviourLog = {} -- [userid]={ {time,pos,vel}, ... }
+local highlightTag = "UniversalESPHighlight"
 
--- Button UI (make sure contentParent, contentY, roundify, strokify, notify exist in your UI)
+--== Prediction Toggle Button ==--
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1796,28 +1804,27 @@ predictBtn.MouseButton1Click:Connect(function()
         if notify then notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150)) end
     else
         if notify then notify("Prediction Disabled", Color3.fromRGB(200, 80, 80)) end
-        for _, v in pairs(visuals) do
-            for _, g in ipairs(v.ghosts or {}) do pcall(function() g:Destroy() end) end
-            for _, b in ipairs(v.beams or {}) do pcall(function() b:Destroy() end) end
-            if v.meter then pcall(function() v.meter:Destroy() end) end
+        for _, obj in ipairs(beamFolder:GetChildren()) do obj:Destroy() end
+        -- Clear all highlights
+        for _, p in ipairs(Players:GetPlayers()) do
+            local char = p.Character
+            if char then
+                for _, v in ipairs(char:GetDescendants()) do
+                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
+                end
+            end
         end
-        table.clear(visuals)
     end
 end)
 
--- Helper: Per-player visual cleanup
-local function clearPlayerVisuals(target)
-    local uid = target.UserId
-    local v = visuals[uid]
-    if v then
-        for _, g in ipairs(v.ghosts or {}) do pcall(function() g:Destroy() end) end
-        for _, b in ipairs(v.beams or {}) do pcall(function() b:Destroy() end) end
-        if v.meter then pcall(function() v.meter:Destroy() end) end
-        visuals[uid] = nil
+--== Helper: Clear visuals ==--
+local function clearVisuals()
+    for _, obj in ipairs(beamFolder:GetChildren()) do
+        obj:Destroy()
     end
 end
 
--- Helper: Log player behaviour (last N entries, per player)
+--== Helper: Log player behaviour (last N entries, per player) ==--
 local MAX_LOG = 30
 local function logBehaviour(target, position, velocity)
     local uid = target.UserId
@@ -1832,28 +1839,11 @@ local function logBehaviour(target, position, velocity)
     end
 end
 
--- Sharp turn detection using last N velocities (returns curve direction if applicable)
-local function getCurveVector(uid)
-    local log = behaviourLog[uid]
-    if not log or #log < 4 then return nil end
-    local vnow = log[#log].vel
-    local vold = log[#log-2].vel
-    if vnow.Magnitude > 0.5 and vold.Magnitude > 0.5 then
-        local angle = math.acos(math.clamp(vnow.Unit:Dot(vold.Unit),-1,1))
-        if angle > math.rad(25) then
-            local cross = vold.Unit:Cross(vnow.Unit)
-            if math.abs(cross.Y) > 0.2 then
-                return cross.Y > 0 and "left" or "right"
-            end
-        end
-    end
-    return nil
-end
-
--- Movement pattern & confidence
+--== Helper: Estimate movement pattern & confidence ==--
 local function analyzeBehaviour(uid)
     local log = behaviourLog[uid]
     if not log or #log < 2 then return "Idle", 0.2 end
+
     local speeds, headings = {}, {}
     for i = 2, #log do
         local v1 = log[i-1].vel
@@ -1867,9 +1857,11 @@ local function analyzeBehaviour(uid)
     local avgSpeed = 0
     for _, s in ipairs(speeds) do avgSpeed += s end
     avgSpeed = #speeds > 0 and avgSpeed/#speeds or 0
+
     local avgHeading = 0
     for _, h in ipairs(headings) do avgHeading += h end
     avgHeading = #headings > 0 and avgHeading/#headings or 0
+
     if avgSpeed < 3 then
         return "Idle", 0.2
     elseif avgHeading > 0.96 and avgSpeed > 10 then
@@ -1882,49 +1874,39 @@ local function analyzeBehaviour(uid)
     return "Idle", 0.2
 end
 
--- Predict movement with sharp turns and vertical movement
-local function predictPathPoints(target, steps, dt)
+--== Helper: Predict movement ==--
+local function predictMovement(target)
     local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
-    local pos = hrp.Position
-    local vel = hrp.Velocity
-    local uid = target.UserId
-    logBehaviour(target, pos, vel)
+    local position = hrp.Position
+    local velocity = hrp.Velocity
+    logBehaviour(target, position, velocity)
 
-    local behaviour, behaviourConf = analyzeBehaviour(uid)
-    local speed = vel.Magnitude
-    local direction = speed > 0 and vel.Unit or Vector3.new(0,0,0)
+    local behaviour, behaviourConf = analyzeBehaviour(target.UserId)
+    local speed = velocity.Magnitude
+    local direction = speed > 0 and velocity.Unit or Vector3.new(0,0,0)
     local confidence = math.clamp((behaviourConf + (speed/60))/2, 0, 1)
-    local curve = getCurveVector(uid)
-
-    local points = {pos}
-    local lastVel = vel
-    for i = 1, steps do
-        -- simulate gravity for vertical axis
-        local gravity = Vector3.new(0, workspace.Gravity * -dt, 0)
-        lastVel = lastVel + gravity
-        local nextPos = points[#points] + lastVel * dt
-        -- curve if sharp turn detected
-        if curve and speed > 7 then
-            local hrpCF = hrp.CFrame
-            local right = hrpCF.RightVector
-            local curveAmount = ((i/steps)^1.5) * (curve=="left" and -1 or 1)
-            nextPos = nextPos + right * curveAmount * speed * 0.08
-        end
-        table.insert(points, nextPos)
-    end
-    return points, confidence, behaviour
+    local predictTime = 0.15 + confidence*0.35
+    local predictedPosition = position + direction * speed * predictTime
+    return {
+        behaviour = behaviour,
+        confidence = confidence,
+        origin = position,
+        direction = direction,
+        velocity = velocity,
+        predicted = predictedPosition
+    }
 end
 
--- Confidence Meter (player-attached)
-local function createConfidenceMeter(confidence, position, parent)
+--== Helper: Confidence Meter ==--
+local function createConfidenceMeter(confidence, position)
     local part = Instance.new("Part")
     part.Anchored = true
     part.CanCollide = false
     part.Transparency = 1
     part.Position = position
     part.Size = Vector3.new(0.1,0.1,0.1)
-    part.Parent = parent
+    part.Parent = beamFolder
 
     local meter = Instance.new("BillboardGui")
     meter.Size = UDim2.new(0, 110, 0, 20)
@@ -1948,37 +1930,58 @@ local function createConfidenceMeter(confidence, position, parent)
     txt.Text = ("%.0f%%"):format(confidence*100)
     txt.Parent = meter
 
-    return part
+    delay(1.5, function()
+        meter:Destroy()
+        part:Destroy()
+    end)
 end
 
--- Draw segmented, bending prediction beam
-local function spawnBentBeam(points, color, parent)
-    local beamParts = {}
-    for i = 1, #points-1 do
-        local a, b = points[i], points[i+1]
-        local dist = (a-b).Magnitude
-        if dist > 0.1 then
-            local part = Instance.new("Part")
-            part.Anchored = true
-            part.CanCollide = false
-            part.Material = Enum.Material.Neon
-            part.Color = color or Color3.fromRGB(255,255,0)
-            part.Transparency = 0.09
-            part.Size = Vector3.new(0.15, 0.15, dist)
-            part.CFrame = CFrame.new(a, b) * CFrame.new(0,0,-dist/2)
-            part.Parent = parent
-            TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
-            table.insert(beamParts, part)
+--== Helper: Smart Beam (jump/fall/floor stop/normal) ==--
+local function smartSpawnBeam(startPos, predictedPos, velocity)
+    local color = Color3.fromRGB(255,255,0)
+    local yVel = velocity.Y
+    local floorStop = false
+    local beamEnd = predictedPos
+
+    -- If jumping up
+    if yVel > 3 then
+        beamEnd = Vector3.new(predictedPos.X, predictedPos.Y + math.clamp(yVel * 0.14, 2, 8), predictedPos.Z)
+    -- If falling down
+    elseif yVel < -3 then
+        local rayOrigin = predictedPos
+        local rayDir = Vector3.new(0, -32, 0)
+        local rayParams = RaycastParams.new()
+        rayParams.FilterDescendantsInstances = {Workspace:FindFirstChild("GhostBeams")}
+        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+        local result = Workspace:Raycast(rayOrigin, rayDir, rayParams)
+        if result then
+            beamEnd = Vector3.new(predictedPos.X, result.Position.Y + 1, predictedPos.Z)
+            floorStop = true
+        else
+            beamEnd = Vector3.new(predictedPos.X, predictedPos.Y - math.clamp(-yVel * 0.10, 2, 12), predictedPos.Z)
         end
     end
-    return beamParts
+
+    local dist = (startPos-beamEnd).Magnitude
+    if dist < 0.25 then return end
+    local part = Instance.new("Part")
+    part.Anchored = true
+    part.CanCollide = false
+    part.Material = Enum.Material.Neon
+    part.Color = floorStop and Color3.fromRGB(0,255,0) or color
+    part.Transparency = 0.09
+    part.Size = Vector3.new(0.15, 0.15, dist)
+    part.CFrame = CFrame.new(startPos, beamEnd) * CFrame.new(0,0,-dist/2)
+    part.Parent = beamFolder
+    TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
+    task.delay(1.3, function() if part then part:Destroy() end end)
 end
 
--- Spawn ghost (player-attached)
-local function spawnGhost(position, confidence, behaviour, parent)
+--== Helper: Spawn ghost ==--
+local function spawnGhost(position, confidence, behaviour)
     local ghost = ghostTemplate:Clone()
     ghost.Position = position
-    ghost.Parent = parent
+    ghost.Parent = beamFolder
     ghost.Transparency = 0.3
 
     local gui = Instance.new("BillboardGui", ghost)
@@ -1993,65 +1996,72 @@ local function spawnGhost(position, confidence, behaviour, parent)
     label.Font = Enum.Font.GothamBold
     label.TextColor3 = Color3.fromRGB(255, 255, 0)
     label.Text = string.format("%s | %.0f%%", behaviour or "?", confidence*100)
-    return ghost
+    TweenService:Create(ghost, TweenInfo.new(1.2), {Transparency = 1}):Play()
+    task.delay(1.3, function() if ghost then ghost:Destroy() end end)
 end
 
--- Player respawn/cleanup handler
-local function setupCleanup(target)
-    local uid = target.UserId
-    if visuals[uid] and visuals[uid].conn then
-        visuals[uid].conn:Disconnect()
-        visuals[uid].conn = nil
-    end
-    visuals[uid] = visuals[uid] or {}
-    visuals[uid].conn = target.CharacterAdded:Connect(function()
-        clearPlayerVisuals(target)
-    end)
-end
-
--- Main prediction loop
-RunService.RenderStepped:Connect(function()
-    if not universalVars.prediction then return end
-    for _, target in ipairs(Players:GetPlayers()) do
-        if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            clearPlayerVisuals(target)
-            setupCleanup(target)
-            local char = target.Character
-            visuals[target.UserId] = visuals[target.UserId] or {ghosts={},beams={},meter=nil}
-            local v = visuals[target.UserId]
-            v.ghosts = {}
-            v.beams = {}
-
-            -- Predict path points (bends for jumps/turns)
-            local steps = 12
-            local totalTime = 1.2
-            local dt = totalTime/steps
-            local points, confidence, behaviour = predictPathPoints(target, steps, dt)
-            if not points then continue end
-
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if not hrp then continue end
-
-            -- Ghosts at [ahead], [mid], [end]
-            local ghost1 = spawnGhost(points[1 + math.floor(steps/4)], confidence*0.6, behaviour, char)
-            local ghost2 = spawnGhost(points[1 + math.floor(steps/2)], confidence*0.8, behaviour, char)
-            local ghost3 = spawnGhost(points[#points], confidence, behaviour, char)
-            table.insert(v.ghosts, ghost1)
-            table.insert(v.ghosts, ghost2)
-            table.insert(v.ghosts, ghost3)
-
-            -- Bending beam from HRP through all predicted points
-            local color = Color3.fromRGB(0,255,0)
-            local beamParts = spawnBentBeam(points, color, char)
-            for _, b in ipairs(beamParts) do table.insert(v.beams, b) end
-
-            -- Confidence meter at predicted (end) ghost
-            v.meter = createConfidenceMeter(confidence, points[#points], char)
-        else
-            clearPlayerVisuals(target)
+--== Highlight all players green (universal, refreshes each frame) ==--
+local function highlightAllPlayers()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            for _, v in ipairs(p.Character:GetChildren()) do
+                if v:IsA("BasePart") and not v:FindFirstChild(highlightTag) then
+                    local hl = Instance.new("Highlight")
+                    hl.Name = highlightTag
+                    hl.FillColor = Color3.fromRGB(0,255,0)
+                    hl.OutlineColor = Color3.fromRGB(0,90,0)
+                    hl.FillTransparency = 0.33
+                    hl.OutlineTransparency = 0.15
+                    hl.Parent = v
+                end
+            end
         end
     end
-  end) 
+end
+
+--== Main prediction + highlight loop ==--
+RunService.RenderStepped:Connect(function()
+    if not universalVars.prediction then return end
+    clearVisuals()
+    highlightAllPlayers()
+    local myChar = player.Character
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    for _, target in ipairs(Players:GetPlayers()) do
+        if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local info = predictMovement(target)
+            if info then
+                local ghost1 = info.origin + info.direction * 3
+                local ghost2 = info.origin + info.direction * 6
+                local ghost3 = info.predicted
+                spawnGhost(ghost1, info.confidence*0.6, info.behaviour)
+                spawnGhost(ghost2, info.confidence*0.8, info.behaviour)
+                spawnGhost(ghost3, info.confidence, info.behaviour)
+                createConfidenceMeter(info.confidence, ghost3)
+                smartSpawnBeam(myRoot.Position, ghost1, info.velocity)
+                smartSpawnBeam(myRoot.Position, ghost2, info.velocity)
+                smartSpawnBeam(myRoot.Position, ghost3, info.velocity)
+            end
+        end
+    end
+end)
+
+--== Character highlight cleanup on respawn ==--
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function(char)
+        char.ChildAdded:Connect(function(obj)
+            if obj:IsA("BasePart") and universalVars.prediction then
+                local hl = Instance.new("Highlight")
+                hl.Name = highlightTag
+                hl.FillColor = Color3.fromRGB(0,255,0)
+                hl.OutlineColor = Color3.fromRGB(0,90,0)
+                hl.FillTransparency = 0.33
+                hl.OutlineTransparency = 0.15
+                hl.Parent = obj
+            end
+        end)
+     end)
+  end)
 end
 
 -----------------------
