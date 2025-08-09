@@ -1748,111 +1748,68 @@ end)
 
 --== Enhanced Prediction System ==--
 
--- Parameters
-local ghostCount = 3
-local beamFadeTime = 1
-local behaviorThresholds = {
-    Idle = 0.3,
-    Chase = 0.6,
-    Zigzag = 0.75,
-    Roam = 0.9
-}
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
--- Assets (make sure these exist in workspace)
 local ghostTemplate = workspace:FindFirstChild("GhostTemplate")
-local beamFolder = workspace:FindFirstChild("GhostBeams")
+local beamTemplate = workspace:FindFirstChild("BeamTemplate")
+local activeGhosts = {}
 
--- Behavior Logger
-local function getBehavior(confidence)
-    if confidence <= behaviorThresholds.Idle then return "Idle" end
-    if confidence <= behaviorThresholds.Chase then return "Chase" end
-    if confidence <= behaviorThresholds.Zigzag then return "Zigzag" end
-    if confidence <= behaviorThresholds.Roam then return "Roam" end
-    return "Unknown"
+--  Predict future position based on velocity
+local function getPredictedPosition(player, secondsAhead)
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+
+    local hrp = character.HumanoidRootPart
+    local velocity = hrp.Velocity
+    local currentPos = hrp.Position
+
+    return currentPos + (velocity * secondsAhead)
 end
 
-local function logBehavior(confidence)
-    local behavior = getBehavior(confidence)
-    print("Predicted Behavior:", behavior)
-end
-
--- Spawn Ghost
-local function spawnGhost(position, confidence)
+--  Spawn ghost and assign AI target
+local function spawnGhostForPlayer(player)
     if not ghostTemplate then return end
+
     local ghost = ghostTemplate:Clone()
-    ghost.Position = position
-    ghost.Transparency = 0.5
-    ghost.Anchored = true
     ghost.Parent = workspace
+    ghost.Position = getPredictedPosition(player, 1.5) or Vector3.new(0, 5, 0)
 
-    local gui = Instance.new("BillboardGui", ghost)
-    gui.Size = UDim2.new(0, 200, 0, 50)
-    gui.AlwaysOnTop = true
-
-    local textLabel = Instance.new("TextLabel", gui)
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.TextScaled = true
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextColor3 = Color3.new(1, 1, 0)
-    textLabel.Text = string.format("Confidence: %.1f%%", confidence * 100)
-
-    return ghost
+    table.insert(activeGhosts, {
+        Model = ghost,
+        TargetPlayer = player
+    })
 end
 
--- Spawn Beam
-local function spawnBeam(startPos, endPos)
-    if not beamFolder then return end
-    local part = Instance.new("Part")
-    part.Anchored = true
-    part.CanCollide = false
-    part.Material = Enum.Material.Neon
-    part.Color = Color3.fromRGB(255, 255, 0)
-    part.Transparency = 0.3
-    part.Size = Vector3.new(0.2, 0.2, (startPos - endPos).Magnitude)
-    part.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -part.Size.Z / 2)
-    part.Parent = beamFolder
+--  Spawn beam toward predicted position
+local function spawnBeamToPredicted(player)
+    if not beamTemplate then return end
 
-    TweenService:Create(part, TweenInfo.new(beamFadeTime), {Transparency = 1}):Play()
-    task.delay(beamFadeTime + 0.2, function() part:Destroy() end)
+    local startPos = Vector3.new(0, 10, 0)
+    local endPos = getPredictedPosition(player, 1.2) or startPos
+
+    local beam = beamTemplate:Clone()
+    beam.Parent = workspace
+    beam.Attachment0.WorldPosition = startPos
+    beam.Attachment1.WorldPosition = endPos
 end
 
--- Prediction Logic
-local function runPrediction()
-    local player = Players.LocalPlayer
-    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+--  AI tracking loop
+RunService.Heartbeat:Connect(function()
+    for _, ghostData in pairs(activeGhosts) do
+        local ghost = ghostData.Model
+        local targetPlayer = ghostData.TargetPlayer
 
-    local predictions = {
-        -- Example prediction
-        {
-            position = root.Position + Vector3.new(0, 0, 5),
-            direction = Vector3.new(0, 0, 1),
-            confidence = 0.85
-        }
-    }
-
-    local bestPrediction
-    local highestConfidence = 0
-    for _, pred in ipairs(predictions) do
-        if pred.confidence > highestConfidence then
-            highestConfidence = pred.confidence
-            bestPrediction = pred
+        if ghost and targetPlayer then
+            local predictedPos = getPredictedPosition(targetPlayer, 1.5)
+            if predictedPos then
+                ghost.Position = ghost.Position:Lerp(predictedPos, 0.1)
+            end
         end
     end
+end)
 
-    if bestPrediction then
-        logBehavior(highestConfidence)
-        for i = 1, ghostCount do
-            local offset = bestPrediction.direction * (i * 0.5)
-            local ghostPos = bestPrediction.position + offset
-            local ghost = spawnGhost(ghostPos, highestConfidence)
-            spawnBeam(root.Position, ghost.Position)
-        end
-    end
-end
-
--- Prediction Button
+-- Prediction Button setup
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Name = "PredictGhostsBtn"
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
