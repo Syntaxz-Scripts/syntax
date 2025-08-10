@@ -1746,7 +1746,7 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Universal Tab: AI Prediction & Pathfinding & Simple Outline ESP (Fixed) ==--
+--== Universal Tab: AI Prediction & Pathfinding & Simple Outline ESP (ESP only when Prediction ON, All Players Accurate) ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -1807,6 +1807,14 @@ predictBtn.MouseButton1Click:Connect(function()
         if notify then notify("Prediction Disabled", Color3.fromRGB(200, 80, 80)) end
         -- Remove all prediction visuals instantly
         for _, obj in ipairs(beamFolder:GetChildren()) do obj:Destroy() end
+        -- Remove all highlights from all players
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character then
+                for _, v in ipairs(p.Character:GetDescendants()) do
+                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
+                end
+            end
+        end
     end
 end)
 
@@ -1991,29 +1999,30 @@ end
 
 local function outlineAllPlayers()
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= player and p.Character then
+        if p.Character then
             outlineChar(p.Character)
         end
     end
 end
 
 local function setupCharOutlineFor(p)
-    if p == player then return end
     p.CharacterAdded:Connect(function(char)
-        outlineChar(char)
-        char.ChildAdded:Connect(function(obj)
-            if obj:IsA("BasePart") then
-                for _,v in ipairs(obj:GetChildren()) do
-                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
+        if universalVars.prediction then
+            outlineChar(char)
+            char.ChildAdded:Connect(function(obj)
+                if obj:IsA("BasePart") and universalVars.prediction then
+                    for _,v in ipairs(obj:GetChildren()) do
+                        if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
+                    end
+                    local hl = Instance.new("Highlight")
+                    hl.Name = highlightTag
+                    hl.FillTransparency = 1
+                    hl.OutlineColor = Color3.fromRGB(0,255,0)
+                    hl.OutlineTransparency = 0.15
+                    hl.Parent = obj
                 end
-                local hl = Instance.new("Highlight")
-                hl.Name = highlightTag
-                hl.FillTransparency = 1
-                hl.OutlineColor = Color3.fromRGB(0,255,0)
-                hl.OutlineTransparency = 0.15
-                hl.Parent = obj
-            end
-        end)
+            end)
+        end
     end)
 end
 
@@ -2031,33 +2040,39 @@ end)
 
 --== Main prediction + simple outline ESP loop ==--
 RunService.RenderStepped:Connect(function()
-    if not universalVars.prediction then
-        clearVisuals()
-        outlineAllPlayers()
-        return
-    end
     clearVisuals()
-    outlineAllPlayers()
-    for _, target in ipairs(Players:GetPlayers()) do
-        if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local info = predictMovement(target)
-            if info then
-                -- Pathfinding prediction (shows up if available, else standard ghosts)
-                if info.waypoints and #info.waypoints > 1 then
-                    for i = 2, math.min(#info.waypoints, 4) do
-                        spawnGhost(info.waypoints[i].Position)
-                        if info.waypoints[i-1] and info.waypoints[i] then
-                            smartSpawnBeam(info.waypoints[i-1].Position, info.waypoints[i].Position, info.velocity)
+    if universalVars.prediction then
+        outlineAllPlayers()
+        for _, target in ipairs(Players:GetPlayers()) do
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local info = predictMovement(target)
+                if info then
+                    -- Pathfinding prediction (shows up if available, else standard ghosts)
+                    if info.waypoints and #info.waypoints > 1 then
+                        for i = 2, math.min(#info.waypoints, 4) do
+                            spawnGhost(info.waypoints[i].Position)
+                            if info.waypoints[i-1] and info.waypoints[i] then
+                                smartSpawnBeam(info.waypoints[i-1].Position, info.waypoints[i].Position, info.velocity)
+                            end
                         end
+                    else
+                        local ghost1 = info.origin + info.direction * 3
+                        local ghost2 = info.origin + info.direction * 6
+                        local ghost3 = info.predicted
+                        spawnGhost(ghost1)
+                        spawnGhost(ghost2)
+                        spawnGhost(ghost3)
+                        smartSpawnBeam(info.origin, ghost3, info.velocity)
                     end
-                else
-                    local ghost1 = info.origin + info.direction * 3
-                    local ghost2 = info.origin + info.direction * 6
-                    local ghost3 = info.predicted
-                    spawnGhost(ghost1)
-                    spawnGhost(ghost2)
-                    spawnGhost(ghost3)
-                    smartSpawnBeam(info.origin, ghost3, info.velocity)
+                end
+            end
+        end
+    else
+        -- When prediction is off, remove all highlights and visuals
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character then
+                for _, v in ipairs(p.Character:GetDescendants()) do
+                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
                    end
                end
            end
