@@ -1,10 +1,10 @@
-  --_____________________________-- 
-  --== Syntaxz Scripts ver 6.7 ==--
-  --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
+--_____________________________-- 
+--== Syntaxz Scripts ver 6.7 ==-- 
+--¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
---/¯------------------------------¯\--
---| NEEDS FIXING: PREDICTION SYSTEM|--
---\_------------------------------_/--
+--/¯-------------------------¯\--
+--| Upd: Ai Prediction System |--
+--\_-------------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -685,7 +685,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.Q and slashActive then orbitAttack("Q", cooldownQ, 40) end
     if input.KeyCode == Enum.KeyCode.R and punchActive then orbitAttack("R", cooldownR, 24) end
 end)
-    
+
 end
 
 -----------------------
