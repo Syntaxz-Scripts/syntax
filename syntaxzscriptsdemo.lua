@@ -1746,7 +1746,7 @@ btn.MouseButton1Click:Connect(function()
     end
 end)
 
---== Universal Tab: AI Prediction & Pathfinding & Simple Outline ESP (ESP only when Prediction ON, All Players Accurate) ==--
+--== Universal Tab: Expanded AI Prediction & Pathfinding Visuals + Behaviour Logger & Confidence Meter ==--
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -1764,7 +1764,7 @@ if not ghostTemplate then
     ghostTemplate.Size = Vector3.new(1, 1, 1)
     ghostTemplate.Anchored = true
     ghostTemplate.CanCollide = false
-    ghostTemplate.Material = Enum.Material.Neon
+    ghostTemplate.Material = Enum.Material.ForceField -- Visible through walls!
     ghostTemplate.Color = Color3.fromRGB(0, 255, 255)
     ghostTemplate.Transparency = 0.3
     ghostTemplate.Parent = Workspace
@@ -1780,9 +1780,8 @@ end
 local universalVars = universalVars or {}
 universalVars.prediction = false
 local behaviourLog = {} -- [userid]={ {time,pos,vel}, ... }
-local highlightTag = "UniversalESPOutline"
 
---== Prediction Toggle Button ==--
+--== Prediction Toggle Button (Universal Tab) ==--
 local predictBtn = Instance.new("TextButton", contentParent)
 predictBtn.Size = UDim2.new(0, 180, 0, 34)
 predictBtn.Position = UDim2.new(0, 14, 0, contentY)
@@ -1805,13 +1804,13 @@ predictBtn.MouseButton1Click:Connect(function()
         if notify then notify("Prediction Enabled!", Color3.fromRGB(100, 200, 150)) end
     else
         if notify then notify("Prediction Disabled", Color3.fromRGB(200, 80, 80)) end
-        -- Remove all prediction visuals instantly
         for _, obj in ipairs(beamFolder:GetChildren()) do obj:Destroy() end
-        -- Remove all highlights from all players
+        -- Remove all confidence meters
         for _, p in ipairs(Players:GetPlayers()) do
-            if p.Character then
-                for _, v in ipairs(p.Character:GetDescendants()) do
-                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
+            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = p.Character.HumanoidRootPart
+                for _,v in ipairs(hrp:GetChildren()) do
+                    if v:IsA("BillboardGui") and v.Name == "ConfMeter" then v:Destroy() end
                 end
             end
         end
@@ -1875,6 +1874,44 @@ local function analyzeBehaviour(uid)
     return "Idle", 0.2
 end
 
+--== Helper: Confidence Meter UI on player ==--
+local function attachConfidenceMeter(target, confidence)
+    local char = target.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    -- Remove old
+    for _,v in ipairs(hrp:GetChildren()) do
+        if v:IsA("BillboardGui") and v.Name == "ConfMeter" then v:Destroy() end
+    end
+
+    local meter = Instance.new("BillboardGui")
+    meter.Name = "ConfMeter"
+    meter.Size = UDim2.new(0, 42, 0, 10)
+    meter.AlwaysOnTop = true
+    meter.StudsOffset = Vector3.new(0, 2.8, 0)
+    meter.Adornee = hrp
+    meter.Parent = hrp
+
+    local bar = Instance.new("Frame", meter)
+    bar.Size = UDim2.new(math.clamp(confidence,0,1), 0, 1, 0)
+    bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    bar.BorderSizePixel = 0
+
+    local txt = Instance.new("TextLabel", meter)
+    txt.Size = UDim2.new(1, 0, 1, 0)
+    txt.BackgroundTransparency = 1
+    txt.TextColor3 = Color3.fromRGB(255,255,100)
+    txt.Font = Enum.Font.Gotham
+    txt.TextScaled = true
+    txt.Text = ("%.0f%%"):format(confidence*100)
+
+    -- Cleanup after fade
+    delay(1.5, function()
+        if meter then meter:Destroy() end
+    end)
+end
+
 --== Pathfinding Helper (FIXED!) ==--
 local function getPath(startPos, goalPos)
     local path = PathfindingService:CreatePath({
@@ -1891,25 +1928,31 @@ local function getPath(startPos, goalPos)
     return nil
 end
 
---== Helper: Predict movement (with pathfinding option) ==--
+--== Helper: Predict movement (with pathfinding option, proper direction, extended range) ==--
 local function predictMovement(target)
     local hrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
     local position = hrp.Position
     local velocity = hrp.Velocity
+
+    -- Only use horizontal velocity for prediction (no upward pointing)
+    local horizontalVel = Vector3.new(velocity.X, 0, velocity.Z)
+    local speed = horizontalVel.Magnitude
+    local direction = speed > 0 and horizontalVel.Unit or Vector3.new(0,0,0)
     logBehaviour(target, position, velocity)
 
     local behaviour, behaviourConf = analyzeBehaviour(target.UserId)
-    local speed = velocity.Magnitude
-    local direction = speed > 0 and velocity.Unit or Vector3.new(0,0,0)
     local confidence = math.clamp((behaviourConf + (speed/60))/2, 0, 1)
-    local predictTime = 0.15 + confidence*0.35
-    if speed > 18 then
-        predictTime = predictTime + math.clamp((speed-18)*0.04,0,1.3)
-    end
-    local predictedPosition = position + direction * speed * predictTime
 
-    -- Use pathfinding if high confidence and moving
+    -- EXTEND prediction distance by a few meters (e.g. +5 meters)
+    local basePredictTime = 0.15 + confidence*0.35
+    if speed > 18 then
+        basePredictTime = basePredictTime + math.clamp((speed-18)*0.04,0,1.3)
+    end
+    local extendedDistance = 5 -- meters to extend
+    local predictedPosition = position + direction * (speed * basePredictTime + extendedDistance)
+
+    -- Use pathfinding for extended goal (allows for wall prediction etc)
     local waypoints
     if speed > 2 and confidence > 0.4 then
         waypoints = getPath(position, predictedPosition)
@@ -1926,48 +1969,25 @@ local function predictMovement(target)
     }
 end
 
---== Helper: Smart Beam (jump/fall/floor stop/normal) ==--
+--== Helper: Smart Beam (just straight line, visible through walls) ==--
 local function smartSpawnBeam(startPos, predictedPos, velocity)
     local color = Color3.fromRGB(255,255,0)
-    local yVel = velocity.Y
-    local floorStop = false
-    local beamEnd = predictedPos
-
-    -- If jumping up
-    if yVel > 3 then
-        beamEnd = Vector3.new(predictedPos.X, predictedPos.Y + math.clamp(yVel * 0.14, 2, 8), predictedPos.Z)
-    -- If falling down
-    elseif yVel < -3 then
-        local rayOrigin = predictedPos
-        local rayDir = Vector3.new(0, -32, 0)
-        local rayParams = RaycastParams.new()
-        rayParams.FilterDescendantsInstances = {Workspace:FindFirstChild("GhostBeams")}
-        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-        local result = Workspace:Raycast(rayOrigin, rayDir, rayParams)
-        if result then
-            beamEnd = Vector3.new(predictedPos.X, result.Position.Y + 1, predictedPos.Z)
-            floorStop = true
-        else
-            beamEnd = Vector3.new(predictedPos.X, predictedPos.Y - math.clamp(-yVel * 0.10, 2, 12), predictedPos.Z)
-        end
-    end
-
-    local dist = (startPos-beamEnd).Magnitude
+    local dist = (startPos-predictedPos).Magnitude
     if dist < 0.25 then return end
-    local part = Instance.new("Part")
-    part.Anchored = true
-    part.CanCollide = false
-    part.Material = Enum.Material.Neon
-    part.Color = floorStop and Color3.fromRGB(0,255,0) or color
-    part.Transparency = 0.09
-    part.Size = Vector3.new(0.15, 0.15, dist)
-    part.CFrame = CFrame.new(startPos, beamEnd) * CFrame.new(0,0,-dist/2)
-    part.Parent = beamFolder
-    TweenService:Create(part, TweenInfo.new(1.2), {Transparency = 1}):Play()
-    task.delay(1.3, function() if part then part:Destroy() end end)
+    local beam = Instance.new("Part")
+    beam.Anchored = true
+    beam.CanCollide = false
+    beam.Material = Enum.Material.ForceField -- Visible through walls!
+    beam.Color = color
+    beam.Transparency = 0.09
+    beam.Size = Vector3.new(0.15, 0.15, dist)
+    beam.CFrame = CFrame.new(startPos, predictedPos) * CFrame.new(0,0,-dist/2)
+    beam.Parent = beamFolder
+    TweenService:Create(beam, TweenInfo.new(1.2), {Transparency = 1}):Play()
+    task.delay(1.3, function() if beam then beam:Destroy() end end)
 end
 
---== Helper: Spawn ghost (NO % text) ==--
+--== Helper: Spawn ghost ==--
 local function spawnGhost(position, colour)
     local ghost = ghostTemplate:Clone()
     ghost.Position = position
@@ -1978,106 +1998,38 @@ local function spawnGhost(position, colour)
     task.delay(1.3, function() if ghost then ghost:Destroy() end end)
 end
 
---== Simple Outline ESP ONLY (replacing the original highlight logic) ==--
-local function outlineChar(char)
-    -- Remove previous
-    for _,v in ipairs(char:GetDescendants()) do
-        if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
-    end
-    -- Add outline to all BaseParts
-    for _, v in ipairs(char:GetChildren()) do
-        if v:IsA("BasePart") then
-            local hl = Instance.new("Highlight")
-            hl.Name = highlightTag
-            hl.FillTransparency = 1 -- Only outline
-            hl.OutlineColor = Color3.fromRGB(0,255,0)
-            hl.OutlineTransparency = 0.15
-            hl.Parent = v
-        end
-    end
-end
-
-local function outlineAllPlayers()
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p.Character then
-            outlineChar(p.Character)
-        end
-    end
-end
-
-local function setupCharOutlineFor(p)
-    p.CharacterAdded:Connect(function(char)
-        if universalVars.prediction then
-            outlineChar(char)
-            char.ChildAdded:Connect(function(obj)
-                if obj:IsA("BasePart") and universalVars.prediction then
-                    for _,v in ipairs(obj:GetChildren()) do
-                        if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
-                    end
-                    local hl = Instance.new("Highlight")
-                    hl.Name = highlightTag
-                    hl.FillTransparency = 1
-                    hl.OutlineColor = Color3.fromRGB(0,255,0)
-                    hl.OutlineTransparency = 0.15
-                    hl.Parent = obj
-                end
-            end)
-        end
-    end)
-end
-
-for _,p in ipairs(Players:GetPlayers()) do
-    setupCharOutlineFor(p)
-end
-Players.PlayerAdded:Connect(setupCharOutlineFor)
-Players.PlayerRemoving:Connect(function(p)
-    if p.Character then
-        for _,v in ipairs(p.Character:GetDescendants()) do
-            if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
-        end
-    end
-end)
-
---== Main prediction + simple outline ESP loop ==--
+--== Main prediction visuals loop ==--
 RunService.RenderStepped:Connect(function()
     clearVisuals()
     if universalVars.prediction then
-        outlineAllPlayers()
+        -- Predict ALL players (not just a few)
         for _, target in ipairs(Players:GetPlayers()) do
             if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local info = predictMovement(target)
                 if info then
+                    attachConfidenceMeter(target, info.confidence)
                     -- Pathfinding prediction (shows up if available, else standard ghosts)
                     if info.waypoints and #info.waypoints > 1 then
-                        for i = 2, math.min(#info.waypoints, 4) do
+                        for i = 2, math.min(#info.waypoints, 6) do -- show up to 6 points for longer paths
                             spawnGhost(info.waypoints[i].Position)
                             if info.waypoints[i-1] and info.waypoints[i] then
                                 smartSpawnBeam(info.waypoints[i-1].Position, info.waypoints[i].Position, info.velocity)
                             end
                         end
                     else
-                        local ghost1 = info.origin + info.direction * 3
-                        local ghost2 = info.origin + info.direction * 6
+                        local ghost1 = info.origin + info.direction * 4
+                        local ghost2 = info.origin + info.direction * 8
                         local ghost3 = info.predicted
                         spawnGhost(ghost1)
                         spawnGhost(ghost2)
                         spawnGhost(ghost3)
                         smartSpawnBeam(info.origin, ghost3, info.velocity)
+                        end
                     end
                 end
             end
         end
-    else
-        -- When prediction is off, remove all highlights and visuals
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p.Character then
-                for _, v in ipairs(p.Character:GetDescendants()) do
-                    if v:IsA("Highlight") and v.Name == highlightTag then v:Destroy() end
-                   end
-               end
-           end
-       end
-   end) 
+    end)
 end
 
 -----------------------
