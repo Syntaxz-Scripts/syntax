@@ -1243,8 +1243,8 @@ do
 
     -- Vibrate/Jitter Character
     local jitterBtn = styledBtn(contentParent, 200, 136, 220, "Vibrate (Jitter) Character: OFF", Color3.fromRGB(130, 120, 220))
-    local JITTER_DISTANCE = 6.7
-    local JITTER_SPEED = 5e9
+    local JITTER_DISTANCE = 10
+    local JITTER_SPEED = 75
     local HUMANOID_PART = "HumanoidRootPart"
     local lastJitterOffset = 0
     local function stopJitter()
