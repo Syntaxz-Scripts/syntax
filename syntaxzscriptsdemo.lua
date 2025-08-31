@@ -686,6 +686,189 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.R and punchActive then orbitAttack("R", cooldownR, 24) end
 end)
 
+-- Forsaken Anti Cheat Fixer + Exploit Detection
+    local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local MAX_FALL_TIME = 9.5
+local MAX_AIR_TIME = 9.5
+local FALL_THRESHOLD = -5
+
+local antiExploitActive = false
+local decoy = nil
+
+local function correctSpawn(character)
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    local rayOrigin = hrp.Position
+    local rayDirection = Vector3.new(0, -500, 0)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {character}
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+    local result = workspace:Raycast(rayOrigin, rayDirection, rayParams)
+    if result then
+        local hitPosition = result.Position
+        local surfaceNormal = result.Normal
+        local offset = surfaceNormal.Unit * 3
+        hrp.CFrame = CFrame.new(hitPosition + offset)
+    else
+        warn("No ground detected below character.")
+    end
+end
+
+local function createDecoyHitbox(character)
+    local hrp = character:WaitForChild("HumanoidRootPart")
+
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(2, 2, 1)
+    part.Transparency = 0.5
+    part.Color = Color3.fromRGB(255, 255, 0)
+    part.CanCollide = false
+    part.Anchored = false
+    part.Name = "DecoyHitbox"
+    part.Parent = character
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = part
+    weld.Part1 = hrp
+    weld.Parent = part
+
+    return part
+end
+
+local function showAimbotWarning(targetCharacter)
+    local hrp = targetCharacter:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local gui = Instance.new("BillboardGui")
+    gui.Name = "AimbotWarning"
+    gui.Size = UDim2.new(0, 150, 0, 30)
+    gui.StudsOffset = Vector3.new(2, 2, 0)
+    gui.Adornee = hrp
+    gui.AlwaysOnTop = true
+    gui.Parent = hrp
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "⚠ Aimbot Detected"
+    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+    label.TextStrokeTransparency = 0.5
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    label.Parent = gui
+
+    task.delay(3, function()
+        gui:Destroy()
+    end)
+end
+
+local function activateAntiExploit()
+    antiExploitActive = true
+    local character = player.Character or player.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+
+    correctSpawn(character)
+    decoy = createDecoyHitbox(character)
+
+    local fallTime = 0
+    local airTime = 0
+
+    RunService.Heartbeat:Connect(function(dt)
+        if not antiExploitActive or not player.Character then return end
+        local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        -- Anti-Fly Detection
+        local velocityY = hrp.Velocity.Y
+        if velocityY < FALL_THRESHOLD then
+            fallTime += dt
+            if fallTime >= MAX_FALL_TIME then
+                hrp.Velocity = Vector3.new(hrp.Velocity.X, 0, hrp.Velocity.Z)
+                hrp.CFrame = hrp.CFrame + Vector3.new(0, 2, 0)
+                fallTime = 0
+            end
+        else
+            fallTime = 0
+        end
+
+        -- Air-Time Detection
+        local rayOrigin = hrp.Position
+        local rayDirection = Vector3.new(0, -5, 0)
+        local rayParams = RaycastParams.new()
+        rayParams.FilterDescendantsInstances = {player.Character}
+        rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+        local result = workspace:Raycast(rayOrigin, rayDirection, rayParams)
+        if result then
+            airTime = 0
+        else
+            airTime += dt
+            if airTime >= MAX_AIR_TIME then
+                hrp.CFrame = hrp.CFrame + Vector3.new(0, -2, 0)
+                airTime = 0
+            end
+        end
+
+        -- Hitbox Extend Detection
+        local nearestPlayer = nil
+        local shortestDistance = math.huge
+        for _, otherPlayer in ipairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                local otherHRP = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if otherHRP then
+                    local distance = (otherHRP.Position - hrp.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestPlayer = otherHRP
+                    end
+                end
+            end
+        end
+
+        if nearestPlayer and shortestDistance < 5 and decoy then
+            local forward = hrp.CFrame.LookVector
+            decoy.CFrame = hrp.CFrame + forward * 10
+        elseif decoy then
+            decoy.CFrame = hrp.CFrame
+        end
+
+        -- Aimbot Detection
+        for _, otherPlayer in ipairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                local otherHRP = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if otherHRP then
+                    local directionToYou = (hrp.Position - otherHRP.Position).Unit
+                    local lookDirection = otherHRP.CFrame.LookVector
+                    local dot = directionToYou:Dot(lookDirection)
+
+                    if dot > 0.99 then
+                        showAimbotWarning(otherPlayer.Character)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- GUI Hookup
+local forsakenTab = player:WaitForChild("PlayerGui"):WaitForChild("Forsaken")
+local button = forsakenTab:WaitForChild("ActivateAntiExploit")
+
+button.MouseButton1Click:Connect(function()
+    activateAntiExploit()
+end)
+
+-- Re-run on respawn if previously activated
+player.CharacterAdded:Connect(function()
+    if antiExploitActive then
+        activateAntiExploit()
+    end
+end)
+
 end
 
 -----------------------
