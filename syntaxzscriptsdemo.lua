@@ -687,7 +687,7 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Forsaken Anti Cheat Fixer + Exploit Detection
-    local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
@@ -700,7 +700,6 @@ local decoy = nil
 
 local function correctSpawn(character)
     local hrp = character:WaitForChild("HumanoidRootPart")
-
     local rayOrigin = hrp.Position
     local rayDirection = Vector3.new(0, -500, 0)
     local rayParams = RaycastParams.new()
@@ -720,7 +719,6 @@ end
 
 local function createDecoyHitbox(character)
     local hrp = character:WaitForChild("HumanoidRootPart")
-
     local part = Instance.new("Part")
     part.Size = Vector3.new(2, 2, 1)
     part.Transparency = 0.5
@@ -765,7 +763,7 @@ local function showAimbotWarning(targetCharacter)
     end)
 end
 
-local function activateAntiExploit()
+local function enableAntiExploit()
     antiExploitActive = true
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:WaitForChild("HumanoidRootPart")
@@ -854,18 +852,40 @@ local function activateAntiExploit()
     end)
 end
 
--- GUI Hookup
-local forsakenTab = player:WaitForChild("PlayerGui"):WaitForChild("Forsaken")
-local button = forsakenTab:WaitForChild("ActivateAntiExploit")
+local function disableAntiExploit()
+    antiExploitActive = false
+    if decoy then
+        decoy:Destroy()
+        decoy = nil
+    end
+end
 
-button.MouseButton1Click:Connect(function()
-    activateAntiExploit()
+-- GUI Hookup (Forsaken Tab)
+local forsakenTab = player:WaitForChild("PlayerGui"):WaitForChild("Forsaken")
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ActivateAntiExploit"
+toggleButton.Size = UDim2.new(0, 180, 0, 34)
+toggleButton.Position = UDim2.new(0, 210, 0, 186) -- Right side
+toggleButton.BackgroundColor3 = Color3.fromRGB(120, 80, 180)
+toggleButton.TextColor3 = Color3.fromRGB(255,255,255)
+toggleButton.Font = Enum.Font.Gotham
+toggleButton.TextSize = 17
+toggleButton.Text = "Anti-Exploit: OFF"
+toggleButton.Parent = forsakenTab
+
+toggleButton.MouseButton1Click:Connect(function()
+    antiExploitActive = not antiExploitActive
+    toggleButton.Text = "Anti-Exploit: " .. (antiExploitActive and "ON" or "OFF")
+    if antiExploitActive then
+        enableAntiExploit()
+    else
+        disableAntiExploit()
+    end
 end)
 
--- Re-run on respawn if previously activated
 player.CharacterAdded:Connect(function()
     if antiExploitActive then
-        activateAntiExploit()
+        enableAntiExploit()
     end
 end)
 
