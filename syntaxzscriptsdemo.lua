@@ -330,7 +330,7 @@ do
             l.Text = txt
             return l
         end
-        label("ESP & UI: Syntaxz Scripts", 10)
+        label("All Features: Syntaxz Scripts", 10)
         label("Discord: no discord.. :(", 38)
     end
 end
@@ -860,32 +860,30 @@ local function disableAntiExploit()
     end
 end
 
--- GUI Hookup (Forsaken Tab)
-local forsakenTab = player:WaitForChild("PlayerGui"):WaitForChild("Forsaken")
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ActivateAntiExploit"
-toggleButton.Size = UDim2.new(0, 180, 0, 34)
-toggleButton.Position = UDim2.new(0, 210, 0, 186) -- Right side
-toggleButton.BackgroundColor3 = Color3.fromRGB(120, 80, 180)
-toggleButton.TextColor3 = Color3.fromRGB(255,255,255)
-toggleButton.Font = Enum.Font.Gotham
-toggleButton.TextSize = 17
-toggleButton.Text = "Anti-Exploit: OFF"
-toggleButton.Parent = forsakenTab
+-- Create Anti-Exploit Button
+local antiExploitBtn = Instance.new("TextButton")
+antiExploitBtn.Size = UDim2.new(0, 180, 0, 34)
+antiExploitBtn.Position = UDim2.new(0.5, -90, 0.5, -17) -- Centered
+antiExploitBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+antiExploitBtn.Text = "Anti-Exploit: OFF"
+antiExploitBtn.Font = Enum.Font.GothamBold
+antiExploitBtn.TextSize = 16
+antiExploitBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
+antiExploitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+antiExploitBtn.Parent = forsakenFrame -- 🔗 Replace with your Forsaken tab's frame
 
-toggleButton.MouseButton1Click:Connect(function()
-    antiExploitActive = not antiExploitActive
-    toggleButton.Text = "Anti-Exploit: " .. (antiExploitActive and "ON" or "OFF")
-    if antiExploitActive then
-        enableAntiExploit()
+-- Toggle Logic
+antiExploitBtn.MouseButton1Click:Connect(function()
+    universalVars.antiExploit = not universalVars.antiExploit
+    antiExploitBtn.Text = "Anti-Exploit: " .. (universalVars.antiExploit and "ON" or "OFF")
+    antiExploitBtn.BackgroundColor3 = universalVars.antiExploit
+        and Color3.fromRGB(0, 170, 80)
+        or Color3.fromRGB(140, 60, 60)
+
+    if universalVars.antiExploit then
+        AntiExploit:Enable()
     else
-        disableAntiExploit()
-    end
-end)
-
-player.CharacterAdded:Connect(function()
-    if antiExploitActive then
-        enableAntiExploit()
+        AntiExploit:Disable()
     end
 end)
 
