@@ -860,33 +860,61 @@ local function disableAntiExploit()
     end
 end
 
--- 🔘 Anti-Exploit Toggle Button
+-- Reference to the Forsaken tab frame
+local tf = tabFrames["Forsaken"]
+
+-- Create the Anti-Exploit button
 local antiExploitBtn = Instance.new("TextButton")
+antiExploitBtn.Name = "AntiExploitBtn"
 antiExploitBtn.Size = UDim2.new(0, 180, 0, 34)
-antiExploitBtn.Position = UDim2.new(0, 14, 0, 186) -- Adjust Y as needed
+antiExploitBtn.Position = UDim2.new(0, 210, 0, 10) -- Right column, top row
 antiExploitBtn.Text = "Anti-Exploit: OFF"
 antiExploitBtn.Font = Enum.Font.GothamBold
 antiExploitBtn.TextSize = 16
 antiExploitBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
 antiExploitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+antiExploitBtn.BorderSizePixel = 0
 antiExploitBtn.AutoButtonColor = true
-antiExploitBtn.BackgroundTransparency = 0.18
-antiExploitBtn.Parent = forsakenTab -- 🔗 Connects to your Forsaken tab
+antiExploitBtn.Parent = tf
 
--- 🔁 Toggle Logic
+-- Toggle state
+local antiExploitEnabled = false
+
+-- Anti-Exploit logic container
+local function enableAntiExploit()
+    -- Example: Monitor for suspicious tools or remotes
+    for _, player in pairs(game.Players:GetPlayers()) do
+        player.CharacterAdded:Connect(function(char)
+            char.ChildAdded:Connect(function(child)
+                if child:IsA("Tool") and child.Name == "ExploitTool" then
+                    player:Kick("Exploit detected: Unauthorized tool.")
+                end
+            end)
+        end)
+    end
+
+    -- Listen for new players joining
+    game.Players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function(char)
+            char.ChildAdded:Connect(function(child)
+                if child:IsA("Tool") and child.Name == "ExploitTool" then
+                    player:Kick("Exploit detected: Unauthorized tool.")
+                end
+            end)
+        end)
+    end)
+end
+
+-- Button click behavior
 antiExploitBtn.MouseButton1Click:Connect(function()
-    universalVars.antiExploit = not universalVars.antiExploit
-    antiExploitBtn.Text = "Anti-Exploit: " .. (universalVars.antiExploit and "ON" or "OFF")
-    antiExploitBtn.BackgroundColor3 = universalVars.antiExploit
-        and Color3.fromRGB(0, 170, 80)
-        or Color3.fromRGB(140, 60, 60)
+    antiExploitEnabled = not antiExploitEnabled
+    antiExploitBtn.Text = "Anti-Exploit: " .. (antiExploitEnabled and "ON" or "OFF")
 
-    if universalVars.antiExploit then
-        notify("Anti-Exploit Enabled", Color3.fromRGB(100, 200, 150))
-        if AntiExploit and AntiExploit.Enable then AntiExploit:Enable() end
+    if antiExploitEnabled then
+        enableAntiExploit()
     else
-        notify("Anti-Exploit Disabled", Color3.fromRGB(200, 80, 80))
-        if AntiExploit and AntiExploit.Disable then AntiExploit:Disable() end
+        -- Optional: Add logic to disable or clean up listeners if needed
+        print("Anti-Exploit disabled.")
     end
 end)
 
