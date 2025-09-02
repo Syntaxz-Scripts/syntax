@@ -2,9 +2,9 @@
 --== Syntaxz Scripts ver 6.7 ==-- 
 --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
---/¯-------------------------¯\--
---| Upd: Ai Prediction System |--
---\_-------------------------_/--
+--/¯----------------------------¯\--
+--| Upd: Anti Exploit + Anticheat|--
+--\_----------------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -860,19 +860,20 @@ local function disableAntiExploit()
     end
 end
 
--- Create Anti-Exploit Button
+-- 🔘 Anti-Exploit Toggle Button
 local antiExploitBtn = Instance.new("TextButton")
 antiExploitBtn.Size = UDim2.new(0, 180, 0, 34)
-antiExploitBtn.Position = UDim2.new(0.5, -90, 0.5, -17) -- Centered
-antiExploitBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+antiExploitBtn.Position = UDim2.new(0, 14, 0, 186) -- Adjust Y as needed
 antiExploitBtn.Text = "Anti-Exploit: OFF"
 antiExploitBtn.Font = Enum.Font.GothamBold
 antiExploitBtn.TextSize = 16
 antiExploitBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
 antiExploitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-antiExploitBtn.Parent = forsakenFrame -- 🔗 Replace with your Forsaken tab's frame
+antiExploitBtn.AutoButtonColor = true
+antiExploitBtn.BackgroundTransparency = 0.18
+antiExploitBtn.Parent = forsakenTab -- 🔗 Connects to your Forsaken tab
 
--- Toggle Logic
+-- 🔁 Toggle Logic
 antiExploitBtn.MouseButton1Click:Connect(function()
     universalVars.antiExploit = not universalVars.antiExploit
     antiExploitBtn.Text = "Anti-Exploit: " .. (universalVars.antiExploit and "ON" or "OFF")
@@ -881,9 +882,11 @@ antiExploitBtn.MouseButton1Click:Connect(function()
         or Color3.fromRGB(140, 60, 60)
 
     if universalVars.antiExploit then
-        AntiExploit:Enable()
+        notify("Anti-Exploit Enabled", Color3.fromRGB(100, 200, 150))
+        if AntiExploit and AntiExploit.Enable then AntiExploit:Enable() end
     else
-        AntiExploit:Disable()
+        notify("Anti-Exploit Disabled", Color3.fromRGB(200, 80, 80))
+        if AntiExploit and AntiExploit.Disable then AntiExploit:Disable() end
     end
 end)
 
