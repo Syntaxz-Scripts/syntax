@@ -435,7 +435,7 @@ end)
 -----------------------
 -- Forsaken Tab 
 -----------------------
-local forsakenVars = { esp = false, stamina = false }
+local forsakenVars = { esp = false, stamina = false, antiexploit = false}
 do
     local tf = tabFrames["Forsaken"]
     local function styledBtn(parent, y, text, col)
