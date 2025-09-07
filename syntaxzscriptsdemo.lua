@@ -2,9 +2,9 @@
 --== Syntaxz Scripts ver 6.7 ==-- 
 --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
---/¯----------------------------¯\--
---| Upd: Anti Exploit + Anticheat|--
---\_----------------------------_/--
+--/¯----------------------¯\--
+--| Upd: Tuff Speed Mirage |--
+--\_----------------------_/--
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -2262,6 +2262,56 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end)
+
+-- Speed Mirage   
+-- Reference to Universal tab frame
+local tf = tabFrames["Universal"]
+
+-- Create the button using your styledBtn system
+local mirageBtn = styledBtn(tf, 10, "Speed Mirage: OFF", Color3.fromRGB(140, 60, 60))
+
+-- Scoped variable for toggle state
+universalVars.speedMirage = false
+
+-- Internal state
+local mirageLoop = nil
+local anchorPos = nil
+
+-- Button logic
+mirageBtn.MouseButton1Click:Connect(function()
+    universalVars.speedMirage = not universalVars.speedMirage
+    mirageBtn.Text = "Speed Mirage: " .. (universalVars.speedMirage and "ON" or "OFF")
+    mirageBtn.BackgroundColor3 = universalVars.speedMirage
+        and Color3.fromRGB(0, 170, 80)
+        or Color3.fromRGB(140, 60, 60)
+
+    local player = game.Players.LocalPlayer
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+
+    if universalVars.speedMirage and hrp then
+        -- Save current position as anchor
+        anchorPos = hrp.Position
+
+        -- Start teleport loop (near-infinite speed illusion)
+        mirageLoop = game:GetService("RunService").RenderStepped:Connect(function()
+            if not hrp then return end
+            local target = math.random() > 0.5 and anchorPos or hrp.Position
+            hrp.Position = target
+        end)
+    else
+        -- Stop loop and stabilize at actual position
+        if mirageLoop then
+            mirageLoop:Disconnect()
+            mirageLoop = nil
+        end
+
+        if hrp then
+            hrp.Position = hrp.Position -- Snap to current location
+        end
+    end
+end)
+
 end
 
 -----------------------
