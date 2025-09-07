@@ -2270,47 +2270,19 @@ universalVars.speedMirage = false
 -- Internal state
 local mirageLoop = nil
 local anchorPos = nil
+local actualPos = nil
+local toggle = true
 
 -- Reference to Universal tab frame
 local tf = tabFrames["Universal"]
-
--- Get correct parent for buttons (scrolling frame if mobile)
 local contentParent = isMobile() and tf:FindFirstChild("ScrollingFrame") or tf
-local contentY = 10 -- Adjust this if stacking with other buttons
 
--- Safe button constructor
-local function safeStyledBtn(parent, x, y, w, text, col)
-    local maxWidth = parent.AbsoluteSize.X - 32
-    local width = math.min(w or 190, maxWidth)
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, width, 0, 34)
-    btn.Position = UDim2.new(0, x, 0, y)
-    btn.BackgroundColor3 = typeof(col) == "Color3" and col or Color3.fromRGB(46, 60, 120)
-    btn.Text = typeof(text) == "string" and text or "Unnamed"
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.BorderSizePixel = 0
-    btn.AutoButtonColor = true
-    btn.BackgroundTransparency = 0.18
-    btn.Parent = parent
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = btn
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Thickness = 1.2
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Parent = btn
-
-    return btn
-end
+-- Button stacking system
+local contentY = 10 -- Adjust if stacking with other buttons
 
 -- Create the Speed Mirage button
-local mirageBtn = safeStyledBtn(contentParent, 14, contentY, 180, "Speed Mirage: OFF", Color3.fromRGB(140, 60, 60))
-contentY += 44 -- Stack spacing
+local mirageBtn = styledBtn(contentParent, 14, contentY, 180, "Speed Mirage: OFF", Color3.fromRGB(140, 60, 60))
+contentY += 44
 
 -- Button logic
 mirageBtn.MouseButton1Click:Connect(function()
@@ -2323,14 +2295,24 @@ mirageBtn.MouseButton1Click:Connect(function()
     local player = game.Players.LocalPlayer
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
+    local cam = workspace.CurrentCamera
 
     if universalVars.speedMirage and hrp then
         anchorPos = hrp.Position
 
         mirageLoop = game:GetService("RunService").RenderStepped:Connect(function()
             if not hrp then return end
-            local target = math.random() > 0.5 and anchorPos or hrp.Position
-            hrp.Position = target
+
+            -- Update actual position every frame
+            actualPos = hrp.Position
+
+            -- Lock camera to actual position
+            cam.CameraSubject = hrp
+            cam.CFrame = CFrame.new(actualPos + Vector3.new(0, 5, 0))
+
+            -- Flicker between anchor and actual
+            hrp.Position = toggle and anchorPos or actualPos
+            toggle = not toggle
         end)
     else
         if mirageLoop then
@@ -2339,7 +2321,7 @@ mirageBtn.MouseButton1Click:Connect(function()
         end
 
         if hrp then
-            hrp.Position = hrp.Position -- Stabilize at current location
+            hrp.Position = actualPos or hrp.Position -- Stabilize at actual location
         end
     end
 end)
