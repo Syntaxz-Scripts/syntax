@@ -2264,19 +2264,53 @@ RunService.RenderStepped:Connect(function()
     end)
 
 -- Speed Mirage   
--- Reference to Universal tab frame
-local tf = tabFrames["Universal"]
-
--- Create the button using your styledBtn system
-local mirageBtn = styledBtn(tf, 10, "Speed Mirage: OFF", 140)
-mirageBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
-
--- Scoped variable for toggle state
+-- Scoped variable
 universalVars.speedMirage = false
 
 -- Internal state
 local mirageLoop = nil
 local anchorPos = nil
+
+-- Reference to Universal tab frame
+local tf = tabFrames["Universal"]
+
+-- Get correct parent for buttons (scrolling frame if mobile)
+local contentParent = isMobile() and tf:FindFirstChild("ScrollingFrame") or tf
+local contentY = 10 -- Adjust this if stacking with other buttons
+
+-- Safe button constructor
+local function safeStyledBtn(parent, x, y, w, text, col)
+    local maxWidth = parent.AbsoluteSize.X - 32
+    local width = math.min(w or 190, maxWidth)
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, width, 0, 34)
+    btn.Position = UDim2.new(0, x, 0, y)
+    btn.BackgroundColor3 = typeof(col) == "Color3" and col or Color3.fromRGB(46, 60, 120)
+    btn.Text = typeof(text) == "string" and text or "Unnamed"
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = true
+    btn.BackgroundTransparency = 0.18
+    btn.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1.2
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Parent = btn
+
+    return btn
+end
+
+-- Create the Speed Mirage button
+local mirageBtn = safeStyledBtn(contentParent, 14, contentY, 180, "Speed Mirage: OFF", Color3.fromRGB(140, 60, 60))
+contentY += 44 -- Stack spacing
 
 -- Button logic
 mirageBtn.MouseButton1Click:Connect(function()
@@ -2291,24 +2325,21 @@ mirageBtn.MouseButton1Click:Connect(function()
     local hrp = char:FindFirstChild("HumanoidRootPart")
 
     if universalVars.speedMirage and hrp then
-        -- Save current position as anchor
         anchorPos = hrp.Position
 
-        -- Start teleport loop (near-infinite speed illusion)
         mirageLoop = game:GetService("RunService").RenderStepped:Connect(function()
             if not hrp then return end
             local target = math.random() > 0.5 and anchorPos or hrp.Position
             hrp.Position = target
         end)
     else
-        -- Stop loop and stabilize at actual position
         if mirageLoop then
             mirageLoop:Disconnect()
             mirageLoop = nil
         end
 
         if hrp then
-            hrp.Position = hrp.Position -- Snap to current location
+            hrp.Position = hrp.Position -- Stabilize at current location
         end
     end
 end)
