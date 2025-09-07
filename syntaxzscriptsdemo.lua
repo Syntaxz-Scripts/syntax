@@ -2270,7 +2270,6 @@ universalVars.speedMirage = false
 -- Internal state
 local mirageLoop = nil
 local anchorPos = nil
-local actualPos = nil
 local toggle = true
 
 -- Reference to Universal tab frame
@@ -2298,30 +2297,33 @@ mirageBtn.MouseButton1Click:Connect(function()
     local cam = workspace.CurrentCamera
 
     if universalVars.speedMirage and hrp then
+        -- Save current position as anchor
         anchorPos = hrp.Position
 
+        -- Lock camera to actual position
+        cam.CameraSubject = hrp
+
+        -- Start flicker loop
         mirageLoop = game:GetService("RunService").RenderStepped:Connect(function()
             if not hrp then return end
 
-            -- Update actual position every frame
-            actualPos = hrp.Position
+            -- Update camera to follow actual position
+            cam.CFrame = CFrame.new(hrp.Position + Vector3.new(0, 5, 0))
 
-            -- Lock camera to actual position
-            cam.CameraSubject = hrp
-            cam.CFrame = CFrame.new(actualPos + Vector3.new(0, 5, 0))
-
-            -- Flicker between anchor and actual
-            hrp.Position = toggle and anchorPos or actualPos
+            -- Alternate between anchor and current position
+            local target = toggle and anchorPos or hrp.Position
+            hrp.Position = target
             toggle = not toggle
         end)
     else
+        -- Stop flicker and stabilize
         if mirageLoop then
             mirageLoop:Disconnect()
             mirageLoop = nil
         end
 
         if hrp then
-            hrp.Position = actualPos or hrp.Position -- Stabilize at actual location
+            hrp.Position = hrp.Position -- Stabilize at current location
         end
     end
 end)
