@@ -2268,7 +2268,8 @@ RunService.RenderStepped:Connect(function()
 local tf = tabFrames["Universal"]
 
 -- Create the button using your styledBtn system
-local mirageBtn = styledBtn(tf, 10, "Speed Mirage: OFF", Color3.fromRGB(140, 60, 60))
+local mirageBtn = styledBtn(tf, 10, "Speed Mirage: OFF", 140)
+mirageBtn.BackgroundColor3 = Color3.fromRGB(140, 60, 60)
 
 -- Scoped variable for toggle state
 universalVars.speedMirage = false
