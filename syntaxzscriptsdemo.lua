@@ -1391,7 +1391,7 @@ do
     end
     local SKIP_DISTANCE = 67 * 0.1
     local SKIP_SPEED = 467
-    local SKIP_DURATION = 0.67
+    local SKIP_DURATION = 0.1
     local externalBtn = nil
     local function createExternalTpWalkBtn()
         if externalBtn and externalBtn.Parent then
