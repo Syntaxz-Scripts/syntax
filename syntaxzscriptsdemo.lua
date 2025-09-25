@@ -1390,7 +1390,7 @@ do
         end
     end
     print("skip thing worked") 
-    local SKIP_DISTANCE = 150 * 0.1
+    local SKIP_DISTANCE = 350 * 0.1
     local SKIP_SPEED = 400
     local SKIP_DURATION = 0.1
     local externalBtn = nil
