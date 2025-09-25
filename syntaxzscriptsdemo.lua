@@ -1389,9 +1389,9 @@ do
             zap(startPos, endPos, LIGHTNING_COLOR)
         end
     end
-    print("skip thing worked") 
+    print("kill sorcerers huh? you're a sorcerer.") 
     local SKIP_DISTANCE = 350 * 0.1
-    local SKIP_SPEED = 400
+    local SKIP_SPEED = 700
     local SKIP_DURATION = 0.1
     local externalBtn = nil
     local function createExternalTpWalkBtn()
