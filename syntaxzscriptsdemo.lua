@@ -1390,7 +1390,7 @@ do
         end
     end
     local SKIP_DISTANCE = 200 * 0.1
-    local SKIP_SPEED = 200
+    local SKIP_SPEED = 467
     local SKIP_DURATION = 0.1
     local externalBtn = nil
     local function createExternalTpWalkBtn()
