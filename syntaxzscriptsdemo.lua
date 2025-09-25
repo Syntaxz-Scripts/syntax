@@ -1389,8 +1389,9 @@ do
             zap(startPos, endPos, LIGHTNING_COLOR)
         end
     end
+    print:("skip thing worked") 
     local SKIP_DISTANCE = 50 * 0.1
-    local SKIP_SPEED = 240
+    local SKIP_SPEED = 200
     local SKIP_DURATION = 0.05
     local externalBtn = nil
     local function createExternalTpWalkBtn()
