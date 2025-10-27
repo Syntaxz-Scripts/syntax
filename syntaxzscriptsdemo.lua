@@ -3,7 +3,7 @@
 --¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯-- 
 
 --/¯----------------------¯\--
---| Hornet naked photo tuff|--
+--| No new updates so far..|--
 --\_----------------------_/--
 
 local Players = game:GetService("Players")
@@ -1390,7 +1390,7 @@ do
         end
     end
     print("kill sorcerers huh? you're a sorcerer.") 
-    local SKIP_DISTANCE = 350 * 0.1
+    local SKIP_DISTANCE = 250 * 0.1
     local SKIP_SPEED = 700
     local SKIP_DURATION = 0.1
     local externalBtn = nil
