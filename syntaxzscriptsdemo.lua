@@ -1288,7 +1288,7 @@ do
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         local NUM_BOLTS = 10
-        local COLOR = ColorSequence.new(Color3.fromRGB(255, 165, 0), Color3.fromRGB(255, 165, 0))
+        local COLOR = ColorSequence.new(Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0))
         for i = 1, NUM_BOLTS do
             local angle = math.rad((i / NUM_BOLTS) * 360)
             local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius + math.random()*1.5)
@@ -1338,7 +1338,7 @@ do
         local up = hrp.CFrame.UpVector
         local right = hrp.CFrame.RightVector
         local NUM_BOLTS = 20
-        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(255, 165, 0), Color3.fromRGB(255, 165, 0))
+        local LIGHTNING_COLOR = ColorSequence.new(Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 0, 0))
         local LIGHTNING_DURATION = 0.2
 
         local function zap(startPos, endPos, color)
@@ -1389,7 +1389,7 @@ do
             zap(startPos, endPos, LIGHTNING_COLOR)
         end
     end
-    print("kill sorcerers huh? you're a sorcerer.") 
+    print("Script fully loaded buddy") 
     local SKIP_DISTANCE = 250 * 0.1
     local SKIP_SPEED = 700
     local SKIP_DURATION = 0.1
