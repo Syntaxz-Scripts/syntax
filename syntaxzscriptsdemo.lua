@@ -1390,8 +1390,8 @@ do
         end
     end
     print("Script fully loaded buddy") 
-    local SKIP_DISTANCE = 250 * 0.1
-    local SKIP_SPEED = 700
+    local SKIP_DISTANCE = 100 * 0.1
+    local SKIP_SPEED = 400
     local SKIP_DURATION = 0.1
     local externalBtn = nil
     local function createExternalTpWalkBtn()
